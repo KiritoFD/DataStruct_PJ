@@ -8,6 +8,8 @@
 #include <random>
 #include <numeric>
 #include <limits>
+#include <thread>
+#include <mutex>
 
 bool try_stod(const std::string &s, double &out) {
     try {
@@ -57,7 +59,6 @@ void solution::build(const std::string& base_file) {
         return;
     }
 
-    // 加载所有数据
     std::cout << "Loading vectors..." << std::endl;
     std::string line;
     while (std::getline(fin, line)) {
@@ -70,8 +71,8 @@ void solution::build(const std::string& base_file) {
     }
     std::cout << "Loaded " << database.size() << " vectors, dim=" << dim << std::endl;
 
-    // K-Means 聚类
-    std::cout << "Running K-Means..." << std::endl;
+    // K-Means 聚类 (多线程)
+    std::cout << "Running K-Means with " << NUM_THREADS << " threads..." << std::endl;
     std::mt19937 rng(42);
     std::uniform_int_distribution<int> dist(0, database.size() - 1);
 
@@ -82,26 +83,18 @@ void solution::build(const std::string& base_file) {
     }
 
     // K-Means 迭代
+    std::vector<int> assignments(database.size());
     for (int iter = 0; iter < KMEANS_ITER; ++iter) {
-        std::vector<std::vector<double>> new_centroids(NUM_CENTROIDS, std::vector<double>(dim, 0.0));
-        std::vector<int> counts(NUM_CENTROIDS, 0);
+        // 并行分配
+        kmeans_assign_parallel(assignments);
 
-        // 分配点到最近的中心
-        for (const auto& dp : database) {
-            int c = find_closest_centroid(dp.vec);
-            for (int d = 0; d < dim; ++d) {
-                new_centroids[c][d] += dp.vec[d];
-            }
-            counts[c]++;
-        }
+        // 并行更新中心
+        std::vector<std::vector<double>> new_centroids(NUM_CENTROIDS, std::vector<double>(dim, 0.0));
+        kmeans_update_parallel(assignments, new_centroids);
 
         // 更新中心
         for (int i = 0; i < NUM_CENTROIDS; ++i) {
-            if (counts[i] > 0) {
-                for (int d = 0; d < dim; ++d) {
-                    centroids[i][d] = new_centroids[i][d] / counts[i];
-                }
-            }
+            centroids[i] = std::move(new_centroids[i]);
         }
 
         if ((iter + 1) % 2 == 0) {
@@ -118,6 +111,64 @@ void solution::build(const std::string& base_file) {
     }
 
     std::cout << "Index built successfully" << std::endl;
+}
+
+void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
+    int chunk_size = database.size() / NUM_THREADS;
+    std::vector<std::thread> threads;
+
+    auto worker = [this, &assignments](int start, int end) {
+        for (int i = start; i < end; ++i) {
+            assignments[i] = find_closest_centroid(database[i].vec);
+        }
+    };
+
+    for (int t = 0; t < NUM_THREADS; ++t) {
+        int start = t * chunk_size;
+        int end = (t == NUM_THREADS - 1) ? database.size() : (t + 1) * chunk_size;
+        threads.emplace_back(worker, start, end);
+    }
+
+    for (auto& t : threads) t.join();
+}
+
+void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::vector<std::vector<double>>& new_centroids) {
+    // 线程安全的累加
+    std::vector<std::mutex> mutexes(NUM_CENTROIDS);
+    std::vector<int> counts(NUM_CENTROIDS, 0);
+
+    int chunk_size = database.size() / NUM_THREADS;
+    std::vector<std::thread> threads;
+
+    auto worker = [this, &assignments, &new_centroids, &mutexes, &counts](int start, int end) {
+        for (int i = start; i < end; ++i) {
+            int c = assignments[i];
+            {
+                std::lock_guard<std::mutex> lock(mutexes[c]);
+                for (int d = 0; d < dim; ++d) {
+                    new_centroids[c][d] += database[i].vec[d];
+                }
+                counts[c]++;
+            }
+        }
+    };
+
+    for (int t = 0; t < NUM_THREADS; ++t) {
+        int start = t * chunk_size;
+        int end = (t == NUM_THREADS - 1) ? database.size() : (t + 1) * chunk_size;
+        threads.emplace_back(worker, start, end);
+    }
+
+    for (auto& t : threads) t.join();
+
+    // 归一化中心
+    for (int i = 0; i < NUM_CENTROIDS; ++i) {
+        if (counts[i] > 0) {
+            for (int d = 0; d < dim; ++d) {
+                new_centroids[i][d] /= counts[i];
+            }
+        }
+    }
 }
 
 int solution::find_closest_centroid(const std::vector<double>& vec) const {
@@ -155,7 +206,7 @@ double solution::compute_distance(const std::vector<double>& a, const std::vecto
 }
 
 std::vector<std::pair<int, double>> solution::find_closest_centroids(const std::vector<double>& query, int nprobe) const {
-    std::priority_queue<std::pair<double, int>> pq;  // max-heap
+    std::priority_queue<std::pair<double, int>> pq;
     
     for (int i = 0; i < (int)centroids.size(); ++i) {
         double d = compute_distance(query, centroids[i]);
@@ -174,24 +225,46 @@ std::vector<std::pair<int, double>> solution::find_closest_centroids(const std::
 }
 
 std::vector<std::pair<int, double>> solution::search(const std::vector<double>& query, int k) {
-    // 找到 NPROBE 个最近的聚类中心
     auto close_centroids = find_closest_centroids(query, NPROBE);
 
-    // 收集候选向量
-    std::unordered_map<int, bool> candidate_ids;
-    for (const auto& [c_id, _] : close_centroids) {
-        auto it = inverted_index.find(c_id);
-        if (it != inverted_index.end()) {
-            for (int vec_id : it->second) {
-                candidate_ids[vec_id] = true;
+    // 并行收集候选向量并计算距离
+    std::vector<std::pair<int, double>> all_candidates;
+    std::mutex candidates_mutex;
+
+    int chunk_size = (close_centroids.size() + NUM_THREADS - 1) / NUM_THREADS;
+    std::vector<std::thread> threads;
+
+    auto worker = [this, &query, &close_centroids, &all_candidates, &candidates_mutex](int start, int end) {
+        std::vector<std::pair<int, double>> local_candidates;
+        for (int i = start; i < end && i < (int)close_centroids.size(); ++i) {
+            int c_id = close_centroids[i].first;
+            auto it = inverted_index.find(c_id);
+            if (it != inverted_index.end()) {
+                for (int vec_id : it->second) {
+                    double dist = compute_distance(query, database[vec_id].vec);
+                    local_candidates.push_back({vec_id, dist});
+                }
             }
+        }
+        {
+            std::lock_guard<std::mutex> lock(candidates_mutex);
+            all_candidates.insert(all_candidates.end(), local_candidates.begin(), local_candidates.end());
+        }
+    };
+
+    for (int t = 0; t < NUM_THREADS; ++t) {
+        int start = t * chunk_size;
+        int end = std::min((t + 1) * chunk_size, (int)close_centroids.size());
+        if (start < (int)close_centroids.size()) {
+            threads.emplace_back(worker, start, end);
         }
     }
 
-    // 在候选集中计算距离并找 top-k
-    std::priority_queue<std::pair<double, int>> topk;  // max-heap
-    for (const auto& [vec_id, _] : candidate_ids) {
-        double dist = compute_distance(query, database[vec_id].vec);
+    for (auto& t : threads) t.join();
+
+    // 找 top-k
+    std::priority_queue<std::pair<double, int>> topk;
+    for (const auto& [vec_id, dist] : all_candidates) {
         if ((int)topk.size() < k) {
             topk.push({dist, vec_id});
         } else if (dist < topk.top().first) {
@@ -200,7 +273,6 @@ std::vector<std::pair<int, double>> solution::search(const std::vector<double>& 
         }
     }
 
-    // 整理结果
     std::vector<std::pair<int, double>> result;
     while (!topk.empty()) {
         result.push_back({topk.top().second, topk.top().first});
