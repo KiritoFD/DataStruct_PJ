@@ -14,6 +14,7 @@ public:
     solution(const std::string& metric = "l2");
     void build(const std::string& base_file);
     std::vector<std::pair<int, double>> search(const std::vector<double>& query, int k);
+    void build_from_memory(int d, std::vector<std::vector<double>> data);
 
 private:
     struct DataPoint {
@@ -21,17 +22,15 @@ private:
         std::vector<double> vec;
     };
 
-    static const int NUM_CENTROIDS = 256;
-    static const int KMEANS_ITER = 10;
-    static const int NPROBE = 25;
-    static const int NUM_THREADS = 8;
-
+    static const int NUM_CENTROIDS = 2048; // 增大聚类中心数量以提升精度
+    static const int KMEANS_ITER = 2;     // 增加迭代次数以强化聚类收敛
+    static const int NPROBE = 128;          // 扩大探针数提升召回
+    std::unordered_map<int, std::vector<int>> inverted_index;
     std::vector<DataPoint> database;
     std::vector<std::vector<double>> centroids;
-    std::unordered_map<int, std::vector<int>> inverted_index;
-    
     std::string metric;
     int dim;
+    int num_threads;
     
     int find_closest_centroid(const std::vector<double>& vec) const;
     double compute_distance(const std::vector<double>& a, const std::vector<double>& b) const;
@@ -40,6 +39,13 @@ private:
     // 多线程辅助函数
     void kmeans_assign_parallel(std::vector<int>& assignments);
     void kmeans_update_parallel(const std::vector<int>& assignments, std::vector<std::vector<double>>& new_centroids);
+    void finalize_build();
+};
+
+class Solution {
+public:
+    void build(int d, const std::vector<float>& base);
+    void search(const std::vector<float>& query, int* res);
 };
 
 #endif // MYSOLUTION_H

@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <sstream>
 #include <cctype>
+#include <vector>
+#include <utility>
 
 // 简单的JSON解析器
 struct SimpleJSON {
@@ -72,28 +74,7 @@ struct SimpleJSON {
     }
 };
 
-// 从文件加载查询向量
-std::vector<std::pair<int, std::vector<double>>> load_queries(const std::string& base_file) {
-    std::vector<std::pair<int, std::vector<double>>> queries;
-    std::ifstream ifs(base_file);
-    if (!ifs) {
-        std::cerr << "Cannot open file: " << base_file << std::endl;
-        return queries;
-    }
-
-    std::string line;
-    int idx = 0;
-    while (std::getline(ifs, line)) {
-        std::string id;
-        std::vector<double> vec;
-        if (parse_vector_line(line, id, vec)) {
-            queries.emplace_back(idx, std::move(vec));
-        }
-        ++idx;
-    }
-    return queries;
-}
-
+// 从文件加载查询向量 —— 改为由 load_base_flat 内联返回，删去独立函数
 // 计算召回率
 double compute_recall(const std::vector<std::pair<int, double>>& result, 
                      const std::vector<std::pair<int, double>>& ground_truth,
@@ -115,26 +96,68 @@ double compute_recall(const std::vector<std::pair<int, double>>& result,
     return matches / (double)std::min(k, (int)ground_truth.size());
 }
 
+// 新增：从 base 文件加载为一维 float 向量，并返回维度 d
+static std::vector<float> load_base_flat(const std::string& base_file, int& out_d,
+                                         std::vector<std::pair<int, std::vector<double>>>* out_queries = nullptr) {
+    std::vector<float> base_flat;
+    out_d = 0;
+    std::ifstream ifs(base_file);
+    if (!ifs) {
+        std::cerr << "Cannot open file: " << base_file << std::endl;
+        return base_flat;
+    }
+    std::string line;
+    bool first = true;
+    int idx = 0;
+    while (std::getline(ifs, line)) {
+        std::string id;
+        std::vector<double> vec;
+        if (!parse_vector_line(line, id, vec)) {
+            ++idx;
+            continue;
+        }
+        if (first) {
+            out_d = static_cast<int>(vec.size());
+            first = false;
+        }
+        if (vec.size() != static_cast<size_t>(out_d)) {
+            ++idx;
+            continue;
+        }
+        for (double v : vec) base_flat.push_back(static_cast<float>(v));
+        if (out_queries) out_queries->emplace_back(idx, std::move(vec));
+        ++idx;
+    }
+    return base_flat;
+}
+
+// 替换 main：使用 Solution 接口进行构建与查询
 int main() {
     // 配置参数
     const std::string base_file = "data_o/sift/base.txt";
-    const std::string gt_file = "data_o/sift/base.json";
-    const int K = 5;  // top-k
-    
-    // 初始化解决方案
-    solution sol("l2");
-    
-    // 构建索引并计时
+    const std::string gt_file = "data_o/sift/test.json";
+    const int K = 10;  // top-k
+
+    // 加载底库为一维 float 向量
+    int d = 0;
+    std::vector<std::pair<int, std::vector<double>>> queries;
+    auto base_flat = load_base_flat(base_file, d, &queries);
+    if (d <= 0 || base_flat.empty() || queries.empty()) {
+        std::cerr << "Empty base or invalid dimension." << std::endl;
+        return 1;
+    }
+
+    // 初始化并构建索引（使用题目接口 Solution）
+    Solution sol;
     auto build_start = std::chrono::high_resolution_clock::now();
     std::cout << "Building index..." << std::endl;
-    sol.build(base_file);
+    sol.build(d, base_flat);
     auto build_end = std::chrono::high_resolution_clock::now();
     auto build_time = std::chrono::duration_cast<std::chrono::seconds>(build_end - build_start).count();
     std::cout << "Index built in " << build_time << " seconds" << std::endl;
 
-    // 加载查询和ground truth
+    // 加载查询和ground truth（复用原有函数）
     std::cout << "Loading queries and ground truth..." << std::endl;
-    auto queries = load_queries(base_file);
     auto ground_truth = SimpleJSON::parse_gt(gt_file);
     std::cout << "Loaded " << ground_truth.size() << " ground truth entries" << std::endl;
 
@@ -144,15 +167,26 @@ int main() {
     int query_count = 0;
     auto search_start = std::chrono::high_resolution_clock::now();
 
+    // 直接使用上面获得的 queries，移除重复文件读取
     for (const auto& gt_pair : ground_truth) {
         int query_idx = gt_pair.first;
-        // 找到对应的查询向量
         auto it = std::find_if(queries.begin(), queries.end(),
             [query_idx](const auto& q) { return q.first == query_idx; });
-        
+
         if (it != queries.end() && !it->second.empty()) {
-            // 执行查询
-            auto result = sol.search(it->second, K);
+            // 转换为 float 并调用 Solution::search
+            std::vector<float> qf;
+            qf.reserve(it->second.size());
+            for (double v : it->second) qf.push_back(static_cast<float>(v));
+            int res_arr[10];
+            sol.search(qf, res_arr);
+
+            // 将返回的 id 转为 result 格式（distance 不影响 recall）
+            std::vector<std::pair<int, double>> result;
+            for (int i = 0; i < K && i < 10; ++i) {
+                if (res_arr[i] >= 0) result.emplace_back(res_arr[i], 0.0);
+            }
+
             // 计算召回率
             double recall = compute_recall(result, gt_pair.second, K);
             total_recall += recall;
@@ -172,9 +206,9 @@ int main() {
     std::cout << "\n=== Results ===" << std::endl;
     std::cout << "Total queries: " << query_count << std::endl;
     if (query_count > 0) {
-        std::cout << "Average recall@" << K << ": " << std::fixed << std::setprecision(4) 
+        std::cout << "Average recall@" << K << ": " << std::fixed << std::setprecision(4)
                   << (total_recall / query_count) << std::endl;
-        std::cout << "Average query time: " << std::fixed << std::setprecision(2) 
+        std::cout << "Average query time: " << std::fixed << std::setprecision(2)
                   << (search_time / (double)query_count) << " ms" << std::endl;
     }
     std::cout << "Index build time: " << build_time << " seconds" << std::endl;

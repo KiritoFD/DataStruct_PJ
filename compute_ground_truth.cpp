@@ -222,8 +222,8 @@ void write_json_output(const string &out_path, const string &dataset, const vect
 int main(int argc, char **argv) {
     // simple arg parsing
     string dataset = "";
-    int num_queries = 100;
-    int k = 5;
+    int num_queries = 100000;
+    int k = 10;
     string metric = "l2";
     int threads = 32;
     int batch_size = 1000;
