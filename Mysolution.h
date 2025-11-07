@@ -22,9 +22,20 @@ private:
         std::vector<double> vec;
     };
 
-    static const int NUM_CENTROIDS = 2048; // 增大聚类中心数量以提升精度
-    static const int KMEANS_ITER = 4;     // 增加迭代次数以强化聚类收敛
-    static const int NPROBE = 128;          // 扩大探针数提升召回
+    // Make these configurable at compile time with -D flags.
+    // Defaults can be overridden by passing -DNUM_CENTROIDS=... etc to g++
+#ifndef NUM_CENTROIDS
+#define NUM_CENTROIDS 1024
+#endif
+
+#ifndef KMEANS_ITER
+#define KMEANS_ITER 4
+#endif
+
+#ifndef NPROBE
+#define NPROBE 128
+#endif
+
     std::unordered_map<int, std::vector<int>> inverted_index;
     std::vector<DataPoint> database;
     std::vector<std::vector<double>> centroids;

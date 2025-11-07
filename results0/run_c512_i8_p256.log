@@ -1,0 +1,116 @@
+Building index...
+[solution] hardware_concurrency = 32, using 32 threads
+[solution] finalize_build: vectors=1192514, dim=100, centroids=512
+[solution] kmeans iter 1/8 done
+[solution] kmeans iter 2/8 done
+[solution] kmeans iter 3/8 done
+[solution] kmeans iter 4/8 done
+[solution] kmeans iter 5/8 done
+[solution] kmeans iter 6/8 done
+[solution] kmeans iter 7/8 done
+[solution] kmeans iter 8/8 done
+[solution] building inverted index (parallel) ...
+[solution] worker 0 start range [0,74533)
+[solution] worker 1 start range [74533,149066)
+[solution] worker 2 start range [149066,223599)
+[solution] worker 3 start range [223599,298132)
+[solution] worker 4 start range [298132,372665)
+[solution] worker 5 start range [372665,447198)
+[solution] worker 6 start range [447198,521731)
+[solution] worker 7 start range [521731,596264)
+[solution] worker 8 start range [596264,670797)
+[solution] worker 9 start range [670797,745330)
+[solution] worker 10 start range [745330,819863)
+[solution] worker 11 start range [819863,894396)
+[solution] worker 12 start range [894396,968929)
+[solution] worker 13 start range [968929,1043462)
+[solution] worker 14 start range [1043462,1117995)
+[solution] worker 15 start range [1117995,1192514)
+[solution] inverted_index progress: 500000/1192514
+[solution] inverted_index progress: 1000000/1192514
+[solution] worker 12 finished (processed 74533)
+[solution] worker 0 finished (processed 74533)
+[solution] worker 14 finished (processed 74533)
+[solution] worker 2 finished (processed 74533)
+[solution] worker 9 finished (processed 74533)
+[solution] worker 7 finished (processed 74533)
+[solution] worker 6 finished (processed 74533)
+[solution] worker 5 finished (processed 74533)
+[solution] worker 1 finished (processed 74533)
+[solution] worker 13 finished (processed 74533)
+[solution] worker 11 finished (processed 74533)
+[solution] worker 3 finished (processed 74533)
+[solution] worker 8 finished (processed 74533)
+[solution] worker 15 finished (processed 74519)
+[solution] worker 10 finished (processed 74533)
+[solution] worker 4 finished (processed 74533)
+[solution][watchdog] progress 1192514/1192514, elapsed=5s
+[solution] inverted index built: non-empty buckets=512, total entries=1192514, time=5.016s
+Index built in 19 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9955
+Average query time: 30.04 ms
+Index build time: 19 seconds
+Building index...
+[solution] hardware_concurrency = 32, using 32 threads
+[solution] finalize_build: vectors=1192514, dim=100, centroids=512
+[solution] kmeans iter 1/8 done
+[solution] kmeans iter 2/8 done
+[solution] kmeans iter 3/8 done
+[solution] kmeans iter 4/8 done
+[solution] kmeans iter 5/8 done
+[solution] kmeans iter 6/8 done
+[solution] kmeans iter 7/8 done
+[solution] kmeans iter 8/8 done
+[solution] building inverted index (parallel) ...
+[solution] worker 0 start range [0,74533)
+[solution] worker 1 start range [74533,149066)
+[solution] worker 2 start range [149066,223599)
+[solution] worker 3 start range [223599,298132)
+[solution] worker 4 start range [298132,372665)
+[solution] worker 5 start range [372665,447198)
+[solution] worker 6 start range [447198,521731)
+[solution] worker 7 start range [521731,596264)
+[solution] worker 8 start range [596264,670797)
+[solution] worker 9 start range [670797,745330)
+[solution] worker 10 start range [745330,819863)
+[solution] worker 11 start range [819863,894396)
+[solution] worker 12 start range [894396,968929)
+[solution] worker 13 start range [968929,1043462)
+[solution] worker 14 start range [1043462,1117995)
+[solution] worker 15 start range [1117995,1192514)
+[solution] inverted_index progress: 500000/1192514
+[solution] inverted_index progress: 1000000/1192514
+[solution] worker 4 finished (processed 74533)
+[solution] worker 12 finished (processed 74533)
+[solution] worker 8 finished (processed 74533)
+[solution] worker 15 finished (processed 74519)
+[solution] worker 7 finished (processed 74533)
+[solution] worker 3 finished (processed 74533)
+[solution] worker 1 finished (processed 74533)
+[solution] worker 2 finished (processed 74533)
+[solution] worker 13 finished (processed 74533)
+[solution] worker 5 finished (processed 74533)
+[solution] worker 9 finished (processed 74533)
+[solution] worker 0 finished (processed 74533)
+[solution] worker 10 finished (processed 74533)
+[solution] worker 6 finished (processed 74533)
+[solution] worker 11 finished (processed 74533)
+[solution] worker 14 finished (processed 74533)
+[solution][watchdog] progress 1192514/1192514, elapsed=5s
+[solution] inverted index built: non-empty buckets=512, total entries=1192514, time=5.006s
+Index built in 20 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9955
+Average query time: 36.36 ms
+Index build time: 20 seconds
