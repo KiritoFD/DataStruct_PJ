@@ -1,0 +1,3 @@
+start: {'NUM_CENTROIDS': 64, 'KMEANS_ITER': 16, 'NPROBE': 32} recall=0.992 avg_ms=39.92 obj=39.920
+iter 1: gradient tiny, probing integer neighbors
+stop: no improving neighbors at iter 1

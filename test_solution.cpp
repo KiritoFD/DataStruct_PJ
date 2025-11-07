@@ -9,7 +9,8 @@
 #include <cctype>
 #include <vector>
 #include <utility>
-
+#include <sys/stat.h>
+const std::string dataset = "glove";
 // 简单的JSON解析器
 struct SimpleJSON {
     static std::unordered_map<int, std::vector<std::pair<int, double>>> parse_gt(const std::string& json_file) {
@@ -131,17 +132,95 @@ static std::vector<float> load_base_flat(const std::string& base_file, int& out_
     return base_flat;
 }
 
+// 新增：二进制缓存加速
+static bool file_exists(const std::string& fname) {
+    struct stat st;
+    return stat(fname.c_str(), &st) == 0;
+}
+
+static bool save_base_bin(const std::string& bin_file, int d, const std::vector<float>& base_flat, const std::vector<std::pair<int, std::vector<double>>>& queries) {
+    std::ofstream ofs(bin_file, std::ios::binary);
+    if (!ofs) return false;
+    int n = (int)base_flat.size() / d;
+    ofs.write((char*)&d, sizeof(int));
+    ofs.write((char*)&n, sizeof(int));
+    ofs.write((char*)base_flat.data(), sizeof(float) * base_flat.size());
+    int nq = (int)queries.size();
+    ofs.write((char*)&nq, sizeof(int));
+    for (const auto& q : queries) {
+        int idx = q.first;
+        ofs.write((char*)&idx, sizeof(int));
+        int qdim = (int)q.second.size();
+        ofs.write((char*)&qdim, sizeof(int));
+        for (double v : q.second) {
+            float fv = (float)v;
+            ofs.write((char*)&fv, sizeof(float));
+        }
+    }
+    return true;
+}
+
+static bool load_base_bin(const std::string& bin_file, int& out_d, std::vector<float>& base_flat, std::vector<std::pair<int, std::vector<double>>>& queries) {
+    std::ifstream ifs(bin_file, std::ios::binary);
+    if (!ifs) return false;
+    int d = 0, n = 0;
+    ifs.read((char*)&d, sizeof(int));
+    ifs.read((char*)&n, sizeof(int));
+    if (d <= 0 || n <= 0) return false;
+    base_flat.resize(n * d);
+    ifs.read((char*)base_flat.data(), sizeof(float) * n * d);
+    int nq = 0;
+    ifs.read((char*)&nq, sizeof(int));
+    queries.clear();
+    for (int i = 0; i < nq; ++i) {
+        int idx = 0, qdim = 0;
+        ifs.read((char*)&idx, sizeof(int));
+        ifs.read((char*)&qdim, sizeof(int));
+        std::vector<double> qv(qdim);
+        for (int j = 0; j < qdim; ++j) {
+            float fv;
+            ifs.read((char*)&fv, sizeof(float));
+            qv[j] = fv;
+        }
+        queries.emplace_back(idx, std::move(qv));
+    }
+    out_d = d;
+    return true;
+}
+
+static std::vector<float> load_base_flat_cached(const std::string& base_file, int& out_d,
+                                         std::vector<std::pair<int, std::vector<double>>>* out_queries = nullptr) {
+    std::string bin_file = base_file + ".bin";
+    std::vector<float> base_flat;
+    std::vector<std::pair<int, std::vector<double>>> queries;
+    if (file_exists(bin_file)) {
+        if (load_base_bin(bin_file, out_d, base_flat, queries)) {
+            if (out_queries) *out_queries = queries;
+            std::cout << "[cache] loaded base vectors from " << bin_file << std::endl;
+            return base_flat;
+        }
+    }
+    base_flat = load_base_flat(base_file, out_d, &queries);
+    if (out_d > 0 && !base_flat.empty() && !queries.empty()) {
+        save_base_bin(bin_file, out_d, base_flat, queries);
+        std::cout << "[cache] saved base vectors to " << bin_file << std::endl;
+    }
+    if (out_queries) *out_queries = queries;
+    return base_flat;
+}
+
 // 替换 main：使用 Solution 接口进行构建与查询
 int main() {
     // 配置参数
-    const std::string base_file = "data_o/glove/base.txt";
-    const std::string gt_file = "data_o/glove/base.json";
+    
+    const std::string base_file = std::string("data_o/") + dataset + "/base.txt";
+    const std::string gt_file = std::string("data_o/") + dataset + "/test.json";
     const int K = 10;  // top-k
 
     // 加载底库为一维 float 向量
     int d = 0;
     std::vector<std::pair<int, std::vector<double>>> queries;
-    auto base_flat = load_base_flat(base_file, d, &queries);
+    auto base_flat = load_base_flat_cached(base_file, d, &queries);
     if (d <= 0 || base_flat.empty() || queries.empty()) {
         std::cerr << "Empty base or invalid dimension." << std::endl;
         return 1;

@@ -22,18 +22,18 @@ private:
         std::vector<double> vec;
     };
 
-    // Make these configurable at compile time with -D flags.
-    // Defaults can be overridden by passing -DNUM_CENTROIDS=... etc to g++
-#ifndef NUM_CENTROIDS
-#define NUM_CENTROIDS 1024
+// Make these configurable at compile time with -D flags.
+// Use names matching grid_test.sh for joint optimization.
+#ifndef NUM_CENTROID
+#define NUM_CENTROID 1024
 #endif
 
-#ifndef KMEANS_ITER
-#define KMEANS_ITER 4
+#ifndef KMEAN_ITER
+#define KMEAN_ITER 12
 #endif
 
-#ifndef NPROBE
-#define NPROBE 128
+#ifndef NPROB
+#define NPROB 128
 #endif
 
     std::unordered_map<int, std::vector<int>> inverted_index;

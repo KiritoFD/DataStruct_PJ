@@ -1,0 +1,846 @@
+Building index...
+[solution] hardware_concurrency = 32, using 32 threads
+[solution] finalize_build: vectors=1192514, dim=100, centroids=8192
+[solution] kmeans iter 1/64 done
+[solution] kmeans iter 2/64 done
+[solution] kmeans iter 3/64 done
+[solution] kmeans iter 4/64 done
+[solution] kmeans iter 5/64 done
+[solution] kmeans iter 6/64 done
+[solution] kmeans iter 7/64 done
+[solution] kmeans iter 8/64 done
+[solution] kmeans iter 9/64 done
+[solution] kmeans iter 10/64 done
+[solution] kmeans iter 11/64 done
+[solution] kmeans iter 12/64 done
+[solution] kmeans iter 13/64 done
+[solution] kmeans iter 14/64 done
+[solution] kmeans iter 15/64 done
+[solution] kmeans iter 16/64 done
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution] kmeans iter 17/64 done
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution] kmeans iter 18/64 done
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution] kmeans iter 19/64 done
+[solution] kmeans iter 20/64 done
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution] kmeans iter 21/64 done
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution] kmeans iter 22/64 done
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution] kmeans iter 23/64 done
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution] kmeans iter 24/64 done
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution] kmeans iter 25/64 done
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution] kmeans iter 26/64 done
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution] kmeans iter 27/64 done
+[solution] kmeans iter 28/64 done
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution] kmeans iter 29/64 done
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution] kmeans iter 30/64 done
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution] kmeans iter 31/64 done
+[solution] kmeans iter 32/64 done
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution] kmeans iter 33/64 done
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution] kmeans iter 34/64 done
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution] kmeans iter 35/64 done
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution] kmeans iter 36/64 done
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution] kmeans iter 37/64 done
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution] kmeans iter 38/64 done
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution] kmeans iter 39/64 done
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution] kmeans iter 40/64 done
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution] kmeans iter 41/64 done
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution] kmeans iter 42/64 done
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution] kmeans iter 43/64 done
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution] kmeans iter 44/64 done
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution] kmeans iter 45/64 done
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution] kmeans iter 46/64 done
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution] kmeans iter 47/64 done
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution] kmeans iter 48/64 done
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution] kmeans iter 49/64 done
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution] kmeans iter 50/64 done
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution] kmeans iter 51/64 done
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution] kmeans iter 52/64 done
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution] kmeans iter 53/64 done
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution] kmeans iter 54/64 done
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution] kmeans iter 55/64 done
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution] kmeans iter 56/64 done
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution] kmeans iter 57/64 done
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution] kmeans iter 58/64 done
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution] kmeans iter 59/64 done
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution] kmeans iter 60/64 done
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution] kmeans iter 61/64 done
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution] kmeans iter 62/64 done
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution] kmeans iter 63/64 done
+[solution][WARN] kmeans_assign worker processing items[186335,223602) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[111801,149068) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[484471,521738) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[37267,74534) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[633539,670806) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[931675,968942) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[372670,409937) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[596272,633539) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1006209,1043476) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[857141,894408) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[447204,484471) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[894408,931675) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[0,37267) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[521738,559005) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[74534,111801) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[223602,260869) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1118010,1155277) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[298136,335403) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1080743,1118010) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[708073,745340) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[409937,447204) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[670806,708073) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[335403,372670) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[745340,782607) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[559005,596272) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[968942,1006209) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[260869,298136) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[782607,819874) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[149068,186335) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1043476,1080743) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[819874,857141) has been running > 30s
+[solution][WARN] kmeans_assign worker processing items[1155277,1192514) has been running > 30s
+[solution] kmeans iter 64/64 done
+[solution] building inverted index (parallel) ...
+[solution] worker [solution] worker [solution] worker [solution] worker [solution] worker [solution] worker 1445[solution] worker 0 start range [0,74533)
+[solution] worker [solution] worker [solution] worker 6 start range [447198[solution] worker ,7 start range [ start range [ start range [315298132,372665)
+11 start range [ start range [[solution] worker 1117995 start range [ start range [372665[solution] worker ,819863,4471988943961043462[solution] worker 521731,596264)
+8)
+,1117995)
+5217311 start range [)
+ start range [74533,1490662596264)
+, start range [)
+67079714906612)
+9223599 start range [670797,745330)
+ start range [,894396,968929)
+,1192514)
+298132)
+,223599)
+[solution] worker 13 start range [968929,1043462)
+[solution] worker 10 start range [745330,819863)
+[solution][watchdog] progress 70846/1192514, elapsed=5s
+[solution][watchdog] progress 143394/1192514, elapsed=10s
+[solution][watchdog] progress 212356/1192514, elapsed=15s
+[solution][watchdog] progress 283447/1192514, elapsed=19s
+[solution][watchdog] progress 352389/1192514, elapsed=24s
+[solution][watchdog] progress 421144/1192514, elapsed=29s
+[solution][watchdog] progress 490948/1192514, elapsed=34s
+[solution] inverted_index progress: 500000/1192514
+[solution][watchdog] progress 593355/1192514, elapsed=39s
+[solution][watchdog] progress 716672/1192514, elapsed=44s
+[solution][watchdog] progress 823314/1192514, elapsed=49s
+[solution][watchdog] progress 928289/1192514, elapsed=53s
+[solution] inverted_index progress: 1000000/1192514
+[solution][watchdog] progress 1029537/1192514, elapsed=58s
+[solution] worker 7 finished (processed 74533)
+[solution][watchdog] progress 1133459/1192514, elapsed=63s
+[solution] worker 8 finished (processed 74533)
+[solution] worker 13 finished (processed 74533)
+[solution] worker 12 finished (processed 74533)
+[solution] worker 11 finished (processed 74533)
+[solution] worker 5 finished (processed 74533)
+[solution] worker 14 finished (processed 74533)
+[solution] worker 9 finished (processed 74533)
+[solution] worker 4 finished (processed 74533)
+[solution] worker 10 finished (processed 74533)
+[solution] worker 2 finished (processed 74533)
+[solution] worker 3 finished (processed 74533)
+[solution] worker 15 finished (processed 74519)
+[solution][watchdog] progress 1183544/1192514, elapsed=68s
+[solution] worker 0 finished (processed 74533)
+[solution] worker 1 finished (processed 74533)
+[solution] worker 6 finished (processed 74533)
+[solution][watchdog] progress 1192514/1192514, elapsed=73s
+[solution] inverted index built: non-empty buckets=8182, total entries=1192514, time=73.219s
+Index built in 2433 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.5586
+Average query time: 1.64 ms
+Index build time: 2433 seconds

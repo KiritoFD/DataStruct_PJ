@@ -4,9 +4,9 @@
 set -euo pipefail
 
 # Edit these arrays for the grid you want to try
-NUM_CENTROIDS_ARR=(64 128 256 512 1024 )
-KMEANS_ITER_ARR=(16 32)
-NPROBE_ARR=(8 16 32 64 128 256 512)
+NUM_CENTROIDS_ARR=(32 64 80 128 186 256 324 400 512 800 1024 1600 2048 4096)
+KMEANS_ITER_ARR=(4 16)
+NPROBE_ARR=(32 48 64 128 256 512 1024)
 
 # Other settings
 SRC="MySolution.cpp"
@@ -15,7 +15,16 @@ BIN="test"
 RESULTS_DIR="results"
 TIMEOUT_SEC=${TIMEOUT_SEC:-1800}  # allow override from env
 CXX=${CXX:-g++}
-CXXFLAGS="-O2 -std=c++17 -pthread -march=native"
+CXXFLAGS="-O3 -std=c++17 -pthread -march=native"
+SLEEP_BETWEEN_RUNS=${SLEEP_BETWEEN_RUNS:-0}  # 默认不 sleep
+
+# Check if timeout is available
+if ! command -v timeout &>/dev/null; then
+  echo "Warning: 'timeout' command not found. Runs will not be killed on timeout."
+  TIMEOUT_CMD=""
+else
+  TIMEOUT_CMD="timeout"
+fi
 
 mkdir -p "$RESULTS_DIR"
 
@@ -32,18 +41,18 @@ echo "NPROBE: ${NPROBE_ARR[*]}"
 echo "Timeout per run: ${TIMEOUT_SEC}s"
 echo
 
-for nc in "${NUM_CENTROIDS_ARR[@]}"; do
+for np in "${NPROBE_ARR[@]}"; do
   for ki in "${KMEANS_ITER_ARR[@]}"; do
-    for np in "${NPROBE_ARR[@]}"; do
+    for nc in "${NUM_CENTROIDS_ARR[@]}"; do
       stamp="c${nc}_i${ki}_p${np}"
       logfile="${RESULTS_DIR}/run_${stamp}.log"
       buildlog="${logfile}.build"
       echo "=== Running ${stamp} ==="
       echo "Compile: NUM_CENTROIDS=${nc}, KMEANS_ITER=${ki}, NPROBE=${np}"
       echo "Log: ${logfile}"
-      # compile with macro overrides
+      # compile with macro overrides (fix macro names to match C++ code)
       echo "Compiling..."
-      if ! $CXX $CXXFLAGS -DNUM_CENTROIDS=${nc} -DKMEANS_ITER=${ki} -DNPROBE=${np} "$SRC" "$TEST_SRC" -o "$BIN" 2>&1 | tee "$buildlog"; then
+      if ! $CXX $CXXFLAGS -DNUM_CENTROID=${nc} -DKMEAN_ITER=${ki} -DNPROB=${np} "$SRC" "$TEST_SRC" -o "$BIN" 2>&1 | tee "$buildlog"; then
         echo "Compile failed for ${stamp}, see ${buildlog}"
         status="COMPILE_FAIL"
         elapsed=0
@@ -57,14 +66,24 @@ for nc in "${NUM_CENTROIDS_ARR[@]}"; do
       echo "Running (timeout ${TIMEOUT_SEC}s)..."
       start_ts=$(date +%s)
       # run with timeout; capture stdout/stderr to logfile
-      if timeout "${TIMEOUT_SEC}"s ./"$BIN" &>> "$logfile"; then
-        status="OK"
-      else
-        rc=$?
-        if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
-          status="TIMEOUT_KILLED"
-          echo "[RUN] exited with $rc (timeout/kill)" >> "$logfile"
+      if [ -n "$TIMEOUT_CMD" ]; then
+        if $TIMEOUT_CMD "${TIMEOUT_SEC}"s ./"$BIN" &>> "$logfile"; then
+          status="OK"
         else
+          rc=$?
+          if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
+            status="TIMEOUT_KILLED"
+            echo "[RUN] exited with $rc (timeout/kill)" >> "$logfile"
+          else
+            status="ERROR_${rc}"
+            echo "[RUN] exited with $rc" >> "$logfile"
+          fi
+        fi
+      else
+        if ./"$BIN" &>> "$logfile"; then
+          status="OK"
+        else
+          rc=$?
           status="ERROR_${rc}"
           echo "[RUN] exited with $rc" >> "$logfile"
         fi
@@ -108,8 +127,16 @@ for nc in "${NUM_CENTROIDS_ARR[@]}"; do
 
       echo "=== Finished ${stamp} ==="
       echo
-      # small pause to let system settle
-      sleep 1
+      # small pause to let system settle (make configurable)
+      if [ "$SLEEP_BETWEEN_RUNS" -gt 0 ]; then
+        sleep "$SLEEP_BETWEEN_RUNS"
+      fi
+      # 跳出所有循环（break 3）如果召回率低于0.98
+      awk_recall=$(awk "BEGIN {print ($recall < 0.98) ? 1 : 0}")
+      if [ "$awk_recall" -eq 1 ]; then
+        echo "Recall is below threshold, stopping early."
+        break 1
+      fi
     done
   done
 done

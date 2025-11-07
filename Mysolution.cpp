@@ -11,8 +11,6 @@
 #include <mutex>
 #include <utility>
 #include <iostream>
-#include <atomic>
-#include <chrono>
 
 // 新增：提供 try_stod 与 parse_vector_line 的定义
 namespace {
@@ -112,200 +110,67 @@ void solution::finalize_build() {
         return;
     }
     std::cout << "[solution] finalize_build: vectors=" << database.size()
-              << ", dim=" << dim << ", centroids=" << NUM_CENTROIDS << '\n';
+              << ", dim=" << dim << ", centroids=" << NUM_CENTROID << '\n';
     std::mt19937 rng(42);
     std::uniform_int_distribution<int> dist(0, static_cast<int>(database.size()) - 1);
 
     centroids.clear();
-    centroids.reserve(NUM_CENTROIDS);
-    for (int i = 0; i < NUM_CENTROIDS; ++i) {
+    centroids.reserve(NUM_CENTROID);
+    for (int i = 0; i < NUM_CENTROID; ++i) {
         centroids.push_back(database[dist(rng)].vec);
     }
 
     std::vector<int> assignments(database.size());
-    for (int iter = 0; iter < KMEANS_ITER; ++iter) {
+    for (int iter = 0; iter < KMEAN_ITER; ++iter) {
         kmeans_assign_parallel(assignments);
-        std::vector<std::vector<double>> new_centroids(NUM_CENTROIDS, std::vector<double>(dim, 0.0));
+        std::vector<std::vector<double>> new_centroids(NUM_CENTROID, std::vector<double>(dim, 0.0));
         kmeans_update_parallel(assignments, new_centroids);
-        for (int i = 0; i < NUM_CENTROIDS; ++i) {
+        for (int i = 0; i < NUM_CENTROID; ++i) {
             centroids[i] = std::move(new_centroids[i]);
         }
         std::cout << "[solution] kmeans iter " << (iter + 1)
-                  << "/" << KMEANS_ITER << " done\n";
+                  << "/" << KMEAN_ITER << " done\n";
     }
 
-    // Replaced: sequential inverted_index build -> parallel with watchdog and timeout
-    {
-        std::cout << "[solution] building inverted index (parallel) ..." << std::endl;
-        auto idx_start = std::chrono::high_resolution_clock::now();
-
-        int dbsize = static_cast<int>(database.size());
-        if (dbsize == 0) {
-            std::cout << "[solution] empty database, skipped inverted index build\n";
-        } else {
-            // Limit threads to avoid oversubscription; choose up to 16 or num_threads
-            int threads_to_use = std::min(num_threads, std::min(16, dbsize));
-            int chunk = (dbsize + threads_to_use - 1) / threads_to_use;
-
-            // per-thread per-centroid local buckets to avoid locking during writes
-            std::vector<std::vector<std::vector<int>>> local_buckets(
-                threads_to_use, std::vector<std::vector<int>>(NUM_CENTROIDS)
-            );
-
-            std::atomic<int> processed{0};
-            std::atomic<bool> stop_flag{false};
-            const int WATCHDOG_INTERVAL_SEC = 5;
-            const int MAX_WAIT_SEC = 300; // timeout to avoid indefinite hang
-            std::vector<std::thread> threads;
-            threads.reserve(threads_to_use);
-
-            // worker threads
-            for (int t = 0; t < threads_to_use; ++t) {
-                int start = t * chunk;
-                int end = std::min(start + chunk, dbsize);
-                if (start >= end) continue;
-                threads.emplace_back([this, &local_buckets, t, start, end, &processed, dbsize, &stop_flag]() {
-                    std::cout << "[solution] worker " << t << " start range [" << start << "," << end << ")\n";
-                    int local_count = 0;
-                    for (int i = start; i < end; ++i) {
-                        if (stop_flag.load(std::memory_order_relaxed)) break;
-                        int c = find_closest_centroid(database[i].vec);
-                        local_buckets[t][c].push_back(database[i].id);
-                        ++local_count;
-                        int cur = ++processed;
-                        // coarse-grained progress logging
-                        if ((cur % 500000) == 0) {
-                            std::cout << "[solution] inverted_index progress: " << cur << "/" << dbsize << std::endl;
-                        }
-                        // occasionally yield to allow watchdog/other threads to run
-                        if ((local_count & 0x7FF) == 0) std::this_thread::yield();
-                    }
-                    std::cout << "[solution] worker " << t << " finished (processed " << local_count << ")\n";
-                });
-            }
-
-            // watchdog thread monitors progress and enforces timeout
-            std::atomic<bool> watchdog_stopped{false};
-            // capture WATCHDOG_INTERVAL_SEC and MAX_WAIT_SEC by value as they are local consts
-            std::thread watchdog([&processed, dbsize, &stop_flag, &watchdog_stopped, idx_start, WATCHDOG_INTERVAL_SEC, MAX_WAIT_SEC]() {
-                int last = 0;
-                int elapsed = 0;
-                while (true) {
-                    std::this_thread::sleep_for(std::chrono::seconds(WATCHDOG_INTERVAL_SEC));
-                    int cur = processed.load();
-                    auto now = std::chrono::high_resolution_clock::now();
-                    elapsed = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(now - idx_start).count());
-                    std::cout << "[solution][watchdog] progress " << cur << "/" << dbsize
-                              << ", elapsed=" << elapsed << "s\n";
-                    if (cur >= dbsize) break; // completed
-                    if (elapsed > MAX_WAIT_SEC) {
-                        std::cout << "[solution][watchdog][WARN] inverted_index build exceeded " << MAX_WAIT_SEC
-                                  << "s, requesting stop\n";
-                        stop_flag.store(true);
-                        break;
-                    }
-                    if (cur == last && cur > 0 && elapsed > WATCHDOG_INTERVAL_SEC * 6) {
-                        // no progress for a while; warn
-                        std::cout << "[solution][watchdog][WARN] no progress detected for " 
-                                  << (elapsed) << "s, continuing to monitor\n";
-                    }
-                    last = cur;
-                }
-                watchdog_stopped.store(true);
-            });
-
-            // join workers
-            for (auto &th : threads) {
-                if (th.joinable()) th.join();
-            }
-
-            // ensure watchdog stops
-            if (!watchdog_stopped.load()) {
-                // if build finished early, watchdog will exit; otherwise give it a chance then join
-                stop_flag.store(true);
-            }
-            if (watchdog.joinable()) watchdog.join();
-
-            // merge local buckets into global inverted_index (may be partial if stopped)
-            inverted_index.clear();
-            for (int c = 0; c < NUM_CENTROIDS; ++c) {
-                size_t total_size = 0;
-                for (int t = 0; t < threads_to_use; ++t) total_size += local_buckets[t][c].size();
-                if (total_size == 0) continue;
-                std::vector<int> merged;
-                merged.reserve(total_size);
-                for (int t = 0; t < threads_to_use; ++t) {
-                    auto &v = local_buckets[t][c];
-                    if (!v.empty()) merged.insert(merged.end(), v.begin(), v.end());
-                }
-                inverted_index[c] = std::move(merged);
-            }
-        }
-
-        auto idx_end = std::chrono::high_resolution_clock::now();
-        auto idx_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(idx_end - idx_start).count();
-        // count non-empty buckets
-        size_t non_empty = 0;
-        size_t total_ids = 0;
-        for (const auto &p : inverted_index) {
-            if (!p.second.empty()) ++non_empty;
-            total_ids += p.second.size();
-        }
-        std::cout << "[solution] inverted index built: non-empty buckets=" << non_empty
-                  << ", total entries=" << total_ids
-                  << ", time=" << (idx_time_ms / 1000.0) << "s\n";
+    inverted_index.clear();
+    for (const auto& dp : database) {
+        int c = find_closest_centroid(dp.vec);
+        inverted_index[c].push_back(dp.id);
     }
+    std::cout << "[solution] inverted index built with "
+              << inverted_index.size() << " buckets\n";
 }
 
 void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
-	// safer int conversions for thread counts
-	int dbsize = static_cast<int>(database.size());
-	int threads_to_use = std::min(num_threads, std::max(1, dbsize));
-	int chunk_size = (dbsize + threads_to_use - 1) / threads_to_use;
+	int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, database.size()));
+	int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
 	std::vector<std::thread> threads;
 	threads.reserve(threads_to_use);
 
-	const auto warn_threshold = std::chrono::seconds(30);
-	auto worker = [this, &assignments, dbsize, &warn_threshold](int start, int end) {
-		auto tstart = std::chrono::high_resolution_clock::now();
-		int counter = 0;
+	auto worker = [this, &assignments](int start, int end) {
 		for (int i = start; i < end; ++i) {
 			assignments[i] = find_closest_centroid(database[i].vec);
-			++counter;
-			if ((counter & 0x3FF) == 0) { // every 1024 items check elapsed
-				auto now = std::chrono::high_resolution_clock::now();
-				if (now - tstart > warn_threshold) {
-					std::cout << "[solution][WARN] kmeans_assign worker processing items[" << start
-							  << "," << end << ") has been running > " << warn_threshold.count() << "s\n";
-					tstart = now; // throttle further logs
-				}
-			}
 		}
 	};
 
 	for (int t = 0; t < threads_to_use; ++t) {
 		int start = t * chunk_size;
-		int end = std::min(start + chunk_size, dbsize);
+		int end = std::min(start + chunk_size, static_cast<int>(database.size()));
 		if (start < end) threads.emplace_back(worker, start, end);
 	}
 	for (auto& th : threads) th.join();
 }
 
 void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::vector<std::vector<double>>& new_centroids) {
-    // 线程安全的累加
-    std::vector<std::mutex> mutexes(NUM_CENTROIDS);
-    std::vector<int> counts(NUM_CENTROIDS, 0);
+    std::vector<std::mutex> mutexes(NUM_CENTROID);
+    std::vector<int> counts(NUM_CENTROID, 0);
 
-    int dbsize = static_cast<int>(database.size());
-    int threads_to_use = std::min(num_threads, std::max(1, dbsize));
-    int chunk_size = (dbsize + threads_to_use - 1) / threads_to_use;
+    int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, database.size()));
+    int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
     std::vector<std::thread> threads;
     threads.reserve(threads_to_use);
 
-    const auto warn_threshold = std::chrono::seconds(30);
-    auto worker = [this, &assignments, &new_centroids, &mutexes, &counts, dbsize, &warn_threshold](int start, int end) {
-        auto tstart = std::chrono::high_resolution_clock::now();
-        int local_counter = 0;
+    auto worker = [this, &assignments, &new_centroids, &mutexes, &counts](int start, int end) {
         for (int i = start; i < end; ++i) {
             int c = assignments[i];
             {
@@ -315,40 +180,22 @@ void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::
                 }
                 counts[c]++;
             }
-            ++local_counter;
-            if ((local_counter & 0x3FF) == 0) {
-                auto now = std::chrono::high_resolution_clock::now();
-                if (now - tstart > warn_threshold) {
-                    std::cout << "[solution][WARN] kmeans_update worker processed " << local_counter
-                              << " items in range [" << start << "," << end << ") > " << warn_threshold.count() << "s\n";
-                    tstart = now;
-                }
-            }
         }
     };
 
     for (int t = 0; t < threads_to_use; ++t) {
         int start = t * chunk_size;
-        int end = std::min(start + chunk_size, dbsize);
+        int end = std::min(start + chunk_size, static_cast<int>(database.size()));
         if (start < end) threads.emplace_back(worker, start, end);
     }
     for (auto& th : threads) th.join();
 
-    // 归一化中心
-    for (int i = 0; i < NUM_CENTROIDS; ++i) {
+    for (int i = 0; i < NUM_CENTROID; ++i) {
         if (counts[i] > 0) {
             for (int d = 0; d < dim; ++d) {
                 new_centroids[i][d] /= counts[i];
             }
         }
-    }
-
-    // consistency check: counts sum should equal dbsize
-    long long sum_counts = 0;
-    for (int c : counts) sum_counts += c;
-    if (sum_counts != dbsize) {
-        std::cout << "[solution][WARN] kmeans_update counts sum (" << sum_counts
-                  << ") != database size (" << dbsize << ")\n";
     }
 }
 
@@ -406,7 +253,7 @@ std::vector<std::pair<int, double>> solution::find_closest_centroids(const std::
 }
 
 std::vector<std::pair<int, double>> solution::search(const std::vector<double>& query, int k) {
-	auto close_centroids = find_closest_centroids(query, NPROBE);
+	auto close_centroids = find_closest_centroids(query, NPROB);
 
 	std::vector<std::pair<int, double>> all_candidates;
 	std::mutex candidates_mutex;

@@ -1,0 +1,13 @@
+{
+  "params": {
+    "NUM_CENTROIDS": 64,
+    "KMEANS_ITER": 16,
+    "NPROBE": 32
+  },
+  "status": "OK",
+  "recall": 0.992,
+  "avg_query_time_ms": 39.92,
+  "elapsed_s": 89.0,
+  "objective": 39.92,
+  "logfile": "results/tune_gd/c64_i16_p32.log"
+}
