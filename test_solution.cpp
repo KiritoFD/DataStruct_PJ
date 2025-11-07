@@ -134,8 +134,8 @@ static std::vector<float> load_base_flat(const std::string& base_file, int& out_
 // 替换 main：使用 Solution 接口进行构建与查询
 int main() {
     // 配置参数
-    const std::string base_file = "data_o/sift/base.txt";
-    const std::string gt_file = "data_o/sift/test.json";
+    const std::string base_file = "data_o/glove/base.txt";
+    const std::string gt_file = "data_o/glove/base.json";
     const int K = 10;  // top-k
 
     // 加载底库为一维 float 向量

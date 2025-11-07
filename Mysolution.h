@@ -23,7 +23,7 @@ private:
     };
 
     static const int NUM_CENTROIDS = 2048; // 增大聚类中心数量以提升精度
-    static const int KMEANS_ITER = 2;     // 增加迭代次数以强化聚类收敛
+    static const int KMEANS_ITER = 4;     // 增加迭代次数以强化聚类收敛
     static const int NPROBE = 128;          // 扩大探针数提升召回
     std::unordered_map<int, std::vector<int>> inverted_index;
     std::vector<DataPoint> database;

@@ -1,4 +1,4 @@
-#include "Mysolution.h"
+#include "MySolution.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
@@ -121,83 +121,103 @@ void solution::finalize_build() {
     }
 
     std::vector<int> assignments(database.size());
+
+    const auto warn_threshold = std::chrono::seconds(30); // warn if an iteration is very slow
     for (int iter = 0; iter < KMEANS_ITER; ++iter) {
-        kmeans_assign_parallel(assignments);
+        auto iter_start = std::chrono::high_resolution_clock::now();
+
+        // Conservative: use single-threaded kmeans assign/update to avoid thread-related hangs.
+        kmeans_assign_single(assignments);
         std::vector<std::vector<double>> new_centroids(NUM_CENTROIDS, std::vector<double>(dim, 0.0));
-        kmeans_update_parallel(assignments, new_centroids);
+        kmeans_update_single(assignments, new_centroids);
+
+        // If a centroid got no points, keep the old centroid (avoid degenerate empty centroid)
         for (int i = 0; i < NUM_CENTROIDS; ++i) {
             centroids[i] = std::move(new_centroids[i]);
         }
+
+        auto iter_end = std::chrono::high_resolution_clock::now();
+        auto iter_time = std::chrono::duration_cast<std::chrono::seconds>(iter_end - iter_start);
         std::cout << "[solution] kmeans iter " << (iter + 1)
-                  << "/" << KMEANS_ITER << " done\n";
+                  << "/" << KMEANS_ITER << " done (time=" << iter_time.count() << "s)\n";
+        if (iter_time > warn_threshold) {
+            std::cout << "[solution][WARN] kmeans iter " << (iter + 1)
+                      << " took more than " << warn_threshold.count() << "s\n";
+        }
+    }
+
+    // Build inverted index using local buckets to guarantee deterministic bucket layout
+    std::vector<std::vector<int>> buckets(NUM_CENTROIDS);
+    for (const auto& dp : database) {
+        int c = find_closest_centroid(dp.vec);
+        if (c < 0 || c >= NUM_CENTROIDS) {
+            std::cout << "[solution][WARN] invalid centroid id " << c << " for vector " << dp.id << "\n";
+            continue;
+        }
+        buckets[c].push_back(dp.id);
     }
 
     inverted_index.clear();
-    for (const auto& dp : database) {
-        int c = find_closest_centroid(dp.vec);
-        inverted_index[c].push_back(dp.id);
-    }
-    std::cout << "[solution] inverted index built with "
-              << inverted_index.size() << " buckets\n";
-}
-
-void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
-	int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, database.size()));
-	int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
-	std::vector<std::thread> threads;
-	threads.reserve(threads_to_use);
-
-	auto worker = [this, &assignments](int start, int end) {
-		for (int i = start; i < end; ++i) {
-			assignments[i] = find_closest_centroid(database[i].vec);
-		}
-	};
-
-	for (int t = 0; t < threads_to_use; ++t) {
-		int start = t * chunk_size;
-		int end = std::min(start + chunk_size, static_cast<int>(database.size()));
-		if (start < end) threads.emplace_back(worker, start, end);
-	}
-	for (auto& th : threads) th.join();
-}
-
-void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::vector<std::vector<double>>& new_centroids) {
-    // 线程安全的累加
-    std::vector<std::mutex> mutexes(NUM_CENTROIDS);
-    std::vector<int> counts(NUM_CENTROIDS, 0);
-
-    int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, database.size()));
-    int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
-    std::vector<std::thread> threads;
-    threads.reserve(threads_to_use);
-
-    auto worker = [this, &assignments, &new_centroids, &mutexes, &counts](int start, int end) {
-        for (int i = start; i < end; ++i) {
-            int c = assignments[i];
-            {
-                std::lock_guard<std::mutex> lock(mutexes[c]);
-                for (int d = 0; d < dim; ++d) {
-                    new_centroids[c][d] += database[i].vec[d];
-                }
-                counts[c]++;
-            }
-        }
-    };
-
-    for (int t = 0; t < threads_to_use; ++t) {
-        int start = t * chunk_size;
-        int end = std::min(start + chunk_size, static_cast<int>(database.size()));
-        if (start < end) threads.emplace_back(worker, start, end);
-    }
-    for (auto& th : threads) th.join();
-
-    // 归一化中心
+    // transfer non-empty buckets to inverted_index (preserves centroid id -> list mapping)
+    int non_empty = 0;
+    long long total_assigned = 0;
     for (int i = 0; i < NUM_CENTROIDS; ++i) {
-        if (counts[i] > 0) {
-            for (int d = 0; d < dim; ++d) {
-                new_centroids[i][d] /= counts[i];
-            }
+        if (!buckets[i].empty()) {
+            inverted_index[i] = std::move(buckets[i]);
+            total_assigned += inverted_index[i].size();
+            ++non_empty;
         }
+    }
+
+    std::cout << "[solution] inverted index built with " << non_empty
+              << " non-empty buckets, total assigned vectors=" << total_assigned << '\n';
+
+    if (total_assigned != static_cast<long long>(database.size())) {
+        std::cout << "[solution][WARN] total assigned (" << total_assigned
+                  << ") != database size (" << database.size() << ")\n";
+    }
+}
+
+// Single-threaded kmeans assign (conservative)
+void solution::kmeans_assign_single(std::vector<int>& assignments) {
+    int n = static_cast<int>(database.size());
+    for (int i = 0; i < n; ++i) {
+        assignments[i] = find_closest_centroid(database[i].vec);
+    }
+}
+
+// Single-threaded kmeans update (conservative)
+// Accumulates vectors into new_centroids and divides by counts. If count==0, keep original centroid.
+void solution::kmeans_update_single(const std::vector<int>& assignments, std::vector<std::vector<double>>& new_centroids) {
+    std::vector<int> counts(NUM_CENTROIDS, 0);
+    // zero-initialized new_centroids assumed
+    int n = static_cast<int>(database.size());
+    for (int i = 0; i < n; ++i) {
+        int c = assignments[i];
+        if (c < 0 || c >= NUM_CENTROIDS) continue;
+        ++counts[c];
+        for (int d = 0; d < dim; ++d) {
+            new_centroids[c][d] += database[i].vec[d];
+        }
+    }
+    for (int c = 0; c < NUM_CENTROIDS; ++c) {
+        if (counts[c] > 0) {
+            double inv = 1.0 / counts[c];
+            for (int d = 0; d < dim; ++d) {
+                new_centroids[c][d] *= inv;
+            }
+        } else {
+            // keep previous centroid when no points assigned (avoid NaNs)
+            new_centroids[c] = centroids[c];
+        }
+    }
+
+    // quick consistency check
+    long long sum_counts = 0;
+    for (int v : counts) sum_counts += v;
+    if (sum_counts != n) {
+        std::cout << "[solution][WARN] kmeans_update_single counts sum (" << sum_counts
+                  << ") != database size (" << n << ")\n";
     }
 }
 
