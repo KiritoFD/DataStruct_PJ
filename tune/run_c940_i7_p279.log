@@ -1,0 +1,36 @@
+Using hyperparameters: num_centroids=940, kmean_iter=7, nprob=279
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[TIMING] build_from_memory - populate database: 0.031308s
+[solution] finalize_build: vectors=1192514, dim=100, centroids=940
+[TIMING] finalize_build - random init centers: 0.000000s
+[TIMING] kmeans_assign_parallel: 41.747695s
+[TIMING] kmeans_update_parallel: 0.060602s
+[solution] kmeans iter 1/7 done, iter_time=10.706945s
+[TIMING] kmeans_update_parallel: 0.055409s
+[solution] kmeans iter 2/7 done, iter_time=1.456287s
+[TIMING] kmeans_update_parallel: 0.053957s
+[solution] kmeans iter 3/7 done, iter_time=1.448891s
+[TIMING] kmeans_update_parallel: 0.054210s
+[solution] kmeans iter 4/7 done, iter_time=1.470590s
+[TIMING] kmeans_update_parallel: 0.051838s
+[solution] kmeans iter 5/7 done, iter_time=1.411683s
+[TIMING] kmeans_update_parallel: 0.053320s
+[solution] kmeans iter 6/7 done, iter_time=1.472074s
+[TIMING] kmeans_update_parallel: 0.052841s
+[solution] kmeans iter 7/7 done, iter_time=1.492443s
+[TIMING] finalize_build - total kmeans: 19.458913s
+[TIMING] finalize_build - centroid distance matrix computed: 21.419035s
+[TIMING] finalize_build - inverted_index build: 22.053384s
+[TIMING] build_from_memory - finalize_build complete: 22.170907s
+Index built in 22 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9823
+Average query time: 12.16 ms
+Index build time: 22 seconds

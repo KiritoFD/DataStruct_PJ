@@ -10,7 +10,8 @@
 #include <vector>
 #include <utility>
 #include <sys/stat.h>
-const std::string dataset = "sift";
+const std::string dataset = "glove";
+
 // 简单的JSON解析器
 struct SimpleJSON {
     static std::unordered_map<int, std::vector<std::pair<int, double>>> parse_gt(const std::string& json_file) {
@@ -196,24 +197,46 @@ static std::vector<float> load_base_flat_cached(const std::string& base_file, in
     if (file_exists(bin_file)) {
         if (load_base_bin(bin_file, out_d, base_flat, queries)) {
             if (out_queries) *out_queries = queries;
-            std::cout << "[cache] loaded base vectors from " << bin_file << std::endl;
+             std::cout << "[cache] loaded base vectors from " << bin_file << std::endl;
             return base_flat;
         }
     }
     base_flat = load_base_flat(base_file, out_d, &queries);
     if (out_d > 0 && !base_flat.empty() && !queries.empty()) {
         save_base_bin(bin_file, out_d, base_flat, queries);
-        std::cout << "[cache] saved base vectors to " << bin_file << std::endl;
+         std::cout << "[cache] saved base vectors to " << bin_file << std::endl;
     }
     if (out_queries) *out_queries = queries;
     return base_flat;
 }
 
-// Add forward declaration for parse_vector_line
-bool parse_vector_line(const std::string& line, std::string& out_id, std::vector<double>& out_vec);
+
+// Simple argument parser
+struct Args {
+    int num_centroids = 0;
+    int kmean_iter = 0;
+    int nprob = 0;
+};
+
+Args parse_args(int argc, char* argv[]) {
+    Args args;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--num-centroids" && i + 1 < argc) {
+            args.num_centroids = std::stoi(argv[++i]);
+        } else if (arg == "--kmean-iter" && i + 1 < argc) {
+            args.kmean_iter = std::stoi(argv[++i]);
+        } else if (arg == "--nprob" && i + 1 < argc) {
+            args.nprob = std::stoi(argv[++i]);
+        } 
+    }
+    return args;
+}
 
 // 替换 main：使用 Solution 接口进行构建与查询
-int main() {
+int main(int argc, char* argv[]) {
+    Args args = parse_args(argc, argv);
+
     // 配置参数
     
     const std::string base_file = std::string("data_o/") + dataset + "/base.txt";
@@ -230,21 +253,33 @@ int main() {
     }
 
     // 初始化并构建索引（使用题目接口 Solution）
-    Solution sol;
+    Solution* sol_ptr = nullptr;
+    if (args.num_centroids > 0 || args.kmean_iter > 0 || args.nprob > 0) {
+        // 若任一参数被指定，则全部传入（未指定的用.h默认值）
+        int nc = args.num_centroids > 0 ? args.num_centroids : 4497;
+        int ki = args.kmean_iter > 0 ? args.kmean_iter : 4;
+        int np = args.nprob > 0 ? args.nprob : 977;
+        sol_ptr = new Solution(nc, ki, np);
+    } else {
+        // 全部用.h默认值
+        sol_ptr = new Solution();
+    }
+    Solution& sol = *sol_ptr;
+
     auto build_start = std::chrono::high_resolution_clock::now();
-    std::cout << "Building index..." << std::endl;
+      std::cout << "Building index..." << std::endl;
     sol.build(d, base_flat);
     auto build_end = std::chrono::high_resolution_clock::now();
     auto build_time = std::chrono::duration_cast<std::chrono::seconds>(build_end - build_start).count();
-    std::cout << "Index built in " << build_time << " seconds" << std::endl;
+      std::cout << "Index built in " << build_time << " seconds" << std::endl;
 
     // 加载查询和ground truth（复用原有函数）
-    std::cout << "Loading queries and ground truth..." << std::endl;
+       std::cout << "Loading queries and ground truth..." << std::endl;
     auto ground_truth = SimpleJSON::parse_gt(gt_file);
-    std::cout << "Loaded " << ground_truth.size() << " ground truth entries" << std::endl;
+       std::cout << "Loaded " << ground_truth.size() << " ground truth entries" << std::endl;
 
     // 执行查询并评估
-    std::cout << "Running queries..." << std::endl;
+       std::cout << "Running queries..." << std::endl;
     double total_recall = 0.0;
     int query_count = 0;
     auto search_start = std::chrono::high_resolution_clock::now();
@@ -275,8 +310,8 @@ int main() {
             ++query_count;
 
             // 打印进度
-            if (query_count % 50 == 0) {
-                std::cout << "Processed " << query_count << " queries\r" << std::flush;
+            if ( query_count % 50 == 0) {
+                 std::cout << "Processed " << query_count << " queries\r" << std::flush;
             }
         }
     }
@@ -285,15 +320,18 @@ int main() {
     auto search_time = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
 
     // 打印结果
-    std::cout << "\n=== Results ===" << std::endl;
-    std::cout << "Total queries: " << query_count << std::endl;
-    if (query_count > 0) {
-        std::cout << "Average recall@" << K << ": " << std::fixed << std::setprecision(4)
-                  << (total_recall / query_count) << std::endl;
-        std::cout << "Average query time: " << std::fixed << std::setprecision(2)
-                  << (search_time / (double)query_count) << " ms" << std::endl;
+      {
+         std::cout << "\n=== Results ===" << std::endl;
+         std::cout << "Total queries: " << query_count << std::endl;
+        if (query_count > 0) {
+             std::cout << "Average recall@" << K << ": " << std::fixed << std::setprecision(4)
+                      << (total_recall / query_count) << std::endl;
+             std::cout << "Average query time: " << std::fixed << std::setprecision(2)
+                      << (search_time / (double)query_count) << " ms" << std::endl;
+        }
+         std::cout << "Index build time: " << build_time << " seconds" << std::endl;
     }
-    std::cout << "Index build time: " << build_time << " seconds" << std::endl;
 
+    delete sol_ptr;
     return 0;
 }

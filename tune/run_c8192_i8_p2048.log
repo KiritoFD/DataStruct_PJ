@@ -1,0 +1,3 @@
+Using hyperparameters: num_centroids=8192, kmean_iter=8, nprob=2048
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...

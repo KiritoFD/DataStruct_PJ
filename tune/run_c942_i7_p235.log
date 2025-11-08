@@ -1,0 +1,36 @@
+Using hyperparameters: num_centroids=942, kmean_iter=7, nprob=235
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[TIMING] build_from_memory - populate database: 0.031065s
+[solution] finalize_build: vectors=1192514, dim=100, centroids=942
+[TIMING] finalize_build - random init centers: 0.000000s
+[TIMING] kmeans_assign_parallel: 42.106877s
+[TIMING] kmeans_update_parallel: 0.121488s
+[solution] kmeans iter 1/7 done, iter_time=10.923894s
+[TIMING] kmeans_update_parallel: 0.060637s
+[solution] kmeans iter 2/7 done, iter_time=1.517533s
+[TIMING] kmeans_update_parallel: 0.055944s
+[solution] kmeans iter 3/7 done, iter_time=1.475486s
+[TIMING] kmeans_update_parallel: 0.059586s
+[solution] kmeans iter 4/7 done, iter_time=1.502707s
+[TIMING] kmeans_update_parallel: 0.052548s
+[solution] kmeans iter 5/7 done, iter_time=1.493684s
+[TIMING] kmeans_update_parallel: 0.053060s
+[solution] kmeans iter 6/7 done, iter_time=1.517006s
+[TIMING] kmeans_update_parallel: 0.052837s
+[solution] kmeans iter 7/7 done, iter_time=-1.201667s
+[TIMING] finalize_build - total kmeans: 17.228642s
+[TIMING] finalize_build - centroid distance matrix computed: 19.166532s
+[TIMING] finalize_build - inverted_index build: 19.798001s
+[TIMING] build_from_memory - finalize_build complete: 19.895713s
+Index built in 20 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9756
+Average query time: 10.95 ms
+Index build time: 20 seconds

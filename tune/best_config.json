@@ -1,12 +1,11 @@
 {
   "params": {
-    "NUM_CENTROIDS": 32,
-    "NPROBE": 2048,
-    "KMEANS_ITER": 4
+    "NUM_CENTROIDS": 947,
+    "KMEAN_ITER": 6,
+    "NPROBE": 277
   },
-  "recall": 1.0,
-  "avg_time": 69.3,
-  "build_time": 2.0,
-  "status": "OK",
-  "obj": 69.1
+  "recall": 0.9834,
+  "avg_query_time_ms": 13.14,
+  "index_build_time_s": 21.0,
+  "status": "OK"
 }

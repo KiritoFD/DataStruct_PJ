@@ -1,0 +1,38 @@
+Using hyperparameters: num_centroids=32, kmean_iter=8, nprob=2048
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[TIMING] build_from_memory - populate database: 0.028740s
+[solution] finalize_build: vectors=1192514, dim=100, centroids=32
+[TIMING] finalize_build - random init centers: 0.000000s
+[TIMING] kmeans_assign_parallel: 1.393692s
+[TIMING] kmeans_update_parallel: 0.044672s
+[solution] kmeans iter 1/8 done, iter_time=0.489457s
+[TIMING] kmeans_update_parallel: 0.042884s
+[solution] kmeans iter 2/8 done, iter_time=0.119200s
+[TIMING] kmeans_update_parallel: 0.048460s
+[solution] kmeans iter 3/8 done, iter_time=0.122170s
+[TIMING] kmeans_update_parallel: 0.049990s
+[solution] kmeans iter 4/8 done, iter_time=0.122296s
+[TIMING] kmeans_update_parallel: 0.046036s
+[solution] kmeans iter 5/8 done, iter_time=0.116772s
+[TIMING] kmeans_update_parallel: 0.045209s
+[solution] kmeans iter 6/8 done, iter_time=0.117291s
+[TIMING] kmeans_update_parallel: 0.056270s
+[solution] kmeans iter 7/8 done, iter_time=0.127304s
+[TIMING] kmeans_update_parallel: 0.046552s
+[solution] kmeans iter 8/8 done, iter_time=0.115927s
+[TIMING] finalize_build - total kmeans: 1.330416s
+[TIMING] finalize_build - centroid distance matrix computed: 3.300204s
+[TIMING] finalize_build - inverted_index build: 3.854164s
+[TIMING] build_from_memory - finalize_build complete: 3.920330s
+Index built in 4 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 1.0000
+Average query time: 46.74 ms
+Index build time: 4 seconds

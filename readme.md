@@ -30,3 +30,5 @@ c3706_i18_p927	3706	18	927	OK	NA	0.9903	15.7	421.0
 [run_experiment] 解析到 recall: 0.9849
 [run_experiment] 解析到 avg_time: 10.15
 [run_experiment] 解析到 build_time: 300.0
+
+c947_i6_p277	947	6	277	OK	NA	0.9834	10.57	22.0

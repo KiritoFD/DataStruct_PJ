@@ -1,0 +1,32 @@
+Using hyperparameters: num_centroids=1124, kmean_iter=5, nprob=233
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[TIMING] build_from_memory - populate database: 0.115970s
+[solution] finalize_build: vectors=1192514, dim=100, centroids=1124
+[TIMING] finalize_build - random init centers: 0.000000s
+[TIMING] kmeans_assign_parallel: 49.645232s
+[TIMING] kmeans_update_parallel: 0.060749s
+[solution] kmeans iter 1/5 done, iter_time=13.071435s
+[TIMING] kmeans_update_parallel: 0.057632s
+[solution] kmeans iter 2/5 done, iter_time=1.714000s
+[TIMING] kmeans_update_parallel: 0.054310s
+[solution] kmeans iter 3/5 done, iter_time=1.730908s
+[TIMING] kmeans_update_parallel: 0.053185s
+[solution] kmeans iter 4/5 done, iter_time=-0.772801s
+[TIMING] kmeans_update_parallel: 0.053516s
+[solution] kmeans iter 5/5 done, iter_time=1.730859s
+[TIMING] finalize_build - total kmeans: 17.474400s
+[TIMING] finalize_build - centroid distance matrix computed: 21.609291s
+[TIMING] finalize_build - inverted_index build: 22.252276s
+[TIMING] build_from_memory - finalize_build complete: 22.484887s
+Index built in 22 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9677
+Average query time: 9.36 ms
+Index build time: 22 seconds
