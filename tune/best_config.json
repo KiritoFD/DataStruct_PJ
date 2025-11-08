@@ -1,0 +1,12 @@
+{
+  "params": {
+    "NUM_CENTROIDS": 32,
+    "NPROBE": 2048,
+    "KMEANS_ITER": 4
+  },
+  "recall": 1.0,
+  "avg_time": 69.3,
+  "build_time": 2.0,
+  "status": "OK",
+  "obj": 69.1
+}

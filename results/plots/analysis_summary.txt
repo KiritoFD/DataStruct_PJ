@@ -1,0 +1,42 @@
+Recall-first Analysis summary
+=============================
+
+Total runs: 472
+Successful runs: 472
+
+Best recall run (global):
+STAMP                 c1024_i4_p1024
+NUM_CENTROIDS                   1024
+KMEANS_ITER                        4
+NPROBE                          1024
+STATUS                            OK
+ELAPSED_s                        151
+RECALL                           1.0
+AVG_QUERY_TIME_ms              71.91
+INDEX_BUILD_TIME_s                66
+RECALL_PER_SEC              0.006623
+
+Elapsed time (s): 151, AVG_QUERY_TIME_ms: 71.91
+
+Top configurations by mean recall (recall_aggregated.csv)
+ NUM_CENTROIDS  KMEANS_ITER  NPROBE  RECALL_mean  ELAPSED_s_mean  AVG_QUERY_TIME_MS_mean  runs
+          1024            4    1024       1.0000        151.0000                 71.9100     1
+            64            8      80       1.0000         91.0000                 71.1200     1
+            64            8      64       1.0000         89.0000                 69.9100     1
+            64            4    1024       1.0000         88.0000                 69.7200     1
+            64            4     800       1.0000         90.0000                 72.0200     1
+            64            4     648       1.0000         89.0000                 71.0300     1
+            64            4     512       1.0000         90.0000                 70.0200     1
+            64            4     400       1.0000         92.0000                 72.7800     1
+            64            4     324       1.0000         91.0000                 71.2700     1
+            64            8     400       1.0000         89.0000                 66.2200     1
+
+Pareto front (recall then time) saved to: pareto_front.csv
+Top-20 runs by recall saved to: top_20_by_recall.csv
+Top-20 runs by recall/sec saved to: top_20_by_recall_per_sec.csv
+统计召回率高于0.98的点的时间情况：
+数量: 329
+ELAPSED_s: mean=99.1550, std=30.3064, min=49.0000, max=297.0000
+AVG_QUERY_TIME_MS: mean=55.8425, std=19.8023, min=14.6000, max=107.2800
+详细点保存于: high_recall_time_stats.csv
+

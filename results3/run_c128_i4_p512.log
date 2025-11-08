@@ -1,0 +1,19 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency = 32, using 32 threads
+[solution] finalize_build: vectors=1192514, dim=100, centroids=128
+[solution] kmeans iter 1/4 done
+[solution] kmeans iter 2/4 done
+[solution] kmeans iter 3/4 done
+[solution] kmeans iter 4/4 done
+[solution] inverted index built with 128 buckets
+Index built in 8 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 1.0000
+Average query time: 69.76 ms
+Index build time: 8 seconds

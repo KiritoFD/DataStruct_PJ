@@ -1,0 +1,24 @@
+MySolution.cpp:58:1: error: no declaration matches ‘solution::solution(const string&)’
+   58 | solution::solution(const std::string& metric_type) : metric(metric_type), dim(0) {
+      | ^~~~~~~~
+In file included from MySolution.cpp:1:
+MySolution.h:16:7: note: candidates are: ‘solution::solution(solution&&)’
+   16 | class solution {
+      |       ^~~~~~~~
+MySolution.h:16:7: note:                 ‘solution::solution(const solution&)’
+MySolution.h:40:5: note:                 ‘solution::solution(const string&, int, int, int)’
+   40 |     solution(const std::string& metric_type = "l2", int num_centroid = 1024, int kmean_iter = 4, int nprob = 256);
+      |     ^~~~~~~~
+MySolution.h:16:7: note: ‘class solution’ defined here
+   16 | class solution {
+      |       ^~~~~~~~
+MySolution.cpp:399:6: error: no declaration matches ‘void Solution::build(int, const std::vector<float>&)’
+  399 | void Solution::build(int d, const std::vector<float>& base) {
+      |      ^~~~~~~~
+In file included from MySolution.cpp:1:
+MySolution.h:56:17: note: candidate is: ‘static void Solution::build(int, const std::vector<float>&, int, int, int)’
+   56 |     static void build(int d, const std::vector<float>& base, int num_centroid = 1024, int kmean_iter = 4, int nprob = 256);
+      |                 ^~~~~
+MySolution.h:54:7: note: ‘class Solution’ defined here
+   54 | class Solution {
+      |       ^~~~~~~~

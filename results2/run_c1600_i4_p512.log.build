@@ -1,0 +1,24 @@
+<command-line>: error: expected unqualified-id before numeric constant
+MySolution.h:18:22: note: in expansion of macro ‘NUM_CENTROID’
+   18 |     static const int NUM_CENTROID = 1024;
+      |                      ^~~~~~~~~~~~
+<command-line>: error: expected unqualified-id before numeric constant
+MySolution.h:19:22: note: in expansion of macro ‘KMEAN_ITER’
+   19 |     static const int KMEAN_ITER = 4;
+      |                      ^~~~~~~~~~
+<command-line>: error: expected unqualified-id before numeric constant
+MySolution.h:20:22: note: in expansion of macro ‘NPROB’
+   20 |     static const int NPROB = 256;
+      |                      ^~~~~
+<command-line>: error: expected unqualified-id before numeric constant
+Mysolution.h:18:22: note: in expansion of macro ‘NUM_CENTROID’
+   18 |     static const int NUM_CENTROID = 1024;
+      |                      ^~~~~~~~~~~~
+<command-line>: error: expected unqualified-id before numeric constant
+Mysolution.h:19:22: note: in expansion of macro ‘KMEAN_ITER’
+   19 |     static const int KMEAN_ITER = 4;
+      |                      ^~~~~~~~~~
+<command-line>: error: expected unqualified-id before numeric constant
+Mysolution.h:20:22: note: in expansion of macro ‘NPROB’
+   20 |     static const int NPROB = 256;
+      |                      ^~~~~

@@ -1,0 +1,79 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency = 32, using 32 threads
+[solution] finalize_build: vectors=1192514, dim=100, centroids=32
+[solution] kmeans iter 1/64 done
+[solution] kmeans iter 2/64 done
+[solution] kmeans iter 3/64 done
+[solution] kmeans iter 4/64 done
+[solution] kmeans iter 5/64 done
+[solution] kmeans iter 6/64 done
+[solution] kmeans iter 7/64 done
+[solution] kmeans iter 8/64 done
+[solution] kmeans iter 9/64 done
+[solution] kmeans iter 10/64 done
+[solution] kmeans iter 11/64 done
+[solution] kmeans iter 12/64 done
+[solution] kmeans iter 13/64 done
+[solution] kmeans iter 14/64 done
+[solution] kmeans iter 15/64 done
+[solution] kmeans iter 16/64 done
+[solution] kmeans iter 17/64 done
+[solution] kmeans iter 18/64 done
+[solution] kmeans iter 19/64 done
+[solution] kmeans iter 20/64 done
+[solution] kmeans iter 21/64 done
+[solution] kmeans iter 22/64 done
+[solution] kmeans iter 23/64 done
+[solution] kmeans iter 24/64 done
+[solution] kmeans iter 25/64 done
+[solution] kmeans iter 26/64 done
+[solution] kmeans iter 27/64 done
+[solution] kmeans iter 28/64 done
+[solution] kmeans iter 29/64 done
+[solution] kmeans iter 30/64 done
+[solution] kmeans iter 31/64 done
+[solution] kmeans iter 32/64 done
+[solution] kmeans iter 33/64 done
+[solution] kmeans iter 34/64 done
+[solution] kmeans iter 35/64 done
+[solution] kmeans iter 36/64 done
+[solution] kmeans iter 37/64 done
+[solution] kmeans iter 38/64 done
+[solution] kmeans iter 39/64 done
+[solution] kmeans iter 40/64 done
+[solution] kmeans iter 41/64 done
+[solution] kmeans iter 42/64 done
+[solution] kmeans iter 43/64 done
+[solution] kmeans iter 44/64 done
+[solution] kmeans iter 45/64 done
+[solution] kmeans iter 46/64 done
+[solution] kmeans iter 47/64 done
+[solution] kmeans iter 48/64 done
+[solution] kmeans iter 49/64 done
+[solution] kmeans iter 50/64 done
+[solution] kmeans iter 51/64 done
+[solution] kmeans iter 52/64 done
+[solution] kmeans iter 53/64 done
+[solution] kmeans iter 54/64 done
+[solution] kmeans iter 55/64 done
+[solution] kmeans iter 56/64 done
+[solution] kmeans iter 57/64 done
+[solution] kmeans iter 58/64 done
+[solution] kmeans iter 59/64 done
+[solution] kmeans iter 60/64 done
+[solution] kmeans iter 61/64 done
+[solution] kmeans iter 62/64 done
+[solution] kmeans iter 63/64 done
+[solution] kmeans iter 64/64 done
+[solution] inverted index built with 32 buckets
+Index built in 13 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.8979
+Average query time: 19.97 ms
+Index build time: 13 seconds

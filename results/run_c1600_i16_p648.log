@@ -1,0 +1,25 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency = 32, using 32 threads
+[solution] finalize_build: vectors=1192514, dim=100, centroids=1600
+[solution] kmeans iter 1/16 done
+[solution] kmeans iter 2/16 done
+[solution] kmeans iter 3/16 done
+[solution] kmeans iter 4/16 done
+[solution] kmeans iter 5/16 done
+[solution] kmeans iter 6/16 done
+[solution] kmeans iter 7/16 done
+[solution] kmeans iter 8/16 done
+[solution] kmeans iter 9/16 done
+[solution] kmeans iter 10/16 done
+[solution] kmeans iter 11/16 done
+[solution] kmeans iter 12/16 done
+[solution] kmeans iter 13/16 done
+[solution] kmeans iter 14/16 done
+[solution] kmeans iter 15/16 done
+[solution] kmeans iter 16/16 done
+[solution] inverted index built with 1600 buckets
+Index built in 165 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...

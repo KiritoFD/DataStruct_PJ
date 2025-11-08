@@ -209,6 +209,9 @@ static std::vector<float> load_base_flat_cached(const std::string& base_file, in
     return base_flat;
 }
 
+// Add forward declaration for parse_vector_line
+bool parse_vector_line(const std::string& line, std::string& out_id, std::vector<double>& out_vec);
+
 // 替换 main：使用 Solution 接口进行构建与查询
 int main() {
     // 配置参数

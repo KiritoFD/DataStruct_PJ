@@ -1,0 +1,53 @@
+MySolution.cpp: In member function ‘void solution::build_from_memory(int, std::vector<std::vector<double> >)’:
+MySolution.cpp:140:5: error: ‘storage’ was not declared in this scope
+  140 |     storage.initialize(dim, data);
+      |     ^~~~~~~
+MySolution.cpp: At global scope:
+MySolution.cpp:153:8: error: no declaration matches ‘double solution::compute_distance_simd(const double*, const double*, double, double) const’
+  153 | double solution::compute_distance_simd(const double* a, const double* b, double norm_a, double norm_b) const {
+      |        ^~~~~~~~
+MySolution.cpp:153:8: note: no functions named ‘double solution::compute_distance_simd(const double*, const double*, double, double) const’
+In file included from MySolution.cpp:1:
+MySolution.h:12:7: note: ‘class solution’ defined here
+   12 | class solution {
+      |       ^~~~~~~~
+MySolution.cpp: In member function ‘double solution::compute_distance(const std::vector<double>&, const std::vector<double>&) const’:
+MySolution.cpp:207:12: error: ‘compute_distance_simd’ was not declared in this scope; did you mean ‘compute_distance’?
+  207 |     return compute_distance_simd(a.data(), b.data(), -1.0, -1.0);
+      |            ^~~~~~~~~~~~~~~~~~~~~
+      |            compute_distance
+MySolution.cpp: In member function ‘void solution::finalize_build()’:
+MySolution.cpp:222:5: error: ‘centroid_norms’ was not declared in this scope; did you mean ‘centroids’?
+  222 |     centroid_norms.resize(NUM_CENTROID);
+      |     ^~~~~~~~~~~~~~
+      |     centroids
+MySolution.cpp:261:20: error: ‘class std::unordered_map<int, std::vector<int> >’ has no member named ‘resize’; did you mean ‘size’?
+  261 |     inverted_index.resize(NUM_CENTROID);  // 预分配
+      |                    ^~~~~~
+      |                    size
+MySolution.cpp: In member function ‘int solution::find_closest_centroid(const std::vector<double>&) const’:
+MySolution.cpp:325:81: error: ‘centroid_norms’ was not declared in this scope; did you mean ‘centroids’?
+  325 |         double d = compute_distance_simd(vec.data(), centroids[i].data(), -1.0, centroid_norms[i]);
+      |                                                                                 ^~~~~~~~~~~~~~
+      |                                                                                 centroids
+MySolution.cpp:325:20: error: ‘compute_distance_simd’ was not declared in this scope; did you mean ‘compute_distance’?
+  325 |         double d = compute_distance_simd(vec.data(), centroids[i].data(), -1.0, centroid_norms[i]);
+      |                    ^~~~~~~~~~~~~~~~~~~~~
+      |                    compute_distance
+MySolution.cpp: In member function ‘std::vector<std::pair<int, double> > solution::find_closest_centroids(const std::vector<double>&, int) const’:
+MySolution.cpp:350:89: error: ‘centroid_norms’ was not declared in this scope; did you mean ‘centroids’?
+  350 |         double d = compute_distance_simd(query.data(), centroids[i].data(), query_norm, centroid_norms[i]);
+      |                                                                                         ^~~~~~~~~~~~~~
+      |                                                                                         centroids
+MySolution.cpp:350:20: error: ‘compute_distance_simd’ was not declared in this scope; did you mean ‘compute_distance’?
+  350 |         double d = compute_distance_simd(query.data(), centroids[i].data(), query_norm, centroid_norms[i]);
+      |                    ^~~~~~~~~~~~~~~~~~~~~
+      |                    compute_distance
+MySolution.cpp: In member function ‘std::vector<std::pair<int, double> > solution::search(const std::vector<double>&, int)’:
+MySolution.cpp:398:41: error: ‘storage’ was not declared in this scope
+  398 |                 const double* vec_ptr = storage.get_vector(vec_id);
+      |                                         ^~~~~~~
+MySolution.cpp:400:31: error: ‘compute_distance_simd’ was not declared in this scope; did you mean ‘compute_distance’?
+  400 |                 double dist = compute_distance_simd(query.data(), vec_ptr, query_norm, vec_norm);
+      |                               ^~~~~~~~~~~~~~~~~~~~~
+      |                               compute_distance

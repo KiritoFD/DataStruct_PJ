@@ -4,9 +4,9 @@
 set -euo pipefail
 
 # Edit these arrays for the grid you want to try
-NUM_CENTROIDS_ARR=(32 64 80 128 186 256 324 400 512 800 1024 1600 2048 4096)
-KMEANS_ITER_ARR=(4 16)
-NPROBE_ARR=(32 48 64 128 256 512 1024)
+NUM_CENTROIDS_ARR=( 1600 2048 4096 8192)
+KMEANS_ITER_ARR=( 16 20 32 64)
+NPROBE_ARR=(512 648 800 1024 2048)
 
 # Other settings
 SRC="MySolution.cpp"
@@ -41,8 +41,9 @@ echo "NPROBE: ${NPROBE_ARR[*]}"
 echo "Timeout per run: ${TIMEOUT_SEC}s"
 echo
 
-for np in "${NPROBE_ARR[@]}"; do
-  for ki in "${KMEANS_ITER_ARR[@]}"; do
+
+for ki in "${KMEANS_ITER_ARR[@]}"; do
+  for np in "${NPROBE_ARR[@]}"; do
     for nc in "${NUM_CENTROIDS_ARR[@]}"; do
       stamp="c${nc}_i${ki}_p${np}"
       logfile="${RESULTS_DIR}/run_${stamp}.log"
