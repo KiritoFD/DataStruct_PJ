@@ -1,0 +1,37 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[TIMING] build_from_memory - populate database: 0.033034s
+[solution] finalize_build: vectors=1192514, dim=100, centroids=1024
+[TIMING] finalize_build - random init centers: 0.000000s
+[TIMING] kmeans_assign_parallel: 37.986591s
+[TIMING] kmeans_update_parallel: 1.450092s
+[solution] kmeans iter 1/8 done, iter_time=11.819612s
+[TIMING] kmeans_update_parallel: 1.450690s
+[solution] kmeans iter 2/8 done, iter_time=1.657534s
+[TIMING] kmeans_update_parallel: 1.445488s
+[solution] kmeans iter 3/8 done, iter_time=1.658379s
+[TIMING] kmeans_update_parallel: 1.630590s
+[solution] kmeans iter 4/8 done, iter_time=1.653458s
+[TIMING] kmeans_update_parallel: 1.498504s
+[solution] kmeans iter 5/8 done, iter_time=1.798880s
+[TIMING] kmeans_update_parallel: 1.471881s
+[solution] kmeans iter 6/8 done, iter_time=1.725834s
+[TIMING] kmeans_update_parallel: 1.413703s
+[solution] kmeans iter 7/8 done, iter_time=1.744333s
+[TIMING] kmeans_update_parallel: 1.390422s
+[solution] kmeans iter 8/8 done, iter_time=1.692549s
+[TIMING] finalize_build - total kmeans: 23.750578s
+[TIMING] finalize_build - centroid distance matrix computed: 25.747037s
+[TIMING] finalize_build - inverted_index build: 26.379562s
+[TIMING] build_from_memory - finalize_build complete: 26.551560s
+Index built in 26 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9845
+Average query time: 14.32 ms
+Index build time: 26 seconds

@@ -1,0 +1,25 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[TIMING] build_from_memory - populate database: 0.032278s
+[solution] finalize_build: vectors=1192514, dim=100, centroids=2048
+[TIMING] finalize_build - random init centers: 0.000000s
+[TIMING] kmeans_assign_parallel: 0.118047s
+[TIMING] kmeans_update_parallel: 1.521138s
+[solution] kmeans iter 1/2 done, iter_time=22.968850s
+[TIMING] kmeans_update_parallel: 1.675032s
+[solution] kmeans iter 2/2 done, iter_time=3.209020s
+[TIMING] finalize_build - total kmeans: 26.177870s
+[TIMING] finalize_build - centroid distance matrix computed: 28.339045s
+[TIMING] finalize_build - inverted_index build: 29.047206s
+[TIMING] build_from_memory - finalize_build complete: 29.222693s
+Index built in 29 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9836
+Average query time: 14.63 ms
+Index build time: 29 seconds

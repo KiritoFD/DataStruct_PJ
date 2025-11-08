@@ -10,7 +10,7 @@
 #include <vector>
 #include <utility>
 #include <sys/stat.h>
-const std::string dataset = "glove";
+const std::string dataset = "sift";
 // 简单的JSON解析器
 struct SimpleJSON {
     static std::unordered_map<int, std::vector<std::pair<int, double>>> parse_gt(const std::string& json_file) {

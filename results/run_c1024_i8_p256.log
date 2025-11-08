@@ -1,0 +1,37 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[TIMING] build_from_memory - populate database: 0.033369s
+[solution] finalize_build: vectors=1192514, dim=100, centroids=1024
+[TIMING] finalize_build - random init centers: 0.000000s
+[TIMING] kmeans_assign_parallel: 39.702641s
+[TIMING] kmeans_update_parallel: 1.617690s
+[solution] kmeans iter 1/8 done, iter_time=12.931101s
+[TIMING] kmeans_update_parallel: 1.561519s
+[solution] kmeans iter 2/8 done, iter_time=-0.808023s
+[TIMING] kmeans_update_parallel: 1.385570s
+[solution] kmeans iter 3/8 done, iter_time=1.626388s
+[TIMING] kmeans_update_parallel: 1.551988s
+[solution] kmeans iter 4/8 done, iter_time=1.681157s
+[TIMING] kmeans_update_parallel: 1.509566s
+[solution] kmeans iter 5/8 done, iter_time=1.691527s
+[TIMING] kmeans_update_parallel: 1.483980s
+[solution] kmeans iter 6/8 done, iter_time=1.658256s
+[TIMING] kmeans_update_parallel: 1.588906s
+[solution] kmeans iter 7/8 done, iter_time=1.657307s
+[TIMING] kmeans_update_parallel: 1.630797s
+[solution] kmeans iter 8/8 done, iter_time=1.758038s
+[TIMING] finalize_build - total kmeans: 22.195751s
+[TIMING] finalize_build - centroid distance matrix computed: 24.302691s
+[TIMING] finalize_build - inverted_index build: 24.978298s
+[TIMING] build_from_memory - finalize_build complete: 25.156755s
+Index built in 25 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9809
+Average query time: 16.04 ms
+Index build time: 25 seconds

@@ -4,9 +4,9 @@
 set -euo pipefail
 
 # Edit these arrays for the grid you want to try
-NUM_CENTROIDS_ARR=( 1600 2048 4096 8192)
-KMEANS_ITER_ARR=( 16 20 32 64)
-NPROBE_ARR=(512 648 800 1024 2048)
+NUM_CENTROIDS_ARR=(1024)
+KMEANS_ITER_ARR=(4 6 8 )
+NPROBE_ARR=(288 300 324 400)
 
 # Other settings
 SRC="MySolution.cpp"
@@ -15,7 +15,7 @@ BIN="test"
 RESULTS_DIR="results"
 TIMEOUT_SEC=${TIMEOUT_SEC:-1800}  # allow override from env
 CXX=${CXX:-g++}
-CXXFLAGS="-O3 -std=c++17 -pthread -march=native"
+CXXFLAGS="-O3 -std=c++17 -mavx -fopenmp -ffast-math"
 SLEEP_BETWEEN_RUNS=${SLEEP_BETWEEN_RUNS:-0}  # 默认不 sleep
 
 # Check if timeout is available

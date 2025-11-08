@@ -1,24 +1,29 @@
 #ifndef MYSOLUTION_H
 #define MYSOLUTION_H
+
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <thread>
 #include <mutex>
+#include <shared_mutex>
+
 bool parse_vector_line(const std::string &line, std::string &out_id, std::vector<double> &out_vec);
+
 class solution {
-public:
+  public:
     solution(const std::string& metric = "l2");
     void build(const std::string& base_file);
     std::vector<std::pair<int, double>> search(const std::vector<double>& query, int k);
     void build_from_memory(int d, std::vector<std::vector<double>> data);
-private:
+
+  private:
     struct DataPoint { int id; std::vector<double> vec; };
 #ifndef NUM_CENTROID
 #define NUM_CENTROID 1024
 #endif
 #ifndef KMEAN_ITER
-#define KMEAN_ITER 4
+#define KMEAN_ITER 6
 #endif
 #ifndef NPROB
 #define NPROB 256
@@ -37,10 +42,15 @@ private:
     void kmeans_assign_parallel(std::vector<int>& assignments);
     void kmeans_update_parallel(const std::vector<int>& assignments, std::vector<std::vector<double>>& new_centroids);
     void finalize_build();
+    
+    // 预计算的聚类中心到所有聚类中心的距离矩阵
+    std::vector<std::vector<double>> centroid_distance_matrix;
 };
+
 class Solution {
-public:
+  public:
     void build(int d, const std::vector<float>& base);
     void search(const std::vector<float>& query, int* res);
 };
+
 #endif
