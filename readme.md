@@ -38,3 +38,17 @@ Average query time: 6.76 ms
 Index build time: 593 seconds
 
 9600 16 800
+
+xy@Archer:/mnt/g/Github/DataStruct_PJ$ g++ MySolution.cpp test_solution.cpp -o test -O3 -mavx && ./test
+[cache] loaded base vectors from data_o/sift/base.txt.bin
+Building index...
+Index built in 46 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9984
+Average query time: 3.07 ms
+Index build time: 46 seconds

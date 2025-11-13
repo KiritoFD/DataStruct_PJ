@@ -10,7 +10,7 @@
 #include <vector>
 #include <utility>
 #include <sys/stat.h>
-const std::string dataset = "glove";
+const std::string dataset = "sift";
 
 // 简单的JSON解析器
 struct SimpleJSON {
@@ -222,11 +222,11 @@ Args parse_args(int argc, char* argv[]) {
     Args args;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "--num-centroids" && i + 1 < argc) {
+        if (arg == "--n" && i + 1 < argc) {
             args.num_centroids = std::stoi(argv[++i]);
-        } else if (arg == "--kmean-iter" && i + 1 < argc) {
+        } else if (arg == "--k" && i + 1 < argc) {
             args.kmean_iter = std::stoi(argv[++i]);
-        } else if (arg == "--nprob" && i + 1 < argc) {
+        } else if (arg == "--p" && i + 1 < argc) {
             args.nprob = std::stoi(argv[++i]);
         } 
     }

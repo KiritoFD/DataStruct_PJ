@@ -13,8 +13,9 @@
 #include <iostream>
 #include <chrono>
 #include <immintrin.h>
+#include <cstring>
 
-const bool debug = true;
+const bool debug = false;
 
 // 新增：提供 try_stod 与 parse_vector_line 的定义
 namespace {
@@ -68,7 +69,8 @@ solution::solution(const std::string& metric_type, int num_centroid, int kmean_i
       num_threads(1),
       num_centroid(num_centroid),
       kmean_iter(kmean_iter),
-      nprob(nprob){
+      nprob(nprob),
+      kd_root_(-1) {
     unsigned int hc = std::thread::hardware_concurrency();
     num_threads = static_cast<int>(hc > 0 ? hc : 1);
     if (debug) {
@@ -98,9 +100,12 @@ void solution::build(const std::string& base_file) {
     }
 
     if (vectors.empty()) {
-        database.clear();
-        centroids.clear();
+        point_ids_.clear();
+        point_data_.clear();
+        centroid_data_.clear();
         inverted_index.clear();
+        kd_nodes_.clear();
+        kd_root_ = -1;
         dim = 0;
         return;
     }
@@ -116,21 +121,19 @@ void solution::build(const std::string& base_file) {
 void solution::build_from_memory(int d, std::vector<std::vector<double>> data) {
     auto t0 = std::chrono::high_resolution_clock::now();
     dim = d;
-    database.clear();
-    database.reserve(data.size());
-    // 将 double -> float 存储以节省内存并配合 SIMD
-    for (size_t i = 0; i < data.size(); ++i) {
-        std::vector<float> vec_f;
-        vec_f.reserve(d);
-        for (int j = 0; j < d; ++j) vec_f.push_back(static_cast<float>(data[i][j]));
-        database.push_back({static_cast<int>(i), std::move(vec_f)});
+    const size_t n = data.size();
+    point_ids_.resize(n);
+    point_data_.assign(n * static_cast<size_t>(dim), 0.0f);
+    for (size_t i = 0; i < n; ++i) {
+        point_ids_[i] = static_cast<int>(i);
+        float* dst = point_ptr(static_cast<int>(i));
+        for (int j = 0; j < dim; ++j) {
+            dst[j] = static_cast<float>(data[i][j]);
+        }
     }
-    // 初始化 float 型质心容器（后续 K-means 会用到）
-    centroids.clear();
-    centroids.resize(num_centroid, std::vector<float>(dim, 0.0f));
-    auto t1 = std::chrono::high_resolution_clock::now();
     if (debug) {
-        std::cout << "[build_from_memory] Data conversion (double->float) time: "
+        auto t1 = std::chrono::high_resolution_clock::now();
+        std::cout << "[build_from_memory] SoA conversion time: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                   << " ms\n";
     }
@@ -139,359 +142,389 @@ void solution::build_from_memory(int d, std::vector<std::vector<double>> data) {
 
 void solution::finalize_build() {
     auto t0 = std::chrono::high_resolution_clock::now();
-    if (database.empty() || dim == 0) {
-        centroids.clear();
+    const int total = static_cast<int>(point_ids_.size());
+    if (total <= 0 || dim == 0) {
+        centroid_data_.clear();
         inverted_index.clear();
+        kd_nodes_.clear();
+        kd_root_ = -1;
         return;
     }
-    std::mt19937 rng(42);
-    std::uniform_int_distribution<int> dist(0, static_cast<int>(database.size()) - 1);
 
-    // 随机初始化质心（从数据库拷贝 float 向量）
-    centroids.clear();
-    centroids.reserve(num_centroid);
+    centroid_data_.assign(static_cast<size_t>(num_centroid) * dim, 0.0f);
+    std::mt19937 rng(42);
+    std::uniform_int_distribution<int> dist(0, total - 1);
     for (int i = 0; i < num_centroid; ++i) {
-        centroids.push_back(database[dist(rng)].second); // second == vec (float)
+        std::memcpy(centroid_ptr(i), point_ptr(dist(rng)), sizeof(float) * dim);
     }
 
-    std::vector<int> assignments(database.size());
+    std::vector<int> assignments(total, 0);
     for (int iter = 0; iter < kmean_iter; ++iter) {
         auto t_assign0 = std::chrono::high_resolution_clock::now();
         kmeans_assign_parallel(assignments);
         auto t_assign1 = std::chrono::high_resolution_clock::now();
-        if (debug) {
-            std::cout << "[finalize_build] kmeans_assign_parallel iter " << iter
-                      << " time: "
-                      << std::chrono::duration_cast<std::chrono::milliseconds>(t_assign1 - t_assign0).count()
-                      << " ms\n";
-        }
-        // new_centroids 使用 float
-        std::vector<std::vector<float>> new_centroids(num_centroid, std::vector<float>(dim, 0.0f));
+
+        std::vector<float> new_centroids(static_cast<size_t>(num_centroid) * dim, 0.0f);
         auto t_update0 = std::chrono::high_resolution_clock::now();
-        // 需要对应重载或模板支持 kmeans_update_parallel 使用 float centroids
         kmeans_update_parallel(assignments, new_centroids);
         auto t_update1 = std::chrono::high_resolution_clock::now();
+
+        centroid_data_.swap(new_centroids);
         if (debug) {
-            std::cout << "[finalize_build] kmeans_update_parallel iter " << iter
-                      << " time: "
+            std::cout << "[finalize_build] iter " << iter
+                      << " assign=" << std::chrono::duration_cast<std::chrono::milliseconds>(t_assign1 - t_assign0).count()
+                      << " ms, update="
                       << std::chrono::duration_cast<std::chrono::milliseconds>(t_update1 - t_update0).count()
                       << " ms\n";
         }
-        for (int i = 0; i < num_centroid; ++i) {
-            centroids[i] = std::move(new_centroids[i]);
-        }
     }
 
-    // 构建倒排索引并预计算到质心的距离（使用线程局部结果避免锁）
-    int threads_to_use = std::min(num_threads, static_cast<int>(database.size()));
-    if (threads_to_use <= 0) threads_to_use = 1;
-    int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
+    kd_nodes_.clear();
+    if (num_centroid > 0) {
+        std::vector<int> ids(num_centroid);
+        std::iota(ids.begin(), ids.end(), 0);
+        kd_root_ = build_kdtree(ids, 0, num_centroid, 0);
+    } else {
+        kd_root_ = -1;
+    }
 
-    std::vector<std::vector<std::vector<BucketItem>>> thread_results(threads_to_use,
-                                                                     std::vector<std::vector<BucketItem>>(num_centroid));
+    int threads_to_use = std::min(num_threads, std::max(1, total));
+    int chunk_size = (total + threads_to_use - 1) / threads_to_use;
+    std::vector<std::vector<std::vector<BucketItem>>> thread_results(
+        threads_to_use, std::vector<std::vector<BucketItem>>(num_centroid));
     std::vector<std::thread> workers;
     workers.reserve(threads_to_use);
-    auto build_worker = [this, &thread_results](int start, int end, int thread_id) {
+    auto worker = [this, &thread_results](int start, int end, int tid) {
         for (int i = start; i < end; ++i) {
-            // database[i].second = vec (float)
-            int c = find_closest_centroid(database[i].second);
-            float dist = compute_distance_simd(database[i].second, centroids[c]);
-            thread_results[thread_id][c].push_back({database[i].first, dist});
+            const float* vec = point_ptr(i);
+            int c = find_closest_centroid_linear(vec);
+            float dist = compute_distance_simd(vec, centroid_ptr(c));
+            thread_results[tid][c].push_back({i, dist});
         }
     };
-
     for (int t = 0; t < threads_to_use; ++t) {
         int start = t * chunk_size;
-        int end = std::min(start + chunk_size, static_cast<int>(database.size()));
-        if (start < end) workers.emplace_back(build_worker, start, end, t);
+        int end = std::min(start + chunk_size, total);
+        if (start < end) workers.emplace_back(worker, start, end, t);
     }
     for (auto& th : workers) th.join();
 
-    // 合并到 inverted_index 并预分配
     inverted_index.clear();
-    try { inverted_index.reserve(static_cast<size_t>(num_centroid)); } catch (...) {}
+    inverted_index.resize(num_centroid);
     for (int c = 0; c < num_centroid; ++c) {
-        size_t total = 0;
-        for (int t = 0; t < threads_to_use; ++t) total += thread_results[t][c].size();
-        if (total == 0) continue;
-        std::vector<BucketItem> bucket;
-        bucket.reserve(total);
+        size_t total_bucket = 0;
+        for (int t = 0; t < threads_to_use; ++t) total_bucket += thread_results[t][c].size();
+        if (total_bucket == 0) continue;
+        auto& dest = inverted_index[c];
+        dest.reserve(total_bucket);
         for (int t = 0; t < threads_to_use; ++t) {
             auto& src = thread_results[t][c];
-            for (auto& it : src) bucket.push_back(std::move(it));
+            dest.insert(dest.end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
             std::vector<BucketItem>().swap(src);
         }
-        inverted_index[c] = std::move(bucket);
     }
-    auto t1 = std::chrono::high_resolution_clock::now();
+
     if (debug) {
-        std::cout << "[finalize_build] Total finalize_build time: "
+        auto t1 = std::chrono::high_resolution_clock::now();
+        std::cout << "[finalize_build] total time: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                   << " ms\n";
     }
 }
 
 void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
-    auto t0 = std::chrono::high_resolution_clock::now();
-	// 更稳健地计算实际使用的线程数（不超过 database.size()）
-	int threads_to_use = std::min(num_threads, static_cast<int>(database.size()));
-	if (threads_to_use <= 0) threads_to_use = 1;
-	int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
-	std::vector<std::thread> threads;
-	threads.reserve(threads_to_use);
+    const int total = static_cast<int>(point_ids_.size());
+    if (total == 0) return;
+    int threads_to_use = std::min(num_threads, std::max(1, total));
+    int chunk_size = (total + threads_to_use - 1) / threads_to_use;
 
-	// 注意：database 存储为 pair<int, vector<float>>，使用 .second
-	auto worker = [this, &assignments](int start, int end) {
-		for (int i = start; i < end; ++i) {
-			assignments[i] = find_closest_centroid(database[i].second);
-		}
-	};
-
-	for (int t = 0; t < threads_to_use; ++t) {
-		int start = t * chunk_size;
-		int end = std::min(start + chunk_size, static_cast<int>(database.size()));
-		if (start < end) threads.emplace_back(worker, start, end);
-	}
-	for (auto& th : threads) th.join();
-    auto t1 = std::chrono::high_resolution_clock::now();
-    if (debug) {
-        std::cout << "[kmeans_assign_parallel] time: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
-                  << " ms\n";
-    }
-}
-
-// 将 kmeans_update_parallel 改为使用 float new_centroids（与 finalize_build 中调用一致）
-void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::vector<std::vector<float>>& new_centroids) {
-    auto t0 = std::chrono::high_resolution_clock::now();
-    int threads_to_use = std::min(num_threads, static_cast<int>(database.size()));
-    if (threads_to_use <= 0) threads_to_use = 1;
-    int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
-
-    // 使用 float 存储线程局部和计数
-    std::vector<std::vector<std::vector<float>>> thread_sums(threads_to_use);
-    std::vector<std::vector<int>> thread_counts(threads_to_use);
-    
-    for (int t = 0; t < threads_to_use; ++t) {
-        thread_sums[t].assign(num_centroid, std::vector<float>(dim, 0.0f));
-        thread_counts[t].assign(num_centroid, 0);
-    }
-    
     std::vector<std::thread> threads;
     threads.reserve(threads_to_use);
-    
-    auto worker = [this, &assignments, &thread_sums, &thread_counts](int start, int end, int thread_id) {
+    auto worker = [this, &assignments](int start, int end) {
         for (int i = start; i < end; ++i) {
-            int c = assignments[i];
-            // database[i].second 是 vector<float>
-            for (int d = 0; d < dim; ++d) {
-                thread_sums[thread_id][c][d] += database[i].second[d];
-            }
-            thread_counts[thread_id][c]++;
+            _mm_prefetch(reinterpret_cast<const char*>(point_ptr(std::min(i + 1, end - 1))), _MM_HINT_T0);
+            assignments[i] = find_closest_centroid_linear(point_ptr(i));
         }
     };
-    
     for (int t = 0; t < threads_to_use; ++t) {
         int start = t * chunk_size;
-        int end = std::min(start + chunk_size, static_cast<int>(database.size()));
+        int end = std::min(start + chunk_size, total);
+        if (start < end) threads.emplace_back(worker, start, end);
+    }
+    for (auto& th : threads) th.join();
+}
+
+void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::vector<float>& new_centroids) {
+    const int total = static_cast<int>(point_ids_.size());
+    if (total == 0) return;
+
+    int threads_to_use = std::min(num_threads, std::max(1, total));
+    int chunk_size = (total + threads_to_use - 1) / threads_to_use;
+
+    std::vector<std::vector<float>> thread_sums(
+        threads_to_use, std::vector<float>(static_cast<size_t>(num_centroid) * dim, 0.0f));
+    std::vector<std::vector<int>> thread_counts(threads_to_use, std::vector<int>(num_centroid, 0));
+
+    std::vector<std::thread> threads;
+    threads.reserve(threads_to_use);
+    auto worker = [this, &assignments, &thread_sums, &thread_counts](int start, int end, int tid) {
+        auto& sums = thread_sums[tid];
+        auto& counts = thread_counts[tid];
+        for (int i = start; i < end; ++i) {
+            int c = assignments[i];
+            float* dst = sums.data() + static_cast<size_t>(c) * dim;
+            const float* src = point_ptr(i);
+            for (int d = 0; d < dim; ++d) dst[d] += src[d];
+            counts[c] += 1;
+        }
+    };
+    for (int t = 0; t < threads_to_use; ++t) {
+        int start = t * chunk_size;
+        int end = std::min(start + chunk_size, total);
         if (start < end) threads.emplace_back(worker, start, end, t);
     }
     for (auto& th : threads) th.join();
-    
-    // 合并线程结果（只合并实际使用的线程数）
+
+    std::fill(new_centroids.begin(), new_centroids.end(), 0.0f);
     for (int c = 0; c < num_centroid; ++c) {
-        for (int d = 0; d < dim; ++d) {
-            new_centroids[c][d] = 0.0f;
-        }
-        int total_count = 0;
-        
+        float* dst = new_centroids.data() + static_cast<size_t>(c) * dim;
+        int count = 0;
         for (int t = 0; t < threads_to_use; ++t) {
-            for (int d = 0; d < dim; ++d) {
-                new_centroids[c][d] += thread_sums[t][c][d];
-            }
-            total_count += thread_counts[t][c];
+            const float* src = thread_sums[t].data() + static_cast<size_t>(c) * dim;
+            for (int d = 0; d < dim; ++d) dst[d] += src[d];
+            count += thread_counts[t][c];
         }
-        
-        if (total_count > 0) {
-            for (int d = 0; d < dim; ++d) {
-                new_centroids[c][d] /= static_cast<float>(total_count);
-            }
+        if (count > 0) {
+            float inv = 1.0f / count;
+            for (int d = 0; d < dim; ++d) dst[d] *= inv;
+        } else {
+            std::memcpy(dst, centroid_ptr(c), sizeof(float) * dim);
         }
-    }
-    auto t1 = std::chrono::high_resolution_clock::now();
-    if (debug) {
-        std::cout << "[kmeans_update_parallel] time: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
-                  << " ms\n";
     }
 }
 
-// 新增：对 float 向量的质心查找（与 centroids 的类型一致）
-int solution::find_closest_centroid(const std::vector<float>& vec) const {
-    float min_dist = std::numeric_limits<float>::max();
+int solution::find_closest_centroid_linear(const float* vec) const {
+    if (centroid_data_.empty()) return 0;
+    float best = std::numeric_limits<float>::max();
     int best_idx = 0;
-    for (int i = 0; i < (int)centroids.size(); ++i) {
-        float d = compute_distance_simd(vec, centroids[i]);
-        if (d < min_dist) {
-            min_dist = d;
-            best_idx = i;
+    for (int c = 0; c < num_centroid; ++c) {
+        float dist = compute_distance_simd(vec, centroid_ptr(c));
+        if (dist < best) {
+            best = dist;
+            best_idx = c;
         }
     }
     return best_idx;
 }
 
-double solution::compute_distance(const std::vector<double>& a, const std::vector<double>& b) const {
-        double sum = 0.0;
-        for (int i = 0; i < dim; ++i) {
-            double diff = a[i] - b[i];
-            sum += diff * diff;
+int solution::find_closest_centroid(const std::vector<double>& vec) const {
+    if (centroid_data_.empty()) return 0;
+    float best = std::numeric_limits<float>::max();
+    int best_idx = 0;
+    for (int c = 0; c < num_centroid; ++c) {
+        const float* ctr = centroid_ptr(c);
+        float acc = 0.0f;
+        for (int d = 0; d < dim; ++d) {
+            float diff = static_cast<float>(vec[d]) - ctr[d];
+            acc += diff * diff;
         }
-        return (sum);
-   
+        if (acc < best) {
+            best = acc;
+            best_idx = c;
+        }
+    }
+    return best_idx;
 }
 
-// 替换为基于 float 的距离计算（SIMD + fallback）
-float solution::compute_distance_simd(const std::vector<float>& a, const std::vector<float>& b) const {
-    if (dim < 8) return compute_distance_fallback(a, b); // 降级到普通计算
-    const float* pa = a.data();
-    const float* pb = b.data();
-
+float solution::compute_distance_simd(const float* a, const float* b) const {
+    if (dim < 8) return compute_distance_fallback(a, b);
     __m256 sumv = _mm256_setzero_ps();
     int i = 0;
-
-    // 8元素并行处理
     for (; i <= dim - 8; i += 8) {
-        __m256 va = _mm256_loadu_ps(pa + i);
-        __m256 vb = _mm256_loadu_ps(pb + i);
+        __m256 va = _mm256_loadu_ps(a + i);
+        __m256 vb = _mm256_loadu_ps(b + i);
         __m256 diff = _mm256_sub_ps(va, vb);
-        __m256 sq = _mm256_mul_ps(diff, diff); // 使用乘法再加法，避免 FMA 要求
+        __m256 sq = _mm256_mul_ps(diff, diff);
         sumv = _mm256_add_ps(sumv, sq);
     }
-
-    // 横向累加 __m256 到标量
-    float tmp[8];
-    _mm256_storeu_ps(tmp, sumv);
+    alignas(32) float tmp[8];
+    _mm256_store_ps(tmp, sumv);
     float total = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
-
-    // 处理剩余元素
     for (; i < dim; ++i) {
-        float diff = pa[i] - pb[i];
+        float diff = a[i] - b[i];
         total += diff * diff;
     }
     return total;
 }
- 
-float solution::compute_distance_fallback(const std::vector<float>& a, const std::vector<float>& b) const {
-     float sum = 0.0f;
-     for (int i = 0; i < dim; ++i) {
-         float diff = a[i] - b[i];
-         sum += diff * diff;
-     }
-     return sum;
+
+float solution::compute_distance_fallback(const float* a, const float* b) const {
+    float sum = 0.0f;
+    for (int i = 0; i < dim; ++i) {
+        float diff = a[i] - b[i];
+        sum += diff * diff;
+    }
+    return sum;
 }
 
 std::vector<std::pair<int, double>> solution::find_closest_centroids(const std::vector<double>& query, int nprobe) const {
+    if (centroid_data_.empty()) return {};
     std::vector<std::pair<double, int>> distances;
-    distances.reserve(centroids.size());
-
-    // centroids 存储为 float；对每个质心按 double 计算距离，避免类型不匹配
-    for (int i = 0; i < (int)centroids.size(); ++i) {
+    distances.reserve(num_centroid);
+    for (int c = 0; c < num_centroid; ++c) {
+        const float* ctr = centroid_ptr(c);
         double sum = 0.0;
         for (int d = 0; d < dim; ++d) {
-            double diff = query[d] - static_cast<double>(centroids[i][d]);
+            double diff = query[d] - static_cast<double>(ctr[d]);
             sum += diff * diff;
         }
-        distances.emplace_back(sum, i);
+        distances.emplace_back(sum, c);
     }
-
-    if (nprobe >= (int)distances.size()) {
+    if (nprobe >= num_centroid) {
         std::sort(distances.begin(), distances.end());
     } else {
         std::partial_sort(distances.begin(), distances.begin() + nprobe, distances.end());
         distances.resize(nprobe);
     }
-
     std::vector<std::pair<int, double>> result;
-    result.reserve(distances.size());
-    for (auto& p : distances) {
-        result.push_back({p.second, p.first});
-    }
-    return result;
-}
-
-// 新的基于 float 的 SIMD 质心搜索
-std::vector<std::pair<int, float>> solution::find_closest_centroids_simd(const std::vector<float>& query, int nprobe) const {
-    std::vector<std::pair<float, int>> distances;
-    distances.reserve(centroids.size());
-    for (int i = 0; i < (int)centroids.size(); ++i) {
-        float dist = compute_distance_simd(query, centroids[i]);
-        distances.push_back({dist, i});
-    }
-    if (nprobe >= (int)distances.size()) {
-        std::sort(distances.begin(), distances.end());
-    } else {
-        std::partial_sort(distances.begin(), distances.begin() + nprobe, distances.end());
-        distances.resize(nprobe);
-    }
-    std::vector<std::pair<int, float>> result;
     result.reserve(distances.size());
     for (auto& p : distances) result.push_back({p.second, p.first});
     return result;
 }
 
-// 新的 search（float）实现：SIMD + 移除激进剪枝，保持召回率
-std::vector<std::pair<int, float>> solution::search(const std::vector<float>& query, int k) {
-    // 第一阶段：找到最近的质心（SIMD）
-    auto close_centroids = find_closest_centroids_simd(query, nprob);
+int solution::build_kdtree(std::vector<int>& indices, int begin, int end, int depth) {
+    if (begin >= end) return -1;
+    int axis = depth % dim;
+    int mid = (begin + end) / 2;
+    std::nth_element(indices.begin() + begin, indices.begin() + mid, indices.begin() + end,
+                     [this, axis](int lhs, int rhs) {
+                         return centroid_ptr(lhs)[axis] < centroid_ptr(rhs)[axis];
+                     });
+    int centroid_index = indices[mid];
+    KDNode node{axis, centroid_index, -1, -1, centroid_ptr(centroid_index)[axis]};
+    int node_id = static_cast<int>(kd_nodes_.size());
+    kd_nodes_.push_back(node);
+    kd_nodes_[node_id].left = build_kdtree(indices, begin, mid, depth + 1);
+    kd_nodes_[node_id].right = build_kdtree(indices, mid + 1, end, depth + 1);
+    return node_id;
+}
 
-    // 并行计算所有候选距离
-    std::vector<std::vector<std::pair<float, int>>> thread_candidates(num_threads);
-    int threads_to_use = std::min<int>(num_threads, std::max<int>(1, static_cast<int>(close_centroids.size())));
-    int chunk_size = (static_cast<int>(close_centroids.size()) + threads_to_use - 1) / threads_to_use;
+void solution::search_kdtree(const float* query, int node_idx, int nprobe,
+                             std::priority_queue<std::pair<float, int>>& best) const {
+    if (node_idx < 0) return;
+    const KDNode& node = kd_nodes_[node_idx];
+    float dist = compute_distance_simd(query, centroid_ptr(node.centroid_index));
+    if (static_cast<int>(best.size()) < nprobe) {
+        best.emplace(dist, node.centroid_index);
+    } else if (dist < best.top().first) {
+        best.pop();
+        best.emplace(dist, node.centroid_index);
+    }
 
-    std::vector<std::thread> threads;
-    threads.reserve(threads_to_use);
+    float diff = query[node.axis] - node.split_value;
+    int near = diff <= 0.0f ? node.left : node.right;
+    int far = diff <= 0.0f ? node.right : node.left;
 
-    auto worker = [this, &query, &close_centroids, &thread_candidates](int start, int end, int thread_id) {
-        for (int i = start; i < end && i < (int)close_centroids.size(); ++i) {
-            int c_id = close_centroids[i].first;
-            auto it = inverted_index.find(c_id);
-            if (it == inverted_index.end()) continue;
-            
-            const auto& bucket = it->second;
-            for (const auto& item : bucket) {
-                // 直接计算精确距离，不进行预剪枝以保证召回率
-                float dist = compute_distance_simd(query, database[item.id].second);
-                thread_candidates[thread_id].push_back({dist, item.id});
+    search_kdtree(query, near, nprobe, best);
+    float worst = best.empty() ? std::numeric_limits<float>::max() : best.top().first;
+    if (static_cast<int>(best.size()) < nprobe || diff * diff < worst) {
+        search_kdtree(query, far, nprobe, best);
+    }
+}
+
+std::vector<std::pair<int, float>> solution::find_closest_centroids_simd(const std::vector<float>& query, int nprobe) const {
+    if (centroid_data_.empty() || nprobe <= 0) return {};
+    nprobe = std::min(nprobe, num_centroid);
+    std::priority_queue<std::pair<float, int>> best;
+    if (kd_root_ >= 0) {
+        search_kdtree(query.data(), kd_root_, nprobe, best);
+    } else {
+        for (int c = 0; c < num_centroid; ++c) {
+            float dist = compute_distance_simd(query.data(), centroid_ptr(c));
+            if (static_cast<int>(best.size()) < nprobe) {
+                best.emplace(dist, c);
+            } else if (dist < best.top().first) {
+                best.pop();
+                best.emplace(dist, c);
             }
         }
-    };
+    }
+    std::vector<std::pair<int, float>> result;
+    result.reserve(best.size());
+    while (!best.empty()) {
+        result.push_back({best.top().second, best.top().first});
+        best.pop();
+    }
+    std::sort(result.begin(), result.end(),
+              [](const auto& a, const auto& b) { return a.second < b.second; });
+    if (result.size() > static_cast<size_t>(nprobe)) result.resize(nprobe);
+    return result;
+}
 
+std::vector<std::pair<int, float>> solution::search(const std::vector<float>& query, int k) {
+    if (point_ids_.empty() || inverted_index.empty() || k <= 0) return {};
+    auto close_centroids = find_closest_centroids_simd(query, std::min(nprob, num_centroid));
+    if (close_centroids.empty()) return {};
+
+    std::vector<float> centroid_dists(close_centroids.size());
+    for (size_t i = 0; i < close_centroids.size(); ++i) centroid_dists[i] = close_centroids[i].second;
+
+    int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, close_centroids.size()));
+    int chunk_size = (static_cast<int>(close_centroids.size()) + threads_to_use - 1) / threads_to_use;
+
+    std::vector<std::vector<std::pair<float, int>>> thread_candidates(threads_to_use);
+    std::vector<std::thread> threads;
+    threads.reserve(threads_to_use);
+    auto worker = [this, &query, &close_centroids, &centroid_dists, &thread_candidates, k](int start, int end, int tid) {
+        std::priority_queue<std::pair<float, int>> local;
+        for (int idx = start; idx < end && idx < static_cast<int>(close_centroids.size()); ++idx) {
+            int c_id = close_centroids[idx].first;
+            float cq = centroid_dists[idx];
+            const auto& bucket = inverted_index[c_id];
+            for (size_t j = 0; j < bucket.size(); ++j) {
+                if (j + 1 < bucket.size()) {
+                    _mm_prefetch(reinterpret_cast<const char*>(point_ptr(bucket[j + 1].index)), _MM_HINT_T0);
+                }
+                float lower = std::fabs(cq - bucket[j].dist_to_centroid);
+                if (static_cast<int>(local.size()) >= k && lower >= local.top().first) continue;
+                float exact = compute_distance_simd(query.data(), point_ptr(bucket[j].index));
+                if (static_cast<int>(local.size()) < k) {
+                    local.emplace(exact, bucket[j].index);
+                } else if (exact < local.top().first) {
+                    local.pop();
+                    local.emplace(exact, bucket[j].index);
+                }
+            }
+        }
+        auto& out = thread_candidates[tid];
+        while (!local.empty()) {
+            out.push_back(local.top());
+            local.pop();
+        }
+    };
     for (int t = 0; t < threads_to_use; ++t) {
         int start = t * chunk_size;
-        int end = std::min(start + chunk_size, (int)close_centroids.size());
+        int end = std::min(start + chunk_size, static_cast<int>(close_centroids.size()));
         if (start < end) threads.emplace_back(worker, start, end, t);
     }
     for (auto& th : threads) th.join();
 
-    // 合并所有候选
     std::vector<std::pair<float, int>> all_candidates;
-    for (const auto& tc : thread_candidates) {
+    for (auto& tc : thread_candidates) {
         all_candidates.insert(all_candidates.end(), tc.begin(), tc.end());
     }
+    if (all_candidates.empty()) return {};
 
-    // 对所有候选进行top-k排序
-    if (k >= all_candidates.size()) {
-        std::sort(all_candidates.begin(), all_candidates.end());
-    } else {
+    if (static_cast<int>(all_candidates.size()) > k) {
         std::partial_sort(all_candidates.begin(), all_candidates.begin() + k, all_candidates.end());
         all_candidates.resize(k);
+    } else {
+        std::sort(all_candidates.begin(), all_candidates.end());
     }
 
     std::vector<std::pair<int, float>> final_result;
     final_result.reserve(all_candidates.size());
-    for (auto& p : all_candidates) {
-        final_result.push_back({p.second, p.first});
+    for (auto& cand : all_candidates) {
+        final_result.push_back({point_ids_[cand.second], cand.first});
     }
     return final_result;
 }

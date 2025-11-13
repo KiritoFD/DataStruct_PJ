@@ -1,0 +1,22 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[solution] metric=l2, num_centroid=2048, kmean_iter=6, nprob=48
+[build_from_memory] SoA conversion time: -279 ms
+[finalize_build] iter 0 assign=1320 ms, update=54 ms
+[finalize_build] iter 1 assign=1311 ms, update=28 ms
+[finalize_build] iter 2 assign=1363 ms, update=33 ms
+[finalize_build] iter 3 assign=1332 ms, update=33 ms
+[finalize_build] iter 4 assign=1322 ms, update=32 ms
+[finalize_build] iter 5 assign=1315 ms, update=37 ms
+[finalize_build] total time: 9535 ms
+Index built in 9 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.8647
+Average query time: 2.64 ms
+Index build time: 9 seconds
