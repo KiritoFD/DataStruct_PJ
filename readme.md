@@ -32,3 +32,9 @@ c3706_i18_p927	3706	18	927	OK	NA	0.9903	15.7	421.0
 [run_experiment] 解析到 build_time: 300.0
 
 c947_i6_p277	947	6	277	OK	NA	0.9834	10.57	22.0
+
+Average recall@10: 0.9641
+Average query time: 6.76 ms
+Index build time: 593 seconds
+
+9600 16 800

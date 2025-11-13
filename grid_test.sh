@@ -4,9 +4,9 @@
 set -euo pipefail
 
 # Edit these arrays for the grid you want to try
-NUM_CENTROIDS_ARR=(1024)
-KMEANS_ITER_ARR=(4 6 8 )
-NPROBE_ARR=(288 300 324 400)
+NUM_CENTROIDS_ARR=(10240)
+KMEANS_ITER_ARR=(1 )
+NPROBE_ARR=(324 400 512 1024)
 
 # Other settings
 SRC="MySolution.cpp"

@@ -10,7 +10,7 @@ bool parse_vector_line(const std::string &line, std::string &out_id, std::vector
 
 class solution {
 public:
-    solution(const std::string& metric = "l2", int num_centroid = 4497, int kmean_iter = 4, int nprob = 977);
+    solution(const std::string& metric = "l2", int num_centroid = 10240, int kmean_iter = 16, int nprob = 256);
     void build(const std::string& base_file);
     std::vector<std::pair<int, double>> search(const std::vector<double>& query, int k);
     void build_from_memory(int d, std::vector<std::vector<double>> data);
@@ -43,7 +43,7 @@ private:
 
 class Solution {
 public:
-    Solution(int num_centroid = 4497, int kmean_iter = 4, int nprob = 977);
+    Solution(int num_centroid = 9600, int kmean_iter = 16, int nprob = 1024);
     void build(int d, const std::vector<float>& base);
     void search(const std::vector<float>& query, int* res);
 private:

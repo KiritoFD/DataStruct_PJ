@@ -166,10 +166,64 @@ void solution::finalize_build() {
         }
     }
 
+    // 并行构建倒排索引：每个线程收集自己的 thread_results[thread_id][centroid]
+    int threads_to_use = std::min(num_threads, static_cast<int>(database.size()));
+    if (threads_to_use <= 0) threads_to_use = 1;
+    int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
+
+    // thread_results[thread_id][centroid] -> vector<id>
+    std::vector<std::vector<std::vector<int>>> thread_results(threads_to_use,
+                                                             std::vector<std::vector<int>>(num_centroid));
+
+    std::vector<std::thread> threads;
+    threads.reserve(threads_to_use);
+    auto worker = [this, &thread_results](int start, int end, int thread_id) {
+        for (int i = start; i < end; ++i) {
+            int c = find_closest_centroid(database[i].vec);
+            thread_results[thread_id][c].push_back(database[i].id);
+        }
+    };
+
+    for (int t = 0; t < threads_to_use; ++t) {
+        int start = t * chunk_size;
+        int end = std::min(start + chunk_size, static_cast<int>(database.size()));
+        if (start < end) threads.emplace_back(worker, start, end, t);
+    }
+    for (auto& th : threads) th.join();
+
+    // 统计每个质心的总量以便预分配
+    std::vector<size_t> centroid_counts(static_cast<size_t>(num_centroid), 0);
+    for (int t = 0; t < threads_to_use; ++t) {
+        for (int c = 0; c < num_centroid; ++c) {
+            centroid_counts[c] += thread_results[t][c].size();
+        }
+    }
+
+    // 准备 inverted_index 并为每个桶预分配空间
     inverted_index.clear();
-    for (const auto& dp : database) {
-        int c = find_closest_centroid(dp.vec);
-        inverted_index[c].push_back(dp.id);
+    try {
+        inverted_index.reserve(static_cast<size_t>(num_centroid));
+    } catch (...) { }
+    for (int c = 0; c < num_centroid; ++c) {
+        inverted_index[c] = std::vector<int>();
+        try {
+            inverted_index[c].reserve(centroid_counts[c]);
+        } catch (...) { }
+    }
+
+    // 合并线程局部结果（使用 move 迭代器以减少拷贝）
+    for (int c = 0; c < num_centroid; ++c) {
+        auto& dest = inverted_index[c];
+        for (int t = 0; t < threads_to_use; ++t) {
+            auto& src = thread_results[t][c];
+            if (!src.empty()) {
+                dest.insert(dest.end(),
+                            std::make_move_iterator(src.begin()),
+                            std::make_move_iterator(src.end()));
+                // clear to free memory sooner
+                std::vector<int>().swap(src);
+            }
+        }
     }
     auto t1 = std::chrono::high_resolution_clock::now();
     if (debug) {
@@ -181,7 +235,9 @@ void solution::finalize_build() {
 
 void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
     auto t0 = std::chrono::high_resolution_clock::now();
-	int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, database.size()));
+	// 更稳健地计算实际使用的线程数（不超过 database.size()）
+	int threads_to_use = std::min(num_threads, static_cast<int>(database.size()));
+	if (threads_to_use <= 0) threads_to_use = 1;
 	int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
 	std::vector<std::thread> threads;
 	threads.reserve(threads_to_use);
@@ -208,17 +264,18 @@ void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
 
 void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::vector<std::vector<double>>& new_centroids) {
     auto t0 = std::chrono::high_resolution_clock::now();
-    // 使用线程局部变量避免锁竞争
-    std::vector<std::vector<std::vector<double>>> thread_sums(num_threads);
-    std::vector<std::vector<int>> thread_counts(num_threads);
+    // 先计算实际需要使用的线程数，按实际线程数分配线程局部变量，避免不必要的大内存分配
+    int threads_to_use = std::min(num_threads, static_cast<int>(database.size()));
+    if (threads_to_use <= 0) threads_to_use = 1;
+    int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
+
+    std::vector<std::vector<std::vector<double>>> thread_sums(threads_to_use);
+    std::vector<std::vector<int>> thread_counts(threads_to_use);
     
-    for (int t = 0; t < num_threads; ++t) {
+    for (int t = 0; t < threads_to_use; ++t) {
         thread_sums[t].assign(num_centroid, std::vector<double>(dim, 0.0));
         thread_counts[t].assign(num_centroid, 0);
     }
-    
-    int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, database.size()));
-    int chunk_size = (static_cast<int>(database.size()) + threads_to_use - 1) / threads_to_use;
     
     std::vector<std::thread> threads;
     threads.reserve(threads_to_use);
@@ -240,14 +297,14 @@ void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::
     }
     for (auto& th : threads) th.join();
     
-    // 合并线程结果
+    // 合并线程结果（只合并实际使用的线程数）
     for (int c = 0; c < num_centroid; ++c) {
         for (int d = 0; d < dim; ++d) {
             new_centroids[c][d] = 0.0;
         }
         int total_count = 0;
         
-        for (int t = 0; t < num_threads; ++t) {
+        for (int t = 0; t < threads_to_use; ++t) {
             for (int d = 0; d < dim; ++d) {
                 new_centroids[c][d] += thread_sums[t][c][d];
             }
