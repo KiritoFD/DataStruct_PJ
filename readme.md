@@ -52,3 +52,5 @@ Total queries: 1000
 Average recall@10: 0.9984
 Average query time: 3.07 ms
 Index build time: 46 seconds
+
+c4096_i1_p112	4096	1	112	OK	24	0.9932	2.76	5

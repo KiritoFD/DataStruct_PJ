@@ -81,7 +81,7 @@ private:
 
 class Solution {
 public:
-    Solution(int num_centroid = 2048, int kmean_iter = 6, int nprob = 48);
+    Solution(int num_centroid = 2308, int kmean_iter = 16, int nprob = 37);
     void build(int d, const std::vector<float>& base);
     void search(const std::vector<float>& query, int* res);
 private:

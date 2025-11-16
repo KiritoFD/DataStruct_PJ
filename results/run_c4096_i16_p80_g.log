@@ -1,0 +1,32 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[solution] metric=l2, num_centroid=4096, kmean_iter=16, nprob=80
+[build_from_memory] SoA conversion time: 460 ms
+[finalize_build] iter 0 assign=2607 ms, update=98 ms
+[finalize_build] iter 1 assign=2628 ms, update=93 ms
+[finalize_build] iter 2 assign=2625 ms, update=100 ms
+[finalize_build] iter 3 assign=6221 ms, update=99 ms
+[finalize_build] iter 4 assign=2571 ms, update=97 ms
+[finalize_build] iter 5 assign=2703 ms, update=98 ms
+[finalize_build] iter 6 assign=2581 ms, update=97 ms
+[finalize_build] iter 7 assign=2571 ms, update=91 ms
+[finalize_build] iter 8 assign=2566 ms, update=92 ms
+[finalize_build] iter 9 assign=2580 ms, update=92 ms
+[finalize_build] iter 10 assign=2565 ms, update=92 ms
+[finalize_build] iter 11 assign=2602 ms, update=92 ms
+[finalize_build] iter 12 assign=2571 ms, update=93 ms
+[finalize_build] iter 13 assign=2558 ms, update=92 ms
+[finalize_build] iter 14 assign=2555 ms, update=91 ms
+[finalize_build] iter 15 assign=2579 ms, update=3679 ms
+[finalize_build] total time: 52867 ms
+Index built in 53 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queriesProcessed 300 queriesProcessed 350 queriesProcessed 400 queriesProcessed 450 queriesProcessed 500 queriesProcessed 550 queriesProcessed 600 queriesProcessed 650 queriesProcessed 700 queriesProcessed 750 queriesProcessed 800 queriesProcessed 850 queriesProcessed 900 queriesProcessed 950 queriesProcessed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.8743
+Average query time: 2.54 ms
+Index build time: 53 seconds
