@@ -1,4 +1,4 @@
-#include "MySolution.h" // 修正大小写
+#include "Mysolution.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -216,19 +216,19 @@ struct Args {
     int num_centroids = 0;
     int kmean_iter = 0;
     int nprob = 0;
-    bool batch = false;
-    bool profile = true;
 };
 
 Args parse_args(int argc, char* argv[]) {
     Args args;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "--n" && i + 1 < argc) args.num_centroids = std::stoi(argv[++i]);
-        else if (arg == "--k" && i + 1 < argc) args.kmean_iter = std::stoi(argv[++i]);
-        else if (arg == "--p" && i + 1 < argc) args.nprob = std::stoi(argv[++i]);
-        else if (arg == "--batch") args.batch = true;
-        else if (arg == "--no-profile") args.profile = false;
+        if (arg == "--n" && i + 1 < argc) {
+            args.num_centroids = std::stoi(argv[++i]);
+        } else if (arg == "--k" && i + 1 < argc) {
+            args.kmean_iter = std::stoi(argv[++i]);
+        } else if (arg == "--p" && i + 1 < argc) {
+            args.nprob = std::stoi(argv[++i]);
+        } 
     }
     return args;
 }
@@ -236,8 +236,6 @@ Args parse_args(int argc, char* argv[]) {
 // 替换 main：使用 Solution 接口进行构建与查询
 int main(int argc, char* argv[]) {
     Args args = parse_args(argc, argv);
-    // 设置 profile
-    solution::set_profile(args.profile);
 
     // 配置参数
     
@@ -286,69 +284,36 @@ int main(int argc, char* argv[]) {
     int query_count = 0;
     auto search_start = std::chrono::high_resolution_clock::now();
 
-    if (!args.batch) {
-        // 单查询模式
-        for (const auto& gt_pair : ground_truth) {
-            int query_idx = gt_pair.first;
-            auto it = std::find_if(queries.begin(), queries.end(),
-                [query_idx](const auto& q) { return q.first == query_idx; });
+    // 直接使用上面获得的 queries，移除重复文件读取
+    for (const auto& gt_pair : ground_truth) {
+        int query_idx = gt_pair.first;
+        auto it = std::find_if(queries.begin(), queries.end(),
+            [query_idx](const auto& q) { return q.first == query_idx; });
 
-            if (it != queries.end() && !it->second.empty()) {
-                // 转换为 float 并调用 Solution::search
-                std::vector<float> qf;
-                qf.reserve(it->second.size());
-                for (float v : it->second) qf.push_back(static_cast<float>(v));
-                int res_arr[10];
-                sol.search(qf, res_arr);
+        if (it != queries.end() && !it->second.empty()) {
+            // 转换为 float 并调用 Solution::search
+            std::vector<float> qf;
+            qf.reserve(it->second.size());
+            for (float v : it->second) qf.push_back(static_cast<float>(v));
+            int res_arr[10];
+            sol.search(qf, res_arr);
 
-                // 将返回的 id 转为 result 格式（distance 不影响 recall）
-                std::vector<std::pair<int, float>> result;
-                for (int i = 0; i < K && i < 10; ++i) {
-                    if (res_arr[i] >= 0) result.emplace_back(res_arr[i], 0.0);
-                }
+            // 将返回的 id 转为 result 格式（distance 不影响 recall）
+            std::vector<std::pair<int, float>> result;
+            for (int i = 0; i < K && i < 10; ++i) {
+                if (res_arr[i] >= 0) result.emplace_back(res_arr[i], 0.0);
+            }
 
-                // 计算召回率
-                float recall = compute_recall(result, gt_pair.second, K);
-                total_recall += recall;
-                ++query_count;
+            // 计算召回率
+            float recall = compute_recall(result, gt_pair.second, K);
+            total_recall += recall;
+            ++query_count;
 
-                // 打印进度
-                if ( query_count % 50 == 0) {
-                     std::cout << "Processed " << query_count << " queries\r" << std::flush;
-                }
+            // 打印进度
+            if ( query_count % 50 == 0) {
+                 std::cout << "Processed " << query_count << " queries\r" << std::flush;
             }
         }
-    } else {
-        // 批量查询模式
-        std::cout << "Running batch search...\n";
-        // 收集所有需要查询的向量（按照 ground_truth key）
-        std::vector<std::vector<float>> batch_queries;
-        batch_queries.reserve(ground_truth.size());
-        for (auto& gt_pair : ground_truth) {
-            int qid = gt_pair.first;
-            auto it = std::find_if(queries.begin(), queries.end(),
-                                   [qid](const auto& q){return q.first == qid;});
-            if (it != queries.end()) batch_queries.push_back(it->second);
-        }
-        std::vector<std::vector<int>> batch_ids;
-        auto t0 = std::chrono::high_resolution_clock::now();
-        sol.search_batch(batch_queries, K, batch_ids);
-        auto t1 = std::chrono::high_resolution_clock::now();
-        double ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-        // 计算平均召回
-        size_t qi = 0;
-        float total_recall = 0.0f;
-        for (auto& gt_pair : ground_truth) {
-            if (qi >= batch_ids.size()) break;
-            std::vector<std::pair<int,float>> tmp;
-            for (int id : batch_ids[qi]) tmp.emplace_back(id, 0.0f);
-            total_recall += compute_recall(tmp, gt_pair.second, K);
-            qi++;
-        }
-        std::cout << "Batch queries=" << qi
-                  << " avg_recall@" << K << "=" << (qi? total_recall/qi : 0.0f)
-                  << " total_time_ms=" << ms
-                  << " avg_time_ms=" << (qi? ms/qi : 0.0f) << "\n";
     }
 
     auto search_end = std::chrono::high_resolution_clock::now();
