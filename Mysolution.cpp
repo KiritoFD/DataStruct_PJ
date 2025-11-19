@@ -15,6 +15,9 @@
 #include <immintrin.h>
 #include <cstring>
 
+// 在文件开头单独定义搜索阶段使用的线程数
+constexpr int SEARCH_THREADS = 3;
+
 const bool debug = true;
 
 // 新增：缓存每个点到其最终质心距离（构建阶段填充，查询阶段可直接按点索引访问）
@@ -75,7 +78,7 @@ solution::solution(const std::string& metric_type, int num_centroid, int kmean_i
       nprob(nprob),
       kd_root_(-1) {
     unsigned int hc = std::thread::hardware_concurrency();
-    num_threads = static_cast<int>(hc > 0 ? hc : 1);
+    num_threads =static_cast<int>(hc > 0 ? hc : 1);
     if (debug) {
         std::cout << "[solution] hardware_concurrency=" << hc << ", using " << num_threads << " threads\n";
         std::cout << "[solution] metric=" << metric << ", num_centroid=" << num_centroid << ", kmean_iter=" << kmean_iter << ", nprob=" << nprob << "\n";
@@ -606,7 +609,7 @@ std::vector<std::pair<int, float>> solution::search(const std::vector<float>& qu
     std::vector<float> centroid_dists(close_centroids.size());
     for (size_t i = 0; i < close_centroids.size(); ++i) centroid_dists[i] = close_centroids[i].second;
 
-    int threads_to_use = std::min<int>(num_threads, std::max<size_t>(1, close_centroids.size()));
+    int threads_to_use = std::max(1, SEARCH_THREADS);
     int chunk_size = (static_cast<int>(close_centroids.size()) + threads_to_use - 1) / threads_to_use;
 
     std::vector<std::vector<std::pair<float, int>>> thread_candidates(threads_to_use);

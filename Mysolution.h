@@ -25,6 +25,12 @@ public:
     // 搜索：浮点向量接口（与 wrapper 对应）
     std::vector<std::pair<int, float>> search(const std::vector<float>& query, int k);
     std::vector<std::pair<int, float>> find_closest_centroids(const std::vector<float>& query, int nprobe) const;
+    // 新增：批量查询（并行按查询级别）
+    void search_batch(const std::vector<std::vector<float>>& queries, int k,
+                      std::vector<std::vector<std::pair<int,float>>>& results);
+
+    // 开关 profiling
+    static void set_profile(bool on);
 
 private:
     // metric & 超参数（从 .h 中定义或构造时传入）
@@ -86,6 +92,9 @@ public:
     Solution(int num_centroid = 5120, int kmean_iter = 16, int nprob = 64);
     void build(int d, const std::vector<float>& base);
     void search(const std::vector<float>& query, int* res);
+    // 包装批量查询
+    void search_batch(const std::vector<std::vector<float>>& queries, int k,
+                      std::vector<std::vector<int>>& out_ids);
 private:
     int num_centroid_;
     int kmean_iter_;
