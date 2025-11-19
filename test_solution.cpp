@@ -14,8 +14,8 @@ const std::string dataset = "sift";
 
 // 简单的JSON解析器
 struct SimpleJSON {
-    static std::unordered_map<int, std::vector<std::pair<int, double>>> parse_gt(const std::string& json_file) {
-        std::unordered_map<int, std::vector<std::pair<int, double>>> gt;
+    static std::unordered_map<int, std::vector<std::pair<int, float>>> parse_gt(const std::string& json_file) {
+        std::unordered_map<int, std::vector<std::pair<int, float>>> gt;
         std::ifstream ifs(json_file);
         if (!ifs) return gt;
 
@@ -40,7 +40,7 @@ struct SimpleJSON {
             idx_str.erase(0, idx_str.find_first_not_of(" \t\n\r"));
             int query_idx = std::stoi(idx_str);
 
-            std::vector<std::pair<int, double>> neighbors;
+            std::vector<std::pair<int, float>> neighbors;
             
             size_t neighbors_pos = results_str.find("\"neighbors\"", pos);
             size_t brackets_start = results_str.find('[', neighbors_pos);
@@ -60,7 +60,7 @@ struct SimpleJSON {
                 size_t dist_brace = neighbors_str.find('}', dist_colon);
                 std::string dist_str = neighbors_str.substr(dist_colon + 1, dist_brace - dist_colon - 1);
                 dist_str.erase(0, dist_str.find_first_not_of(" \t\n\r"));
-                double distance = std::stod(dist_str);
+                float distance = std::stod(dist_str);
 
                 neighbors.emplace_back(neighbor_id, distance);
                 idx_pos = dist_brace + 1;
@@ -78,8 +78,8 @@ struct SimpleJSON {
 
 // 从文件加载查询向量 —— 改为由 load_base_flat 内联返回，删去独立函数
 // 计算召回率
-double compute_recall(const std::vector<std::pair<int, double>>& result, 
-                     const std::vector<std::pair<int, double>>& ground_truth,
+float compute_recall(const std::vector<std::pair<int, float>>& result, 
+                     const std::vector<std::pair<int, float>>& ground_truth,
                      int k) {
     if (ground_truth.empty()) return 0.0;
     
@@ -95,12 +95,12 @@ double compute_recall(const std::vector<std::pair<int, double>>& result,
         }
     }
 
-    return matches / (double)std::min(k, (int)ground_truth.size());
+    return matches / (float)std::min(k, (int)ground_truth.size());
 }
 
 // 新增：从 base 文件加载为一维 float 向量，并返回维度 d
 static std::vector<float> load_base_flat(const std::string& base_file, int& out_d,
-                                         std::vector<std::pair<int, std::vector<double>>>* out_queries = nullptr) {
+                                         std::vector<std::pair<int, std::vector<float>>>* out_queries = nullptr) {
     std::vector<float> base_flat;
     out_d = 0;
     std::ifstream ifs(base_file);
@@ -113,7 +113,7 @@ static std::vector<float> load_base_flat(const std::string& base_file, int& out_
     int idx = 0;
     while (std::getline(ifs, line)) {
         std::string id;
-        std::vector<double> vec;
+        std::vector<float> vec;
         if (!parse_vector_line(line, id, vec)) {
             ++idx;
             continue;
@@ -126,7 +126,7 @@ static std::vector<float> load_base_flat(const std::string& base_file, int& out_
             ++idx;
             continue;
         }
-        for (double v : vec) base_flat.push_back(static_cast<float>(v));
+        for (float v : vec) base_flat.push_back(static_cast<float>(v));
         if (out_queries) out_queries->emplace_back(idx, std::move(vec));
         ++idx;
     }
@@ -139,7 +139,7 @@ static bool file_exists(const std::string& fname) {
     return stat(fname.c_str(), &st) == 0;
 }
 
-static bool save_base_bin(const std::string& bin_file, int d, const std::vector<float>& base_flat, const std::vector<std::pair<int, std::vector<double>>>& queries) {
+static bool save_base_bin(const std::string& bin_file, int d, const std::vector<float>& base_flat, const std::vector<std::pair<int, std::vector<float>>>& queries) {
     std::ofstream ofs(bin_file, std::ios::binary);
     if (!ofs) return false;
     int n = (int)base_flat.size() / d;
@@ -153,7 +153,7 @@ static bool save_base_bin(const std::string& bin_file, int d, const std::vector<
         ofs.write((char*)&idx, sizeof(int));
         int qdim = (int)q.second.size();
         ofs.write((char*)&qdim, sizeof(int));
-        for (double v : q.second) {
+        for (float v : q.second) {
             float fv = (float)v;
             ofs.write((char*)&fv, sizeof(float));
         }
@@ -161,7 +161,7 @@ static bool save_base_bin(const std::string& bin_file, int d, const std::vector<
     return true;
 }
 
-static bool load_base_bin(const std::string& bin_file, int& out_d, std::vector<float>& base_flat, std::vector<std::pair<int, std::vector<double>>>& queries) {
+static bool load_base_bin(const std::string& bin_file, int& out_d, std::vector<float>& base_flat, std::vector<std::pair<int, std::vector<float>>>& queries) {
     std::ifstream ifs(bin_file, std::ios::binary);
     if (!ifs) return false;
     int d = 0, n = 0;
@@ -177,7 +177,7 @@ static bool load_base_bin(const std::string& bin_file, int& out_d, std::vector<f
         int idx = 0, qdim = 0;
         ifs.read((char*)&idx, sizeof(int));
         ifs.read((char*)&qdim, sizeof(int));
-        std::vector<double> qv(qdim);
+        std::vector<float> qv(qdim);
         for (int j = 0; j < qdim; ++j) {
             float fv;
             ifs.read((char*)&fv, sizeof(float));
@@ -190,10 +190,10 @@ static bool load_base_bin(const std::string& bin_file, int& out_d, std::vector<f
 }
 
 static std::vector<float> load_base_flat_cached(const std::string& base_file, int& out_d,
-                                         std::vector<std::pair<int, std::vector<double>>>* out_queries = nullptr) {
+                                         std::vector<std::pair<int, std::vector<float>>>* out_queries = nullptr) {
     std::string bin_file = base_file + ".bin";
     std::vector<float> base_flat;
-    std::vector<std::pair<int, std::vector<double>>> queries;
+    std::vector<std::pair<int, std::vector<float>>> queries;
     if (file_exists(bin_file)) {
         if (load_base_bin(bin_file, out_d, base_flat, queries)) {
             if (out_queries) *out_queries = queries;
@@ -245,7 +245,7 @@ int main(int argc, char* argv[]) {
 
     // 加载底库为一维 float 向量
     int d = 0;
-    std::vector<std::pair<int, std::vector<double>>> queries;
+    std::vector<std::pair<int, std::vector<float>>> queries;
     auto base_flat = load_base_flat_cached(base_file, d, &queries);
     if (d <= 0 || base_flat.empty() || queries.empty()) {
         std::cerr << "Empty base or invalid dimension." << std::endl;
@@ -280,7 +280,7 @@ int main(int argc, char* argv[]) {
 
     // 执行查询并评估
        std::cout << "Running queries..." << std::endl;
-    double total_recall = 0.0;
+    float total_recall = 0.0;
     int query_count = 0;
     auto search_start = std::chrono::high_resolution_clock::now();
 
@@ -294,18 +294,18 @@ int main(int argc, char* argv[]) {
             // 转换为 float 并调用 Solution::search
             std::vector<float> qf;
             qf.reserve(it->second.size());
-            for (double v : it->second) qf.push_back(static_cast<float>(v));
+            for (float v : it->second) qf.push_back(static_cast<float>(v));
             int res_arr[10];
             sol.search(qf, res_arr);
 
             // 将返回的 id 转为 result 格式（distance 不影响 recall）
-            std::vector<std::pair<int, double>> result;
+            std::vector<std::pair<int, float>> result;
             for (int i = 0; i < K && i < 10; ++i) {
                 if (res_arr[i] >= 0) result.emplace_back(res_arr[i], 0.0);
             }
 
             // 计算召回率
-            double recall = compute_recall(result, gt_pair.second, K);
+            float recall = compute_recall(result, gt_pair.second, K);
             total_recall += recall;
             ++query_count;
 
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
              std::cout << "Average recall@" << K << ": " << std::fixed << std::setprecision(4)
                       << (total_recall / query_count) << std::endl;
              std::cout << "Average query time: " << std::fixed << std::setprecision(2)
-                      << (search_time / (double)query_count) << " ms" << std::endl;
+                      << (search_time / (float)query_count) << " ms" << std::endl;
         }
          std::cout << "Index build time: " << build_time << " seconds" << std::endl;
     }

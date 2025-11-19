@@ -1,4 +1,6 @@
 #include "MySolution.h"
+#include "CommonUtils.h"
+#include "DistanceUtils.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
@@ -15,72 +17,7 @@
 #include <immintrin.h>
 #include <cstring>
 
-const bool debug = true;
-
-// 新增：缓存每个点到其最终质心距离（构建阶段填充，查询阶段可直接按点索引访问）
-static std::vector<float> g_point_centroid_dist;
-
-// 新增：提供 try_stod 与 parse_vector_line 的定义
-namespace {
-	bool try_stod(const std::string& s, float& out) {
-		try {
-			size_t pos = 0;
-			out = std::stod(s, &pos);
-			return pos == s.size();
-		} catch (...) {
-			return false;
-		}
-	}
-}
-
-bool parse_vector_line(const std::string& line, std::string& out_id, std::vector<float>& out_vec) {
-	out_id.clear();
-	out_vec.clear();
-	std::istringstream iss(line);
-	std::vector<std::string> toks;
-	std::string t;
-	while (iss >> t) toks.push_back(t);
-	if (toks.empty()) return false;
-
-	float val = 0.0;
-	bool allnum = true;
-	for (const auto& s : toks) {
-		if (!try_stod(s, val)) { allnum = false; break; }
-	}
-	if (allnum) {
-		out_vec.reserve(toks.size());
-		for (const auto& s : toks) out_vec.push_back(std::stod(s));
-		return true;
-	}
-
-	if (toks.size() < 2) return false;
-	out_id = toks[0];
-	out_vec.reserve(toks.size() - 1);
-	for (size_t i = 1; i < toks.size(); ++i) {
-		if (!try_stod(toks[i], val)) return false;
-		out_vec.push_back(std::stod(toks[i]));
-	}
-	return true;
-}
-
-
-
-
-solution::solution(const std::string& metric_type, int num_centroid, int kmean_iter, int nprob)
-    : metric(metric_type),
-      dim(0),
-      num_threads(1),
-      num_centroid(num_centroid),
-      kmean_iter(kmean_iter),
-      nprob(nprob),
-      kd_root_(-1) {
-    unsigned int hc = std::thread::hardware_concurrency();
-    num_threads = static_cast<int>(hc > 0 ? hc : 1);
-    if (debug) {
-        std::cout << "[solution] hardware_concurrency=" << hc << ", using " << num_threads << " threads\n";
-        std::cout << "[solution] metric=" << metric << ", num_centroid=" << num_centroid << ", kmean_iter=" << kmean_iter << ", nprob=" << nprob << "\n";
-    }
-}
+const bool debug = false;
 
 void solution::build(const std::string& base_file) {
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -88,13 +25,13 @@ void solution::build(const std::string& base_file) {
     if (!fin) {
         return;
     }
-    std::vector<std::vector<float>> vectors;
+    std::vector<std::vector<double>> vectors;
     std::string line;
     int local_dim = 0;
     while (std::getline(fin, line)) {
         std::string id;
-        std::vector<float> vec;
-        if (!parse_vector_line(line, id, vec)) continue;
+        std::vector<double> vec;
+        if (!common::parse_vector_line(line, id, vec)) continue;
         if (local_dim == 0) local_dim = static_cast<int>(vec.size());
         if (vec.size() != static_cast<size_t>(local_dim)) {
             continue;
@@ -121,7 +58,7 @@ void solution::build(const std::string& base_file) {
     build_from_memory(local_dim, std::move(vectors));
 }
 
-void solution::build_from_memory(int d, std::vector<std::vector<float>> data) {
+void solution::build_from_memory(int d, std::vector<std::vector<double>> data) {
     auto t0 = std::chrono::high_resolution_clock::now();
     dim = d;
     const size_t n = data.size();
@@ -191,21 +128,18 @@ void solution::finalize_build() {
         kd_root_ = -1;
     }
 
-    // 使用最后一次 assignments 构建倒排，同时缓存点到质心距离
     int threads_to_use = std::min(num_threads, std::max(1, total));
     int chunk_size = (total + threads_to_use - 1) / threads_to_use;
     std::vector<std::vector<std::vector<BucketItem>>> thread_results(
         threads_to_use, std::vector<std::vector<BucketItem>>(num_centroid));
-    g_point_centroid_dist.assign(total, 0.0f);
-
     std::vector<std::thread> workers;
     workers.reserve(threads_to_use);
-    auto worker = [this, &thread_results, &assignments](int start, int end, int tid) {
+    auto worker = [this, &thread_results](int start, int end, int tid) {
         for (int i = start; i < end; ++i) {
-            int c = assignments[i];
-            float dist = compute_distance_simd(point_ptr(i), centroid_ptr(c));
+            const float* vec = point_ptr(i);
+            int c = find_closest_centroid_linear(vec);
+            float dist = compute_distance_simd(vec, centroid_ptr(c));
             thread_results[tid][c].push_back({i, dist});
-            g_point_centroid_dist[i] = dist;
         }
     };
     for (int t = 0; t < threads_to_use; ++t) {
@@ -227,50 +161,6 @@ void solution::finalize_build() {
             auto& src = thread_results[t][c];
             dest.insert(dest.end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
             std::vector<BucketItem>().swap(src);
-        }
-    }
-
-    // 新增：按桶顺序重排点数据（提升后续查询的缓存局部性）
-    {
-        std::vector<int> old2new(total, -1);
-        std::vector<float> new_points(static_cast<size_t>(total) * dim);
-        std::vector<int> new_ids(total);
-        int write = 0;
-        for (int c = 0; c < num_centroid; ++c) {
-            auto& bucket = inverted_index[c];
-            for (auto& bi : bucket) {
-                int old = bi.index;
-                float* src = point_ptr(old);
-                float* dst = new_points.data() + static_cast<size_t>(write) * dim;
-                std::memcpy(dst, src, sizeof(float) * dim);
-                old2new[old] = write;
-                new_ids[write] = point_ids_[old]; // 保留原始外部 id
-                bi.index = write;                 // 更新桶内索引
-                write++;
-            }
-        }
-        // 若有遗漏（空桶导致未覆盖全部点），追加剩余点（理论上不会出现，因为每点都有簇）
-        for (int old = 0; old < total; ++old) {
-            if (old2new[old] == -1) {
-                int write2 = write++;
-                float* src = point_ptr(old);
-                float* dst = new_points.data() + static_cast<size_t>(write2) * dim;
-                std::memcpy(dst, src, sizeof(float) * dim);
-                old2new[old] = write2;
-                new_ids[write2] = point_ids_[old];
-            }
-        }
-        point_data_.swap(new_points);
-        point_ids_.swap(new_ids);
-
-        // 同步全局缓存点到质心距离的索引（可选：保持顺序一致）
-        if (!g_point_centroid_dist.empty()) {
-            std::vector<float> new_dist(total);
-            for (int old = 0; old < total; ++old) {
-                int nw = old2new[old];
-                new_dist[nw] = g_point_centroid_dist[old];
-            }
-            g_point_centroid_dist.swap(new_dist);
         }
     }
 
@@ -367,7 +257,7 @@ int solution::find_closest_centroid_linear(const float* vec) const {
     return best_idx;
 }
 
-int solution::find_closest_centroid(const std::vector<float>& vec) const {
+int solution::find_closest_centroid(const std::vector<double>& vec) const {
     if (centroid_data_.empty()) return 0;
     float best = std::numeric_limits<float>::max();
     int best_idx = 0;
@@ -387,132 +277,22 @@ int solution::find_closest_centroid(const std::vector<float>& vec) const {
 }
 
 float solution::compute_distance_simd(const float* a, const float* b) const {
-#if defined(__AVX512F)
-    if (dim >= 16) {
-        __m512 sum512 = _mm512_setzero_ps();
-        int i = 0;
-        for (; i <= dim - 16; i += 16) {
-            __m512 va = _mm512_loadu_ps(a + i);
-            __m512 vb = _mm512_loadu_ps(b + i);
-            __m512 diff = _mm512_sub_ps(va, vb);
-            __m512 sq = _mm512_mul_ps(diff, diff);
-            sum512 = _mm512_add_ps(sum512, sq);
-        }
-        alignas(64) float tmp512[16];
-        _mm512_store_ps(tmp512, sum512);
-        float total = 0.0f;
-        for (int k = 0; k < 16; ++k) total += tmp512[k];
-        // 剩余部分用 AVX 或标量
-        for (; i <= dim - 8; i += 8) {
-            __m256 va = _mm256_loadu_ps(a + i);
-            __m256 vb = _mm256_loadu_ps(b + i);
-            __m256 diff = _mm256_sub_ps(va, vb);
-            __m256 sq = _mm256_mul_ps(diff, diff);
-            alignas(32) float tmp[8];
-            _mm256_store_ps(tmp, sq);
-            total += tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
-        }
-        for (; i < dim; ++i) {
-            float diff = a[i] - b[i];
-            total += diff * diff;
-        }
-        return total;
-    }
-#endif
-    __m256 sumv = _mm256_setzero_ps();
-    int i = 0;
-    for (; i <= dim - 8; i += 8) {
-        __m256 va = _mm256_loadu_ps(a + i);
-        __m256 vb = _mm256_loadu_ps(b + i);
-        __m256 diff = _mm256_sub_ps(va, vb);
-        __m256 sq = _mm256_mul_ps(diff, diff);
-        sumv = _mm256_add_ps(sumv, sq);
-    }
-    alignas(32) float tmp[8];
-    _mm256_store_ps(tmp, sumv);
-    float total = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
-    for (; i < dim; ++i) {
-        float diff = a[i] - b[i];
-        total += diff * diff;
-    }
-    return total;
+    return common::compute_distance_simd(dim, a, b);
 }
 
-// 新增：带上界的距离（超过 cap 提前退出）
-float solution::compute_distance_capped_simd(const float* a, const float* b, float cap) const {
-    if (std::isinf(cap)) {
-        return compute_distance_simd(a, b);
-    }
-#if defined(__AVX512F)
-    if (dim >= 16) {
-        __m512 sum512 = _mm512_setzero_ps();
-        float total = 0.0f;
-        int i = 0;
-        alignas(64) float tmp512[16];
-        for (; i <= dim - 16; i += 16) {
-            __m512 va = _mm512_loadu_ps(a + i);
-            __m512 vb = _mm512_loadu_ps(b + i);
-            __m512 diff = _mm512_sub_ps(va, vb);
-            __m512 sq = _mm512_mul_ps(diff, diff);
-            sum512 = _mm512_add_ps(sum512, sq);
-            _mm512_store_ps(tmp512, sum512);
-            total = 0.0f;
-            for (int k = 0; k < 16; ++k) total += tmp512[k];
-            if (total >= cap) return total; // 提前退出
-        }
-        // AVX512 块结束后的剩余
-        for (; i <= dim - 8; i += 8) {
-            __m256 va = _mm256_loadu_ps(a + i);
-            __m256 vb = _mm256_loadu_ps(b + i);
-            __m256 diff = _mm256_sub_ps(va, vb);
-            __m256 sq = _mm256_mul_ps(diff, diff);
-            alignas(32) float tmp[8];
-            _mm256_store_ps(tmp, sq);
-            for (int k = 0; k < 8; ++k) {
-                total += tmp[k];
-                if (total >= cap) return total;
-            }
-        }
-        for (; i < dim; ++i) {
-            float d = a[i] - b[i];
-            total += d * d;
-            if (total >= cap) return total;
-        }
-        return total;
-    }
-#endif
-    // AVX 路径
-    float total = 0.0f;
-    int i = 0;
-    for (; i <= dim - 8; i += 8) {
-        __m256 va = _mm256_loadu_ps(a + i);
-        __m256 vb = _mm256_loadu_ps(b + i);
-        __m256 diff = _mm256_sub_ps(va, vb);
-        __m256 sq = _mm256_mul_ps(diff, diff);
-        alignas(32) float tmp[8];
-        _mm256_store_ps(tmp, sq);
-        for (int k = 0; k < 8; ++k) {
-            total += tmp[k];
-            if (total >= cap) return total;
-        }
-    }
-    for (; i < dim; ++i) {
-        float d = a[i] - b[i];
-        total += d * d;
-        if (total >= cap) return total;
-    }
-    return total;
+float solution::compute_distance_fallback(const float* a, const float* b) const {
+    return common::compute_distance_fallback(dim, a, b);
 }
 
-std::vector<std::pair<int, float>> solution::find_closest_centroids(const std::vector<float>& query, int nprobe) const {
+std::vector<std::pair<int, double>> solution::find_closest_centroids(const std::vector<double>& query, int nprobe) const {
     if (centroid_data_.empty()) return {};
-    std::vector<std::pair<float, int>> distances;
+    std::vector<std::pair<double, int>> distances;
     distances.reserve(num_centroid);
     for (int c = 0; c < num_centroid; ++c) {
         const float* ctr = centroid_ptr(c);
-        float sum = 0.0;
+        double sum = 0.0;
         for (int d = 0; d < dim; ++d) {
-            float diff = query[d] - static_cast<float>(ctr[d]);
+            double diff = query[d] - static_cast<double>(ctr[d]);
             sum += diff * diff;
         }
         distances.emplace_back(sum, c);
@@ -523,7 +303,7 @@ std::vector<std::pair<int, float>> solution::find_closest_centroids(const std::v
         std::partial_sort(distances.begin(), distances.begin() + nprobe, distances.end());
         distances.resize(nprobe);
     }
-    std::vector<std::pair<int, float>> result;
+    std::vector<std::pair<int, double>> result;
     result.reserve(distances.size());
     for (auto& p : distances) result.push_back({p.second, p.first});
     return result;
@@ -624,12 +404,7 @@ std::vector<std::pair<int, float>> solution::search(const std::vector<float>& qu
                 }
                 float lower = std::fabs(cq - bucket[j].dist_to_centroid);
                 if (static_cast<int>(local.size()) >= k && lower >= local.top().first) continue;
-
-                // 修改：使用“截断上界”的距离计算
-                float cap = (static_cast<int>(local.size()) >= k) ? local.top().first
-                                                                  : std::numeric_limits<float>::infinity();
-                float exact = compute_distance_capped_simd(query.data(), point_ptr(bucket[j].index), cap);
-
+                float exact = compute_distance_simd(query.data(), point_ptr(bucket[j].index));
                 if (static_cast<int>(local.size()) < k) {
                     local.emplace(exact, bucket[j].index);
                 } else if (exact < local.top().first) {
@@ -684,13 +459,13 @@ void Solution::build(int d, const std::vector<float>& base) {
     int n = static_cast<int>(base.size()) / d;
     if (n <= 0) return;
 
-    std::vector<std::vector<float>> data;
+    std::vector<std::vector<double>> data;
     data.reserve(n);
     for (int i = 0; i < n; ++i) {
-        std::vector<float> vec;
+        std::vector<double> vec;
         vec.reserve(d);
         for (int j = 0; j < d; ++j) {
-            vec.push_back(static_cast<float>(base[i * d + j]));
+            vec.push_back(static_cast<double>(base[i * d + j]));
         }
         data.push_back(std::move(vec));
     }
