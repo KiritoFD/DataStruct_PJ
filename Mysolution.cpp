@@ -14,11 +14,69 @@
 #include <chrono>
 #include <immintrin.h>
 #include <cstring>
+#include <memory>
+#include <condition_variable>
+#include <functional>
+#include <future>
 
-// 在文件开头单独定义搜索阶段使用的线程数
 constexpr int SEARCH_THREADS = 3;
 
 const bool debug = true;
+
+// 新增：简易线程池及全局实例
+class ThreadPool {
+public:
+	explicit ThreadPool(size_t threads) : stop(false) {
+		for (size_t i = 0; i < threads; ++i)
+			workers.emplace_back([this] {
+				for (;;) {
+					std::function<void()> task;
+					{
+						std::unique_lock<std::mutex> lock(this->queue_mutex);
+						this->condition.wait(lock, [this] { return this->stop || !this->tasks.empty(); });
+						if (this->stop && this->tasks.empty()) return;
+						task = std::move(this->tasks.front());
+						this->tasks.pop();
+					}
+					task();
+				}
+			});
+	}
+
+	template <class F, class... Args>
+	auto enqueue(F&& f, Args&&... args)
+		-> std::future<typename std::result_of<F(Args...)>::type> {
+		using return_type = typename std::result_of<F(Args...)>::type;
+		auto task = std::make_shared<std::packaged_task<return_type()>>(
+			std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+		std::future<return_type> res = task->get_future();
+		{
+			std::unique_lock<std::mutex> lock(queue_mutex);
+			if (stop) throw std::runtime_error("enqueue on stopped ThreadPool");
+			tasks.emplace([task]() { (*task)(); });
+		}
+		condition.notify_one();
+		return res;
+	}
+
+	~ThreadPool() {
+		{
+			std::unique_lock<std::mutex> lock(queue_mutex);
+			stop = true;
+		}
+		condition.notify_all();
+		for (std::thread& worker : workers) worker.join();
+	}
+
+private:
+	std::vector<std::thread> workers;
+	std::queue<std::function<void()>> tasks;
+	std::mutex queue_mutex;
+	std::condition_variable condition;
+	bool stop;
+};
+
+static std::unique_ptr<ThreadPool> g_pool;
 
 // 新增：缓存每个点到其最终质心距离（构建阶段填充，查询阶段可直接按点索引访问）
 static std::vector<float> g_point_centroid_dist;
@@ -78,11 +136,17 @@ solution::solution(const std::string& metric_type, int num_centroid, int kmean_i
       nprob(nprob),
       kd_root_(-1) {
     unsigned int hc = std::thread::hardware_concurrency();
-    num_threads =static_cast<int>(hc > 0 ? hc : 1);
+    num_threads = static_cast<int>(hc > 0 ? hc : 1);
     if (debug) {
         std::cout << "[solution] hardware_concurrency=" << hc << ", using " << num_threads << " threads\n";
-        std::cout << "[solution] metric=" << metric << ", num_centroid=" << num_centroid << ", kmean_iter=" << kmean_iter << ", nprob=" << nprob << "\n";
+        std::cout << "[solution] metric=" << metric << ", num_centroid=" << num_centroid
+                  << ", kmean_iter=" << kmean_iter << ", nprob=" << nprob << "\n";
     }
+    static std::once_flag pool_flag;
+    std::call_once(pool_flag, []() {
+        int t_cnt = std::max(1, SEARCH_THREADS);
+        g_pool = std::make_unique<ThreadPool>(t_cnt);
+    });
 }
 
 void solution::build(const std::string& base_file) {
@@ -231,6 +295,8 @@ void solution::finalize_build() {
             dest.insert(dest.end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
             std::vector<BucketItem>().swap(src);
         }
+        std::sort(inverted_index[c].begin(), inverted_index[c].end(),
+                  [](const BucketItem& a, const BucketItem& b) { return a.dist_to_centroid < b.dist_to_centroid; });
     }
 
     // 新增：按桶顺序重排点数据（提升后续查询的缓存局部性）
@@ -602,77 +668,76 @@ std::vector<std::pair<int, float>> solution::find_closest_centroids_simd(const s
 }
 
 std::vector<std::pair<int, float>> solution::search(const std::vector<float>& query, int k) {
-    if (point_ids_.empty() || inverted_index.empty() || k <= 0) return {};
-    auto close_centroids = find_closest_centroids_simd(query, std::min(nprob, num_centroid));
-    if (close_centroids.empty()) return {};
+	if (point_ids_.empty() || inverted_index.empty() || k <= 0) return {};
+	auto close_centroids = find_closest_centroids_simd(query, std::min(nprob, num_centroid));
+	if (close_centroids.empty()) return {};
+	std::vector<float> centroid_dists(close_centroids.size());
+	for (size_t i = 0; i < close_centroids.size(); ++i) centroid_dists[i] = close_centroids[i].second;
 
-    std::vector<float> centroid_dists(close_centroids.size());
-    for (size_t i = 0; i < close_centroids.size(); ++i) centroid_dists[i] = close_centroids[i].second;
+	int threads_to_use = std::max(1, SEARCH_THREADS);
+	int total_centroids = static_cast<int>(close_centroids.size());
+	int chunk_size = (total_centroids + threads_to_use - 1) / threads_to_use;
 
-    int threads_to_use = std::max(1, SEARCH_THREADS);
-    int chunk_size = (static_cast<int>(close_centroids.size()) + threads_to_use - 1) / threads_to_use;
+	std::vector<std::future<std::vector<std::pair<float, int>>>> futures;
+	futures.reserve(threads_to_use);
+	for (int t = 0; t < threads_to_use; ++t) {
+		int start = t * chunk_size;
+		int end = std::min(start + chunk_size, total_centroids);
+		if (start >= end) continue;
 
-    std::vector<std::vector<std::pair<float, int>>> thread_candidates(threads_to_use);
-    std::vector<std::thread> threads;
-    threads.reserve(threads_to_use);
-    auto worker = [this, &query, &close_centroids, &centroid_dists, &thread_candidates, k](int start, int end, int tid) {
-        std::priority_queue<std::pair<float, int>> local;
-        for (int idx = start; idx < end && idx < static_cast<int>(close_centroids.size()); ++idx) {
-            int c_id = close_centroids[idx].first;
-            float cq = centroid_dists[idx];
-            const auto& bucket = inverted_index[c_id];
-            for (size_t j = 0; j < bucket.size(); ++j) {
-                if (j + 1 < bucket.size()) {
-                    _mm_prefetch(reinterpret_cast<const char*>(point_ptr(bucket[j + 1].index)), _MM_HINT_T0);
-                }
-                float lower = std::fabs(cq - bucket[j].dist_to_centroid);
-                if (static_cast<int>(local.size()) >= k && lower >= local.top().first) continue;
+		futures.push_back(g_pool->enqueue([this, start, end, k, &query, &close_centroids, &centroid_dists]() {
+			std::vector<std::pair<float, int>> local_top;
+			local_top.reserve(k + 1);
+			float current_limit = std::numeric_limits<float>::max();
+			for (int idx = start; idx < end; ++idx) {
+				int c_id = close_centroids[idx].first;
+				float d_qc = centroid_dists[idx];
+				const auto& bucket = inverted_index[c_id];
+				const size_t bucket_size = bucket.size();
+				const int prefetch_dist = 8;
+				for (size_t j = 0; j < bucket_size; ++j) {
+					if (j + prefetch_dist < bucket_size) {
+						_mm_prefetch(reinterpret_cast<const char*>(point_ptr(bucket[j + prefetch_dist].index)), _MM_HINT_T0);
+					}
+					float dist_pc = bucket[j].dist_to_centroid;
+					float lower_bound = std::fabs(d_qc - dist_pc);
+					if (lower_bound >= current_limit) continue;
+					float exact = compute_distance_capped_simd(query.data(), point_ptr(bucket[j].index), current_limit);
+					if (exact < current_limit) {
+						local_top.emplace_back(exact, bucket[j].index);
+						std::push_heap(local_top.begin(), local_top.end());
+						if (local_top.size() > (size_t)k) {
+							std::pop_heap(local_top.begin(), local_top.end());
+							local_top.pop_back();
+						}
+						if (local_top.size() == (size_t)k) {
+							current_limit = local_top.front().first;
+						}
+					}
+				}
+			}
+			return local_top;
+		}));
+	}
 
-                // 修改：使用“截断上界”的距离计算
-                float cap = (static_cast<int>(local.size()) >= k) ? local.top().first
-                                                                  : std::numeric_limits<float>::infinity();
-                float exact = compute_distance_capped_simd(query.data(), point_ptr(bucket[j].index), cap);
+	std::vector<std::pair<float, int>> all_candidates;
+	for (auto& f : futures) {
+		auto res = f.get();
+		all_candidates.insert(all_candidates.end(), res.begin(), res.end());
+	}
+	if (all_candidates.empty()) return {};
 
-                if (static_cast<int>(local.size()) < k) {
-                    local.emplace(exact, bucket[j].index);
-                } else if (exact < local.top().first) {
-                    local.pop();
-                    local.emplace(exact, bucket[j].index);
-                }
-            }
-        }
-        auto& out = thread_candidates[tid];
-        while (!local.empty()) {
-            out.push_back(local.top());
-            local.pop();
-        }
-    };
-    for (int t = 0; t < threads_to_use; ++t) {
-        int start = t * chunk_size;
-        int end = std::min(start + chunk_size, static_cast<int>(close_centroids.size()));
-        if (start < end) threads.emplace_back(worker, start, end, t);
-    }
-    for (auto& th : threads) th.join();
+	if (static_cast<int>(all_candidates.size()) > k) {
+		std::partial_sort(all_candidates.begin(), all_candidates.begin() + k, all_candidates.end());
+		all_candidates.resize(k);
+	} else {
+		std::sort(all_candidates.begin(), all_candidates.end());
+	}
 
-    std::vector<std::pair<float, int>> all_candidates;
-    for (auto& tc : thread_candidates) {
-        all_candidates.insert(all_candidates.end(), tc.begin(), tc.end());
-    }
-    if (all_candidates.empty()) return {};
-
-    if (static_cast<int>(all_candidates.size()) > k) {
-        std::partial_sort(all_candidates.begin(), all_candidates.begin() + k, all_candidates.end());
-        all_candidates.resize(k);
-    } else {
-        std::sort(all_candidates.begin(), all_candidates.end());
-    }
-
-    std::vector<std::pair<int, float>> final_result;
-    final_result.reserve(all_candidates.size());
-    for (auto& cand : all_candidates) {
-        final_result.push_back({point_ids_[cand.second], cand.first});
-    }
-    return final_result;
+	std::vector<std::pair<int, float>> final_result;
+	final_result.reserve(all_candidates.size());
+	for (auto& cand : all_candidates) final_result.push_back({point_ids_[cand.second], cand.first});
+	return final_result;
 }
 
 // 新增全局内部实现指针（保持索引状态）

@@ -2,9 +2,9 @@
 Building index...
 [solution] hardware_concurrency=32, using 32 threads
 [solution] metric=l2, num_centroid=64, kmean_iter=1, nprob=32
-[build_from_memory] SoA conversion time: 422 ms
-[finalize_build] iter 0 assign=43 ms, update=20 ms
-[finalize_build] total time: 715 ms
+[build_from_memory] SoA conversion time: 443 ms
+[finalize_build] iter 0 assign=44 ms, update=19 ms
+[finalize_build] total time: 720 ms
 Index built in 1 seconds
 Loading queries and ground truth...
 Loaded 1000 ground truth entries
@@ -13,5 +13,5 @@ Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 q
 === Results ===
 Total queries: 1000
 Average recall@10: 0.9769
-Average query time: 22.34 ms
+Average query time: 23.50 ms
 Index build time: 1 seconds

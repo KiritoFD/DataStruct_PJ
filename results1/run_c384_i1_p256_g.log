@@ -1,0 +1,12 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] hardware_concurrency=32, using 32 threads
+[solution] metric=l2, num_centroid=384, kmean_iter=1, nprob=256
+[build_from_memory] SoA conversion time: 420 ms
+[finalize_build] iter 0 assign=225 ms, update=22 ms
+[finalize_build] total time: 899 ms
+Index built in 1 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queriesProcessed 250 queries
