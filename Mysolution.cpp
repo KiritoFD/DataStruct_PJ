@@ -19,7 +19,7 @@
 #include <functional>
 #include <future>
 
-constexpr int SEARCH_THREADS = 16;
+constexpr int SEARCH_THREADS =16;
 const bool debug = true;
 
 // --- 简易线程池 ---
@@ -205,6 +205,7 @@ void solution::finalize_build() {
                   });
         
         inverted_index[c].max_radius = dest.empty() ? 0.0f : dest.back().dist_to_centroid;
+        inverted_index[c].max_radius_sq8 = static_cast<int>(inverted_index[c].max_radius * global_scale_ * global_scale_ * dim);
     }
 
     // 6. 物理内存重排
@@ -390,10 +391,7 @@ float solution::compute_distance_simd(const float* a, const float* b) const {
             __m512 diff = _mm512_sub_ps(va, vb);
             sum512 = _mm512_add_ps(sum512, _mm512_mul_ps(diff, diff));
         }
-        alignas(64) float tmp512[16];
-        _mm512_store_ps(tmp512, sum512);
-        float total = 0.0f;
-        for (int k = 0; k < 16; ++k) total += tmp512[k];
+        float total = _mm512_reduce_add_ps(sum512);
         for (; i <= dim - 8; i += 8) {
             __m256 va = _mm256_loadu_ps(a + i);
             __m256 vb = _mm256_loadu_ps(b + i);
@@ -427,7 +425,7 @@ float solution::compute_distance_simd(const float* a, const float* b) const {
     return total;
 }
 
-int solution::compute_distance_sq8(const uint8_t* a, const uint8_t* b) const {
+int solution::compute_distance_sq8(const uint8_t* a, const uint8_t* b, int limit) const {
     __m256i sum = _mm256_setzero_si256();
     for (int i = 0; i < padded_dim; i += 32) {
         __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
@@ -449,6 +447,13 @@ int solution::compute_distance_sq8(const uint8_t* a, const uint8_t* b) const {
         __m256i diff_hi = _mm256_sub_epi16(va_16_hi, vb_16_hi);
         __m256i sq_hi = _mm256_madd_epi16(diff_hi, diff_hi);
         sum = _mm256_add_epi32(sum, sq_hi);
+
+        // Early break check
+        __m128i sum128_partial = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extracti128_si256(sum, 1));
+        __m128i tmp1_partial = _mm_hadd_epi32(sum128_partial, sum128_partial);
+        __m128i tmp2_partial = _mm_hadd_epi32(tmp1_partial, tmp1_partial);
+        int partial = _mm_cvtsi128_si32(tmp2_partial);
+        if (partial > limit) return std::numeric_limits<int>::max();
     }
     
     __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extracti128_si256(sum, 1));
@@ -538,6 +543,8 @@ std::vector<std::pair<int, float>> solution::search(const std::vector<float>& qu
     
     if (close_centroids.empty()) return {};
 
+    int total_centroids = static_cast<int>(close_centroids.size());
+
     // Quantize Query
     std::vector<uint8_t> q_quant(padded_dim, 0);
     for(int j=0; j<dim; ++j) {
@@ -545,7 +552,17 @@ std::vector<std::pair<int, float>> solution::search(const std::vector<float>& qu
         q_quant[j] = static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, val)));
     }
 
-    int total_centroids = static_cast<int>(close_centroids.size());
+    std::vector<int> centroid_sq8_dists(total_centroids);
+    for(int idx=0; idx<total_centroids; ++idx){
+        int c_id = close_centroids[idx].first;
+        std::vector<uint8_t> c_quant(padded_dim, 0);
+        for(int j=0; j<dim; ++j){
+            float val = (centroid_ptr(c_id)[j] - global_min_) * global_scale_;
+            c_quant[j] = static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, val)));
+        }
+        centroid_sq8_dists[idx] = compute_distance_sq8(q_quant.data(), c_quant.data());
+    }
+
     unsigned int hw_threads = std::thread::hardware_concurrency();
     int threads_to_use = std::max(1u, std::min(hw_threads, static_cast<unsigned int>(total_centroids)));
     int buckets_per_thread = (total_centroids + threads_to_use - 1) / threads_to_use;
@@ -568,7 +585,7 @@ std::vector<std::pair<int, float>> solution::search(const std::vector<float>& qu
         int end = std::min(start + buckets_per_thread, total_centroids);
         if (start >= end) continue;
 
-        workers.emplace_back([this, start, end, k_refine, &q_quant, &close_centroids, &results, t]() {
+        workers.emplace_back([this, start, end, k_refine, &q_quant, &close_centroids, &results, t, &centroid_sq8_dists]() {
             auto& res = results[t];
             std::vector<std::pair<int, int>> heap;
             heap.reserve(k_refine + 1);
@@ -579,9 +596,12 @@ std::vector<std::pair<int, float>> solution::search(const std::vector<float>& qu
                 int c_id = close_centroids[idx].first;
                 const auto& bucket = inverted_index[c_id];
                 
+                // Bucket-level early prune
+                if (centroid_sq8_dists[idx] - bucket.max_radius_sq8 > limit) continue;
+                
                 for (const auto& item : bucket.items) {
                     res.checked++;
-                    int dist_sq8 = compute_distance_sq8(q_quant.data(), quantized_ptr(item.index));
+                    int dist_sq8 = compute_distance_sq8(q_quant.data(), quantized_ptr(item.index), limit);
 
                     if (!has_k) {
                         heap.emplace_back(dist_sq8, item.index);

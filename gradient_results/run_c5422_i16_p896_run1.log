@@ -1,0 +1,2014 @@
+[cache] loaded base vectors from data_o/glove/base.txt.bin
+Building index...
+[solution] threads=32, centroid=5422, iter=16, nprob=896
+[finalize_build] 65630 ms
+Index built in 66 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+[Timing] coarse=514us fine=2361us merge=607us sort=5us map=0us TOTAL=3523us
+[Stats] checked=189762 refined=6400
+[Timing] coarse=548us fine=2337us merge=628us sort=5us map=1us TOTAL=3551us
+[Stats] checked=192651 refined=6400
+[Timing] coarse=476us fine=2241us merge=610us sort=5us map=0us TOTAL=3359us
+[Stats] checked=164000 refined=6400
+[Timing] coarse=454us fine=2210us merge=615us sort=5us map=0us TOTAL=3315us
+[Stats] checked=173142 refined=6400
+[Timing] coarse=456us fine=2233us merge=651us sort=6us map=1us TOTAL=3372us
+[Stats] checked=174436 refined=6400
+[Timing] coarse=506us fine=2541us merge=694us sort=5us map=1us TOTAL=3778us
+[Stats] checked=158796 refined=6400
+[Timing] coarse=538us fine=2302us merge=721us sort=5us map=0us TOTAL=3598us
+[Stats] checked=161923 refined=6400
+[Timing] coarse=491us fine=2203us merge=637us sort=5us map=0us TOTAL=3362us
+[Stats] checked=170982 refined=6400
+[Timing] coarse=403us fine=2285us merge=636us sort=5us map=0us TOTAL=3355us
+[Stats] checked=163021 refined=6400
+[Timing] coarse=582us fine=2184us merge=645us sort=5us map=0us TOTAL=3447us
+[Stats] checked=175103 refined=6400
+[Timing] coarse=394us fine=2126us merge=594us sort=5us map=0us TOTAL=3140us
+[Stats] checked=187607 refined=6400
+[Timing] coarse=545us fine=2292us merge=620us sort=5us map=13us TOTAL=3509us
+[Stats] checked=174246 refined=6400
+[Timing] coarse=448us fine=2302us merge=628us sort=5us map=0us TOTAL=3408us
+[Stats] checked=164125 refined=6400
+[Timing] coarse=388us fine=2637us merge=582us sort=5us map=0us TOTAL=3638us
+[Stats] checked=205930 refined=6400
+[Timing] coarse=508us fine=2326us merge=636us sort=5us map=0us TOTAL=3505us
+[Stats] checked=167608 refined=6400
+[Timing] coarse=402us fine=2282us merge=597us sort=5us map=0us TOTAL=3309us
+[Stats] checked=174057 refined=6400
+[Timing] coarse=447us fine=2274us merge=656us sort=5us map=0us TOTAL=3406us
+[Stats] checked=174773 refined=6400
+[Timing] coarse=540us fine=2225us merge=651us sort=5us map=0us TOTAL=3449us
+[Stats] checked=162363 refined=6400
+[Timing] coarse=408us fine=2210us merge=685us sort=5us map=0us TOTAL=3329us
+[Stats] checked=168724 refined=6400
+[Timing] coarse=494us fine=2437us merge=625us sort=5us map=0us TOTAL=3589us
+[Stats] checked=172726 refined=6400
+[Timing] coarse=403us fine=2340us merge=628us sort=5us map=0us TOTAL=3409us
+[Stats] checked=172416 refined=6400
+[Timing] coarse=465us fine=2432us merge=619us sort=5us map=0us TOTAL=3589us
+[Stats] checked=183100 refined=6400
+[Timing] coarse=524us fine=2334us merge=968us sort=5us map=0us TOTAL=3858us
+[Stats] checked=161124 refined=6400
+[Timing] coarse=414us fine=2349us merge=713us sort=5us map=0us TOTAL=3505us
+[Stats] checked=170149 refined=6400
+[Timing] coarse=564us fine=2294us merge=760us sort=5us map=1us TOTAL=3656us
+[Stats] checked=173752 refined=6400
+[Timing] coarse=568us fine=2374us merge=637us sort=8us map=1us TOTAL=3620us
+[Stats] checked=187112 refined=6400
+[Timing] coarse=514us fine=2244us merge=617us sort=5us map=1us TOTAL=3407us
+[Stats] checked=175961 refined=6400
+[Timing] coarse=476us fine=2251us merge=609us sort=5us map=0us TOTAL=3370us
+[Stats] checked=187711 refined=6400
+[Timing] coarse=496us fine=2302us merge=650us sort=5us map=0us TOTAL=3485us
+[Stats] checked=173889 refined=6400
+[Timing] coarse=478us fine=2375us merge=649us sort=5us map=0us TOTAL=3535us
+[Stats] checked=173769 refined=6400
+[Timing] coarse=465us fine=2306us merge=682us sort=5us map=0us TOTAL=3485us
+[Stats] checked=172548 refined=6400
+[Timing] coarse=526us fine=2132us merge=651us sort=5us map=0us TOTAL=3349us
+[Stats] checked=178603 refined=6400
+[Timing] coarse=550us fine=2516us merge=649us sort=5us map=1us TOTAL=3751us
+[Stats] checked=194422 refined=6400
+[Timing] coarse=515us fine=2456us merge=656us sort=5us map=0us TOTAL=3661us
+[Stats] checked=177463 refined=6400
+[Timing] coarse=602us fine=2494us merge=839us sort=5us map=1us TOTAL=3976us
+[Stats] checked=173255 refined=6400
+[Timing] coarse=540us fine=2493us merge=678us sort=5us map=0us TOTAL=3750us
+[Stats] checked=170674 refined=6400
+[Timing] coarse=535us fine=2575us merge=640us sort=5us map=1us TOTAL=3801us
+[Stats] checked=168257 refined=6400
+[Timing] coarse=566us fine=2217us merge=601us sort=5us map=0us TOTAL=3419us
+[Stats] checked=182397 refined=6400
+[Timing] coarse=619us fine=2371us merge=697us sort=5us map=1us TOTAL=3731us
+[Stats] checked=164393 refined=6400
+[Timing] coarse=519us fine=2339us merge=894us sort=5us map=0us TOTAL=3785us
+[Stats] checked=177700 refined=6400
+[Timing] coarse=522us fine=2395us merge=623us sort=5us map=0us TOTAL=3579us
+[Stats] checked=166070 refined=6400
+[Timing] coarse=493us fine=2194us merge=736us sort=5us map=1us TOTAL=3456us
+[Stats] checked=186278 refined=6400
+[Timing] coarse=502us fine=2324us merge=624us sort=5us map=0us TOTAL=3490us
+[Stats] checked=184590 refined=6400
+[Timing] coarse=443us fine=2737us merge=821us sort=7us map=1us TOTAL=4037us
+[Stats] checked=173424 refined=6400
+[Timing] coarse=717us fine=2651us merge=833us sort=7us map=1us TOTAL=4255us
+[Stats] checked=168443 refined=6400
+[Timing] coarse=588us fine=2611us merge=827us sort=7us map=0us TOTAL=4068us
+[Stats] checked=168602 refined=6400
+[Timing] coarse=440us fine=2510us merge=1105us sort=7us map=0us TOTAL=4088us
+[Stats] checked=164132 refined=6400
+[Timing] coarse=643us fine=2763us merge=805us sort=7us map=1us TOTAL=4254us
+[Stats] checked=158274 refined=6400
+[Timing] coarse=373us fine=2347us merge=876us sort=4us map=0us TOTAL=3624us
+[Stats] checked=184867 refined=6400
+[Timing] coarse=417us fine=2594us merge=721us sort=5us map=1us TOTAL=3761us
+[Stats] checked=168519 refined=6400
+Processed 50 queries[Timing] coarse=367us fine=2359us merge=723us sort=5us map=0us TOTAL=3478us
+[Stats] checked=171844 refined=6400
+[Timing] coarse=454us fine=2710us merge=814us sort=7us map=0us TOTAL=4012us
+[Stats] checked=191221 refined=6400
+[Timing] coarse=577us fine=2400us merge=798us sort=5us map=0us TOTAL=3810us
+[Stats] checked=189886 refined=6400
+[Timing] coarse=412us fine=2259us merge=640us sort=5us map=1us TOTAL=3342us
+[Stats] checked=196454 refined=6400
+[Timing] coarse=619us fine=2170us merge=633us sort=5us map=0us TOTAL=3461us
+[Stats] checked=170075 refined=6400
+[Timing] coarse=539us fine=2338us merge=673us sort=5us map=0us TOTAL=3591us
+[Stats] checked=183228 refined=6400
+[Timing] coarse=477us fine=2621us merge=607us sort=5us map=0us TOTAL=3742us
+[Stats] checked=171431 refined=6400
+[Timing] coarse=507us fine=2334us merge=625us sort=5us map=0us TOTAL=3499us
+[Stats] checked=154370 refined=6400
+[Timing] coarse=441us fine=2445us merge=749us sort=5us map=0us TOTAL=3666us
+[Stats] checked=185957 refined=6400
+[Timing] coarse=514us fine=2599us merge=659us sort=6us map=0us TOTAL=3817us
+[Stats] checked=169601 refined=6400
+[Timing] coarse=454us fine=2223us merge=700us sort=5us map=1us TOTAL=3412us
+[Stats] checked=159710 refined=6400
+[Timing] coarse=408us fine=2361us merge=655us sort=5us map=0us TOTAL=3455us
+[Stats] checked=162562 refined=6400
+[Timing] coarse=381us fine=2314us merge=643us sort=7us map=0us TOTAL=3370us
+[Stats] checked=170892 refined=6400
+[Timing] coarse=480us fine=2287us merge=628us sort=6us map=0us TOTAL=3433us
+[Stats] checked=169066 refined=6400
+[Timing] coarse=447us fine=2291us merge=732us sort=5us map=0us TOTAL=3501us
+[Stats] checked=166100 refined=6400
+[Timing] coarse=516us fine=2261us merge=604us sort=5us map=0us TOTAL=3421us
+[Stats] checked=178365 refined=6400
+[Timing] coarse=444us fine=2332us merge=612us sort=5us map=0us TOTAL=3420us
+[Stats] checked=182156 refined=6400
+[Timing] coarse=469us fine=2257us merge=621us sort=5us map=0us TOTAL=3381us
+[Stats] checked=157941 refined=6400
+[Timing] coarse=402us fine=2156us merge=682us sort=4us map=0us TOTAL=3269us
+[Stats] checked=175663 refined=6400
+[Timing] coarse=460us fine=2606us merge=627us sort=5us map=0us TOTAL=3739us
+[Stats] checked=164859 refined=6400
+[Timing] coarse=547us fine=2389us merge=637us sort=6us map=0us TOTAL=3609us
+[Stats] checked=197347 refined=6400
+[Timing] coarse=450us fine=2612us merge=666us sort=5us map=0us TOTAL=3759us
+[Stats] checked=183291 refined=6400
+[Timing] coarse=475us fine=2257us merge=659us sort=5us map=0us TOTAL=3422us
+[Stats] checked=187056 refined=6400
+[Timing] coarse=394us fine=2188us merge=622us sort=5us map=0us TOTAL=3231us
+[Stats] checked=161338 refined=6400
+[Timing] coarse=394us fine=2241us merge=657us sort=5us map=0us TOTAL=3321us
+[Stats] checked=165104 refined=6400
+[Timing] coarse=360us fine=2359us merge=604us sort=5us map=0us TOTAL=3348us
+[Stats] checked=185613 refined=6400
+[Timing] coarse=388us fine=2246us merge=583us sort=5us map=1us TOTAL=3245us
+[Stats] checked=199114 refined=6400
+[Timing] coarse=434us fine=2422us merge=625us sort=6us map=0us TOTAL=3511us
+[Stats] checked=165802 refined=6400
+[Timing] coarse=518us fine=2655us merge=639us sort=5us map=0us TOTAL=3853us
+[Stats] checked=183355 refined=6400
+[Timing] coarse=547us fine=2279us merge=644us sort=5us map=0us TOTAL=3506us
+[Stats] checked=193086 refined=6400
+[Timing] coarse=498us fine=2342us merge=783us sort=5us map=1us TOTAL=3657us
+[Stats] checked=183360 refined=6400
+[Timing] coarse=607us fine=2379us merge=656us sort=5us map=11us TOTAL=3701us
+[Stats] checked=166793 refined=6400
+[Timing] coarse=465us fine=2350us merge=902us sort=5us map=1us TOTAL=3753us
+[Stats] checked=177661 refined=6400
+[Timing] coarse=568us fine=2679us merge=656us sort=5us map=1us TOTAL=3963us
+[Stats] checked=173222 refined=6400
+[Timing] coarse=554us fine=2547us merge=702us sort=5us map=0us TOTAL=3844us
+[Stats] checked=191238 refined=6400
+[Timing] coarse=507us fine=2430us merge=636us sort=5us map=1us TOTAL=3612us
+[Stats] checked=157653 refined=6400
+[Timing] coarse=432us fine=2358us merge=637us sort=5us map=0us TOTAL=3460us
+[Stats] checked=168323 refined=6400
+[Timing] coarse=671us fine=2545us merge=663us sort=5us map=0us TOTAL=3924us
+[Stats] checked=176844 refined=6400
+[Timing] coarse=542us fine=2236us merge=698us sort=5us map=0us TOTAL=3520us
+[Stats] checked=181202 refined=6400
+[Timing] coarse=558us fine=2606us merge=666us sort=5us map=1us TOTAL=3869us
+[Stats] checked=184852 refined=6400
+[Timing] coarse=541us fine=2282us merge=615us sort=5us map=0us TOTAL=3479us
+[Stats] checked=169992 refined=6400
+[Timing] coarse=507us fine=2451us merge=763us sort=5us map=0us TOTAL=3754us
+[Stats] checked=186147 refined=6400
+[Timing] coarse=534us fine=2364us merge=606us sort=4us map=0us TOTAL=3546us
+[Stats] checked=188725 refined=6400
+[Timing] coarse=447us fine=2759us merge=734us sort=5us map=1us TOTAL=3970us
+[Stats] checked=158979 refined=6400
+[Timing] coarse=527us fine=2327us merge=656us sort=5us map=0us TOTAL=3556us
+[Stats] checked=168649 refined=6400
+[Timing] coarse=519us fine=2279us merge=626us sort=5us map=0us TOTAL=3455us
+[Stats] checked=178375 refined=6400
+[Timing] coarse=514us fine=2382us merge=773us sort=5us map=0us TOTAL=3712us
+[Stats] checked=167879 refined=6400
+[Timing] coarse=473us fine=2529us merge=728us sort=5us map=1us TOTAL=3763us
+[Stats] checked=189341 refined=6400
+[Timing] coarse=558us fine=2421us merge=618us sort=5us map=0us TOTAL=3643us
+[Stats] checked=216504 refined=6400
+[Timing] coarse=629us fine=2427us merge=666us sort=5us map=0us TOTAL=3766us
+[Stats] checked=181352 refined=6400
+Processed 100 queries[Timing] coarse=433us fine=2559us merge=667us sort=5us map=1us TOTAL=3687us
+[Stats] checked=169220 refined=6400
+[Timing] coarse=614us fine=2466us merge=696us sort=5us map=1us TOTAL=3822us
+[Stats] checked=171345 refined=6400
+[Timing] coarse=457us fine=2218us merge=598us sort=5us map=1us TOTAL=3307us
+[Stats] checked=191513 refined=6400
+[Timing] coarse=611us fine=2478us merge=614us sort=6us map=0us TOTAL=3747us
+[Stats] checked=162601 refined=6400
+[Timing] coarse=537us fine=2442us merge=644us sort=5us map=0us TOTAL=3662us
+[Stats] checked=201247 refined=6400
+[Timing] coarse=532us fine=2372us merge=615us sort=5us map=1us TOTAL=3562us
+[Stats] checked=177485 refined=6400
+[Timing] coarse=544us fine=2675us merge=686us sort=5us map=1us TOTAL=3955us
+[Stats] checked=184258 refined=6400
+[Timing] coarse=537us fine=2254us merge=855us sort=5us map=1us TOTAL=3689us
+[Stats] checked=160271 refined=6400
+[Timing] coarse=498us fine=2476us merge=667us sort=5us map=0us TOTAL=3679us
+[Stats] checked=194958 refined=6400
+[Timing] coarse=497us fine=2243us merge=757us sort=5us map=0us TOTAL=3534us
+[Stats] checked=157717 refined=6400
+[Timing] coarse=436us fine=2205us merge=617us sort=6us map=0us TOTAL=3291us
+[Stats] checked=175488 refined=6400
+[Timing] coarse=467us fine=2343us merge=647us sort=5us map=1us TOTAL=3493us
+[Stats] checked=207569 refined=6400
+[Timing] coarse=443us fine=2206us merge=616us sort=5us map=0us TOTAL=3294us
+[Stats] checked=166730 refined=6400
+[Timing] coarse=517us fine=2270us merge=592us sort=5us map=0us TOTAL=3414us
+[Stats] checked=212244 refined=6400
+[Timing] coarse=474us fine=2388us merge=694us sort=5us map=0us TOTAL=3589us
+[Stats] checked=173387 refined=6400
+[Timing] coarse=439us fine=2359us merge=614us sort=5us map=0us TOTAL=3447us
+[Stats] checked=181461 refined=6400
+[Timing] coarse=488us fine=2179us merge=684us sort=5us map=0us TOTAL=3381us
+[Stats] checked=191001 refined=6400
+[Timing] coarse=464us fine=2273us merge=607us sort=5us map=0us TOTAL=3378us
+[Stats] checked=182806 refined=6400
+[Timing] coarse=341us fine=2344us merge=609us sort=5us map=0us TOTAL=3320us
+[Stats] checked=182736 refined=6400
+[Timing] coarse=449us fine=2229us merge=635us sort=5us map=0us TOTAL=3344us
+[Stats] checked=194608 refined=6400
+[Timing] coarse=461us fine=2417us merge=584us sort=5us map=0us TOTAL=3492us
+[Stats] checked=220615 refined=6400
+[Timing] coarse=418us fine=2217us merge=636us sort=5us map=0us TOTAL=3299us
+[Stats] checked=185792 refined=6400
+[Timing] coarse=432us fine=2403us merge=683us sort=5us map=0us TOTAL=3549us
+[Stats] checked=189854 refined=6400
+[Timing] coarse=467us fine=2225us merge=677us sort=5us map=1us TOTAL=3402us
+[Stats] checked=177011 refined=6400
+[Timing] coarse=504us fine=2282us merge=677us sort=5us map=0us TOTAL=3501us
+[Stats] checked=183621 refined=6400
+[Timing] coarse=462us fine=2254us merge=645us sort=5us map=0us TOTAL=3393us
+[Stats] checked=177670 refined=6400
+[Timing] coarse=439us fine=2389us merge=667us sort=6us map=1us TOTAL=3526us
+[Stats] checked=161484 refined=6400
+[Timing] coarse=487us fine=2269us merge=641us sort=5us map=1us TOTAL=3436us
+[Stats] checked=194676 refined=6400
+[Timing] coarse=451us fine=2408us merge=629us sort=5us map=0us TOTAL=3521us
+[Stats] checked=177419 refined=6400
+[Timing] coarse=449us fine=2184us merge=562us sort=5us map=0us TOTAL=3222us
+[Stats] checked=207914 refined=6400
+[Timing] coarse=390us fine=2148us merge=656us sort=5us map=0us TOTAL=3222us
+[Stats] checked=182933 refined=6400
+[Timing] coarse=436us fine=2181us merge=638us sort=5us map=0us TOTAL=3286us
+[Stats] checked=164471 refined=6400
+[Timing] coarse=421us fine=2291us merge=689us sort=5us map=1us TOTAL=3430us
+[Stats] checked=165451 refined=6400
+[Timing] coarse=588us fine=2544us merge=631us sort=5us map=0us TOTAL=3806us
+[Stats] checked=175347 refined=6400
+[Timing] coarse=495us fine=2394us merge=657us sort=5us map=0us TOTAL=3583us
+[Stats] checked=179763 refined=6400
+[Timing] coarse=486us fine=2285us merge=675us sort=5us map=0us TOTAL=3481us
+[Stats] checked=157415 refined=6400
+[Timing] coarse=491us fine=2492us merge=759us sort=5us map=0us TOTAL=3775us
+[Stats] checked=182535 refined=6400
+[Timing] coarse=504us fine=2171us merge=683us sort=5us map=0us TOTAL=3396us
+[Stats] checked=191864 refined=6400
+[Timing] coarse=601us fine=2426us merge=882us sort=5us map=1us TOTAL=3952us
+[Stats] checked=167141 refined=6400
+[Timing] coarse=559us fine=2599us merge=610us sort=5us map=0us TOTAL=3810us
+[Stats] checked=190708 refined=6400
+[Timing] coarse=584us fine=2353us merge=612us sort=5us map=0us TOTAL=3590us
+[Stats] checked=200917 refined=6400
+[Timing] coarse=556us fine=2249us merge=638us sort=5us map=0us TOTAL=3481us
+[Stats] checked=165019 refined=6400
+[Timing] coarse=516us fine=2182us merge=632us sort=5us map=1us TOTAL=3368us
+[Stats] checked=167070 refined=6400
+[Timing] coarse=530us fine=2285us merge=615us sort=5us map=0us TOTAL=3471us
+[Stats] checked=202713 refined=6400
+[Timing] coarse=550us fine=2403us merge=629us sort=5us map=0us TOTAL=3621us
+[Stats] checked=191754 refined=6400
+[Timing] coarse=530us fine=2887us merge=844us sort=7us map=0us TOTAL=4307us
+[Stats] checked=161398 refined=6400
+[Timing] coarse=726us fine=3092us merge=818us sort=7us map=1us TOTAL=4692us
+[Stats] checked=187151 refined=6400
+[Timing] coarse=589us fine=2264us merge=635us sort=5us map=0us TOTAL=3543us
+[Stats] checked=179939 refined=6400
+[Timing] coarse=490us fine=2397us merge=630us sort=5us map=0us TOTAL=3550us
+[Stats] checked=188572 refined=6400
+[Timing] coarse=517us fine=2234us merge=637us sort=5us map=1us TOTAL=3424us
+[Stats] checked=165345 refined=6400
+Processed 150 queries[Timing] coarse=559us fine=2262us merge=620us sort=5us map=1us TOTAL=3485us
+[Stats] checked=177173 refined=6400
+[Timing] coarse=466us fine=2192us merge=621us sort=5us map=0us TOTAL=3313us
+[Stats] checked=199286 refined=6400
+[Timing] coarse=490us fine=2335us merge=663us sort=5us map=1us TOTAL=3520us
+[Stats] checked=175112 refined=6400
+[Timing] coarse=517us fine=2218us merge=662us sort=5us map=0us TOTAL=3449us
+[Stats] checked=190408 refined=6400
+[Timing] coarse=457us fine=2211us merge=615us sort=5us map=0us TOTAL=3316us
+[Stats] checked=180087 refined=6400
+[Timing] coarse=488us fine=2138us merge=615us sort=5us map=0us TOTAL=3277us
+[Stats] checked=177180 refined=6400
+[Timing] coarse=427us fine=2408us merge=728us sort=5us map=1us TOTAL=3595us
+[Stats] checked=175499 refined=6400
+[Timing] coarse=500us fine=2368us merge=620us sort=5us map=0us TOTAL=3524us
+[Stats] checked=181769 refined=6400
+[Timing] coarse=541us fine=2406us merge=615us sort=5us map=0us TOTAL=3600us
+[Stats] checked=185868 refined=6400
+[Timing] coarse=425us fine=2361us merge=605us sort=5us map=0us TOTAL=3420us
+[Stats] checked=202530 refined=6400
+[Timing] coarse=534us fine=2494us merge=724us sort=5us map=1us TOTAL=3791us
+[Stats] checked=183431 refined=6400
+[Timing] coarse=481us fine=2214us merge=648us sort=5us map=0us TOTAL=3376us
+[Stats] checked=173150 refined=6400
+[Timing] coarse=503us fine=3169us merge=675us sort=5us map=0us TOTAL=4382us
+[Stats] checked=175057 refined=6400
+[Timing] coarse=603us fine=2612us merge=793us sort=5us map=0us TOTAL=4057us
+[Stats] checked=189023 refined=6400
+[Timing] coarse=603us fine=2588us merge=738us sort=5us map=1us TOTAL=3990us
+[Stats] checked=174342 refined=6400
+[Timing] coarse=537us fine=2384us merge=655us sort=5us map=0us TOTAL=3622us
+[Stats] checked=176844 refined=6400
+[Timing] coarse=681us fine=2434us merge=667us sort=5us map=0us TOTAL=3822us
+[Stats] checked=190835 refined=6400
+[Timing] coarse=570us fine=2099us merge=605us sort=5us map=1us TOTAL=3321us
+[Stats] checked=175919 refined=6400
+[Timing] coarse=533us fine=2199us merge=701us sort=5us map=0us TOTAL=3477us
+[Stats] checked=164268 refined=6400
+[Timing] coarse=564us fine=2245us merge=627us sort=5us map=0us TOTAL=3477us
+[Stats] checked=158043 refined=6400
+[Timing] coarse=508us fine=2538us merge=709us sort=5us map=0us TOTAL=3793us
+[Stats] checked=164893 refined=6400
+[Timing] coarse=620us fine=2314us merge=634us sort=5us map=0us TOTAL=3613us
+[Stats] checked=158672 refined=6400
+[Timing] coarse=480us fine=2219us merge=633us sort=5us map=0us TOTAL=3365us
+[Stats] checked=159282 refined=6400
+[Timing] coarse=453us fine=2092us merge=595us sort=5us map=0us TOTAL=3171us
+[Stats] checked=191023 refined=6400
+[Timing] coarse=522us fine=2221us merge=607us sort=5us map=0us TOTAL=3389us
+[Stats] checked=199384 refined=6400
+[Timing] coarse=452us fine=2405us merge=661us sort=5us map=0us TOTAL=3547us
+[Stats] checked=181398 refined=6400
+[Timing] coarse=429us fine=2443us merge=634us sort=5us map=0us TOTAL=3536us
+[Stats] checked=177092 refined=6400
+[Timing] coarse=611us fine=2388us merge=579us sort=5us map=1us TOTAL=3623us
+[Stats] checked=184812 refined=6400
+[Timing] coarse=496us fine=2507us merge=824us sort=5us map=1us TOTAL=3864us
+[Stats] checked=154662 refined=6400
+[Timing] coarse=542us fine=2828us merge=658us sort=5us map=0us TOTAL=4077us
+[Stats] checked=178928 refined=6400
+[Timing] coarse=501us fine=2240us merge=656us sort=5us map=1us TOTAL=3438us
+[Stats] checked=163816 refined=6400
+[Timing] coarse=480us fine=2221us merge=689us sort=5us map=1us TOTAL=3425us
+[Stats] checked=181089 refined=6400
+[Timing] coarse=562us fine=2631us merge=666us sort=5us map=0us TOTAL=3908us
+[Stats] checked=185328 refined=6400
+[Timing] coarse=382us fine=2361us merge=664us sort=5us map=0us TOTAL=3431us
+[Stats] checked=197061 refined=6400
+[Timing] coarse=373us fine=2287us merge=621us sort=5us map=0us TOTAL=3306us
+[Stats] checked=164539 refined=6400
+[Timing] coarse=511us fine=2652us merge=622us sort=5us map=0us TOTAL=3826us
+[Stats] checked=177581 refined=6400
+[Timing] coarse=502us fine=2285us merge=630us sort=5us map=0us TOTAL=3451us
+[Stats] checked=218648 refined=6400
+[Timing] coarse=391us fine=2366us merge=595us sort=5us map=0us TOTAL=3380us
+[Stats] checked=173528 refined=6400
+[Timing] coarse=581us fine=2182us merge=570us sort=5us map=0us TOTAL=3372us
+[Stats] checked=172323 refined=6400
+[Timing] coarse=499us fine=2195us merge=613us sort=5us map=1us TOTAL=3338us
+[Stats] checked=171686 refined=6400
+[Timing] coarse=497us fine=2272us merge=641us sort=5us map=0us TOTAL=3443us
+[Stats] checked=182866 refined=6400
+[Timing] coarse=401us fine=2309us merge=608us sort=5us map=1us TOTAL=3346us
+[Stats] checked=194508 refined=6400
+[Timing] coarse=358us fine=2171us merge=664us sort=5us map=0us TOTAL=3221us
+[Stats] checked=163985 refined=6400
+[Timing] coarse=447us fine=2519us merge=719us sort=5us map=0us TOTAL=3716us
+[Stats] checked=186991 refined=6400
+[Timing] coarse=381us fine=2254us merge=646us sort=5us map=0us TOTAL=3310us
+[Stats] checked=177197 refined=6400
+[Timing] coarse=505us fine=2316us merge=666us sort=5us map=0us TOTAL=3533us
+[Stats] checked=172854 refined=6400
+[Timing] coarse=494us fine=2194us merge=602us sort=5us map=0us TOTAL=3326us
+[Stats] checked=172832 refined=6400
+[Timing] coarse=902us fine=2242us merge=595us sort=5us map=0us TOTAL=3765us
+[Stats] checked=176837 refined=6400
+[Timing] coarse=534us fine=2157us merge=662us sort=5us map=0us TOTAL=3402us
+[Stats] checked=157626 refined=6400
+[Timing] coarse=392us fine=2313us merge=764us sort=5us map=0us TOTAL=3497us
+[Stats] checked=199064 refined=6400
+Processed 200 queries[Timing] coarse=435us fine=2104us merge=711us sort=4us map=1us TOTAL=3280us
+[Stats] checked=159684 refined=6400
+[Timing] coarse=404us fine=2329us merge=635us sort=5us map=1us TOTAL=3398us
+[Stats] checked=172000 refined=6400
+[Timing] coarse=424us fine=2183us merge=681us sort=5us map=0us TOTAL=3317us
+[Stats] checked=204861 refined=6400
+[Timing] coarse=399us fine=2250us merge=593us sort=4us map=0us TOTAL=3271us
+[Stats] checked=194413 refined=6400
+[Timing] coarse=491us fine=2199us merge=647us sort=5us map=0us TOTAL=3373us
+[Stats] checked=186820 refined=6400
+[Timing] coarse=573us fine=2497us merge=1361us sort=56us map=2us TOTAL=4580us
+[Stats] checked=165659 refined=6400
+[Timing] coarse=699us fine=3028us merge=1207us sort=11us map=1us TOTAL=5000us
+[Stats] checked=165734 refined=6400
+[Timing] coarse=907us fine=2877us merge=1012us sort=7us map=1us TOTAL=4850us
+[Stats] checked=208942 refined=6400
+[Timing] coarse=654us fine=2477us merge=703us sort=5us map=0us TOTAL=3889us
+[Stats] checked=185979 refined=6400
+[Timing] coarse=581us fine=2778us merge=1084us sort=7us map=0us TOTAL=4485us
+[Stats] checked=171985 refined=6400
+[Timing] coarse=569us fine=2403us merge=745us sort=5us map=0us TOTAL=3758us
+[Stats] checked=188839 refined=6400
+[Timing] coarse=539us fine=2223us merge=604us sort=4us map=0us TOTAL=3410us
+[Stats] checked=179739 refined=6400
+[Timing] coarse=706us fine=2210us merge=665us sort=5us map=0us TOTAL=3613us
+[Stats] checked=188541 refined=6400
+[Timing] coarse=463us fine=2095us merge=638us sort=5us map=0us TOTAL=3225us
+[Stats] checked=171662 refined=6400
+[Timing] coarse=517us fine=2196us merge=629us sort=4us map=0us TOTAL=3378us
+[Stats] checked=192042 refined=6400
+[Timing] coarse=513us fine=2109us merge=641us sort=5us map=0us TOTAL=3337us
+[Stats] checked=172412 refined=6400
+[Timing] coarse=408us fine=2100us merge=624us sort=4us map=0us TOTAL=3160us
+[Stats] checked=182252 refined=6400
+[Timing] coarse=439us fine=2081us merge=630us sort=5us map=0us TOTAL=3179us
+[Stats] checked=164863 refined=6400
+[Timing] coarse=475us fine=2176us merge=672us sort=5us map=0us TOTAL=3360us
+[Stats] checked=163973 refined=6400
+[Timing] coarse=541us fine=2242us merge=640us sort=4us map=0us TOTAL=3464us
+[Stats] checked=178679 refined=6400
+[Timing] coarse=434us fine=2092us merge=632us sort=5us map=0us TOTAL=3190us
+[Stats] checked=186178 refined=6400
+[Timing] coarse=444us fine=2018us merge=624us sort=5us map=0us TOTAL=3120us
+[Stats] checked=176871 refined=6400
+[Timing] coarse=459us fine=2190us merge=622us sort=5us map=0us TOTAL=3303us
+[Stats] checked=166149 refined=6400
+[Timing] coarse=342us fine=2016us merge=625us sort=4us map=0us TOTAL=3008us
+[Stats] checked=170993 refined=6400
+[Timing] coarse=306us fine=2028us merge=606us sort=5us map=0us TOTAL=2963us
+[Stats] checked=166924 refined=6400
+[Timing] coarse=421us fine=2213us merge=570us sort=5us map=0us TOTAL=3232us
+[Stats] checked=182868 refined=6400
+[Timing] coarse=325us fine=2234us merge=575us sort=5us map=0us TOTAL=3156us
+[Stats] checked=176296 refined=6400
+[Timing] coarse=454us fine=2128us merge=574us sort=5us map=0us TOTAL=3242us
+[Stats] checked=186808 refined=6400
+[Timing] coarse=520us fine=2129us merge=593us sort=4us map=0us TOTAL=3275us
+[Stats] checked=159541 refined=6400
+[Timing] coarse=314us fine=2099us merge=618us sort=5us map=1us TOTAL=3053us
+[Stats] checked=174841 refined=6400
+[Timing] coarse=521us fine=2433us merge=595us sort=28us map=1us TOTAL=3613us
+[Stats] checked=189169 refined=6400
+[Timing] coarse=476us fine=2013us merge=649us sort=5us map=0us TOTAL=3167us
+[Stats] checked=177530 refined=6400
+[Timing] coarse=381us fine=2497us merge=613us sort=5us map=0us TOTAL=3518us
+[Stats] checked=177548 refined=6400
+[Timing] coarse=486us fine=2281us merge=630us sort=4us map=0us TOTAL=3438us
+[Stats] checked=179278 refined=6400
+[Timing] coarse=527us fine=2182us merge=677us sort=4us map=0us TOTAL=3421us
+[Stats] checked=158899 refined=6400
+[Timing] coarse=469us fine=2409us merge=649us sort=5us map=1us TOTAL=3562us
+[Stats] checked=187505 refined=6400
+[Timing] coarse=478us fine=2302us merge=649us sort=5us map=1us TOTAL=3466us
+[Stats] checked=163315 refined=6400
+[Timing] coarse=577us fine=2237us merge=593us sort=5us map=0us TOTAL=3450us
+[Stats] checked=196837 refined=6400
+[Timing] coarse=468us fine=2005us merge=597us sort=5us map=0us TOTAL=3099us
+[Stats] checked=168958 refined=6400
+[Timing] coarse=363us fine=2367us merge=636us sort=5us map=0us TOTAL=3394us
+[Stats] checked=172181 refined=6400
+[Timing] coarse=458us fine=2156us merge=604us sort=5us map=0us TOTAL=3251us
+[Stats] checked=198931 refined=6400
+[Timing] coarse=521us fine=2426us merge=650us sort=5us map=0us TOTAL=3637us
+[Stats] checked=196837 refined=6400
+[Timing] coarse=404us fine=2136us merge=612us sort=5us map=0us TOTAL=3181us
+[Stats] checked=171885 refined=6400
+[Timing] coarse=455us fine=2081us merge=599us sort=5us map=0us TOTAL=3169us
+[Stats] checked=170622 refined=6400
+[Timing] coarse=469us fine=2190us merge=611us sort=5us map=0us TOTAL=3301us
+[Stats] checked=191842 refined=6400
+[Timing] coarse=370us fine=2218us merge=607us sort=5us map=0us TOTAL=3221us
+[Stats] checked=209892 refined=6400
+[Timing] coarse=418us fine=2254us merge=617us sort=5us map=0us TOTAL=3322us
+[Stats] checked=168330 refined=6400
+[Timing] coarse=348us fine=2073us merge=629us sort=5us map=0us TOTAL=3076us
+[Stats] checked=166633 refined=6400
+[Timing] coarse=298us fine=2133us merge=654us sort=5us map=1us TOTAL=3109us
+[Stats] checked=177813 refined=6400
+[Timing] coarse=539us fine=2301us merge=654us sort=5us map=0us TOTAL=3531us
+[Stats] checked=183308 refined=6400
+Processed 250 queries[Timing] coarse=427us fine=2140us merge=642us sort=4us map=0us TOTAL=3235us
+[Stats] checked=187151 refined=6400
+[Timing] coarse=458us fine=2373us merge=623us sort=5us map=0us TOTAL=3484us
+[Stats] checked=178786 refined=6400
+[Timing] coarse=447us fine=2402us merge=688us sort=5us map=1us TOTAL=3572us
+[Stats] checked=181311 refined=6400
+[Timing] coarse=397us fine=2344us merge=646us sort=5us map=0us TOTAL=3415us
+[Stats] checked=176284 refined=6400
+[Timing] coarse=411us fine=2548us merge=672us sort=6us map=0us TOTAL=3659us
+[Stats] checked=166632 refined=6400
+[Timing] coarse=457us fine=2320us merge=587us sort=5us map=0us TOTAL=3394us
+[Stats] checked=188554 refined=6400
+[Timing] coarse=453us fine=2285us merge=723us sort=6us map=0us TOTAL=3494us
+[Stats] checked=165511 refined=6400
+[Timing] coarse=505us fine=2256us merge=750us sort=5us map=0us TOTAL=3543us
+[Stats] checked=189943 refined=6400
+[Timing] coarse=643us fine=2492us merge=674us sort=6us map=0us TOTAL=3840us
+[Stats] checked=191718 refined=6400
+[Timing] coarse=381us fine=2468us merge=658us sort=4us map=0us TOTAL=3537us
+[Stats] checked=196720 refined=6400
+[Timing] coarse=373us fine=2111us merge=664us sort=4us map=0us TOTAL=3175us
+[Stats] checked=166638 refined=6400
+[Timing] coarse=366us fine=2447us merge=620us sort=5us map=1us TOTAL=3458us
+[Stats] checked=172706 refined=6400
+[Timing] coarse=462us fine=2263us merge=628us sort=5us map=0us TOTAL=3437us
+[Stats] checked=159735 refined=6400
+[Timing] coarse=438us fine=2356us merge=661us sort=5us map=0us TOTAL=3483us
+[Stats] checked=182800 refined=6400
+[Timing] coarse=513us fine=2237us merge=638us sort=5us map=0us TOTAL=3419us
+[Stats] checked=181332 refined=6400
+[Timing] coarse=379us fine=2298us merge=668us sort=5us map=0us TOTAL=3369us
+[Stats] checked=182653 refined=6400
+[Timing] coarse=378us fine=2095us merge=607us sort=5us map=0us TOTAL=3107us
+[Stats] checked=155578 refined=6400
+[Timing] coarse=388us fine=2285us merge=634us sort=5us map=0us TOTAL=3336us
+[Stats] checked=185065 refined=6400
+[Timing] coarse=458us fine=2175us merge=602us sort=5us map=0us TOTAL=3268us
+[Stats] checked=181485 refined=6400
+[Timing] coarse=398us fine=2353us merge=740us sort=5us map=0us TOTAL=3517us
+[Stats] checked=183417 refined=6400
+[Timing] coarse=395us fine=2118us merge=691us sort=5us map=0us TOTAL=3232us
+[Stats] checked=166611 refined=6400
+[Timing] coarse=538us fine=2669us merge=622us sort=5us map=0us TOTAL=3867us
+[Stats] checked=181864 refined=6400
+[Timing] coarse=607us fine=2314us merge=614us sort=5us map=1us TOTAL=3581us
+[Stats] checked=172832 refined=6400
+[Timing] coarse=610us fine=2313us merge=610us sort=5us map=1us TOTAL=3578us
+[Stats] checked=171469 refined=6400
+[Timing] coarse=511us fine=2307us merge=726us sort=5us map=0us TOTAL=3579us
+[Stats] checked=175218 refined=6400
+[Timing] coarse=520us fine=2442us merge=629us sort=5us map=0us TOTAL=3636us
+[Stats] checked=200894 refined=6400
+[Timing] coarse=497us fine=2159us merge=748us sort=5us map=0us TOTAL=3437us
+[Stats] checked=185600 refined=6400
+[Timing] coarse=572us fine=2349us merge=616us sort=6us map=0us TOTAL=3583us
+[Stats] checked=162014 refined=6400
+[Timing] coarse=469us fine=2419us merge=666us sort=5us map=0us TOTAL=3589us
+[Stats] checked=208131 refined=6400
+[Timing] coarse=467us fine=2283us merge=821us sort=5us map=1us TOTAL=3607us
+[Stats] checked=167264 refined=6400
+[Timing] coarse=414us fine=2307us merge=639us sort=5us map=0us TOTAL=3389us
+[Stats] checked=153572 refined=6400
+[Timing] coarse=560us fine=2413us merge=637us sort=5us map=0us TOTAL=3680us
+[Stats] checked=172670 refined=6400
+[Timing] coarse=520us fine=2610us merge=693us sort=5us map=0us TOTAL=3862us
+[Stats] checked=172382 refined=6400
+[Timing] coarse=516us fine=2244us merge=660us sort=5us map=1us TOTAL=3458us
+[Stats] checked=169825 refined=6400
+[Timing] coarse=540us fine=2302us merge=679us sort=5us map=0us TOTAL=3553us
+[Stats] checked=191470 refined=6400
+[Timing] coarse=556us fine=2249us merge=646us sort=4us map=0us TOTAL=3492us
+[Stats] checked=202227 refined=6400
+[Timing] coarse=416us fine=2284us merge=623us sort=5us map=0us TOTAL=3352us
+[Stats] checked=160374 refined=6400
+[Timing] coarse=376us fine=2173us merge=688us sort=5us map=0us TOTAL=3261us
+[Stats] checked=157024 refined=6400
+[Timing] coarse=447us fine=2320us merge=581us sort=5us map=0us TOTAL=3380us
+[Stats] checked=185399 refined=6400
+[Timing] coarse=397us fine=2179us merge=615us sort=5us map=0us TOTAL=3218us
+[Stats] checked=165348 refined=6400
+[Timing] coarse=328us fine=2413us merge=672us sort=5us map=0us TOTAL=3435us
+[Stats] checked=178827 refined=6400
+[Timing] coarse=482us fine=2311us merge=571us sort=5us map=0us TOTAL=3398us
+[Stats] checked=198188 refined=6400
+[Timing] coarse=382us fine=2328us merge=613us sort=5us map=0us TOTAL=3347us
+[Stats] checked=185020 refined=6400
+[Timing] coarse=324us fine=2163us merge=658us sort=5us map=0us TOTAL=3168us
+[Stats] checked=177502 refined=6400
+[Timing] coarse=350us fine=2246us merge=701us sort=5us map=0us TOTAL=3323us
+[Stats] checked=167330 refined=6400
+[Timing] coarse=316us fine=2378us merge=616us sort=5us map=0us TOTAL=3337us
+[Stats] checked=172313 refined=6400
+[Timing] coarse=477us fine=2364us merge=628us sort=5us map=0us TOTAL=3504us
+[Stats] checked=171616 refined=6400
+[Timing] coarse=426us fine=2208us merge=687us sort=5us map=0us TOTAL=3349us
+[Stats] checked=173046 refined=6400
+[Timing] coarse=436us fine=2250us merge=611us sort=5us map=0us TOTAL=3330us
+[Stats] checked=161091 refined=6400
+[Timing] coarse=462us fine=2196us merge=597us sort=5us map=0us TOTAL=3287us
+[Stats] checked=160848 refined=6400
+Processed 300 queries[Timing] coarse=377us fine=2338us merge=647us sort=5us map=0us TOTAL=3390us
+[Stats] checked=160584 refined=6400
+[Timing] coarse=436us fine=2374us merge=614us sort=5us map=0us TOTAL=3455us
+[Stats] checked=164943 refined=6400
+[Timing] coarse=387us fine=2141us merge=742us sort=5us map=0us TOTAL=3299us
+[Stats] checked=170807 refined=6400
+[Timing] coarse=450us fine=2215us merge=603us sort=5us map=0us TOTAL=3301us
+[Stats] checked=173677 refined=6400
+[Timing] coarse=371us fine=2367us merge=1021us sort=5us map=0us TOTAL=3788us
+[Stats] checked=159701 refined=6400
+[Timing] coarse=552us fine=2263us merge=614us sort=5us map=0us TOTAL=3475us
+[Stats] checked=164562 refined=6400
+[Timing] coarse=367us fine=2349us merge=625us sort=5us map=0us TOTAL=3368us
+[Stats] checked=161498 refined=6400
+[Timing] coarse=508us fine=2357us merge=625us sort=5us map=0us TOTAL=3527us
+[Stats] checked=181312 refined=6400
+[Timing] coarse=458us fine=2353us merge=665us sort=5us map=0us TOTAL=3509us
+[Stats] checked=171391 refined=6400
+[Timing] coarse=491us fine=2369us merge=660us sort=5us map=0us TOTAL=3553us
+[Stats] checked=158671 refined=6400
+[Timing] coarse=467us fine=2372us merge=675us sort=5us map=0us TOTAL=3544us
+[Stats] checked=171694 refined=6400
+[Timing] coarse=529us fine=2350us merge=622us sort=5us map=0us TOTAL=3542us
+[Stats] checked=180489 refined=6400
+[Timing] coarse=553us fine=2596us merge=632us sort=5us map=0us TOTAL=3824us
+[Stats] checked=162080 refined=6400
+[Timing] coarse=459us fine=2212us merge=637us sort=5us map=1us TOTAL=3341us
+[Stats] checked=159878 refined=6400
+[Timing] coarse=546us fine=2370us merge=707us sort=5us map=0us TOTAL=3665us
+[Stats] checked=187095 refined=6400
+[Timing] coarse=479us fine=2416us merge=649us sort=8us map=0us TOTAL=3580us
+[Stats] checked=182929 refined=6400
+[Timing] coarse=632us fine=2364us merge=690us sort=5us map=0us TOTAL=3729us
+[Stats] checked=161605 refined=6400
+[Timing] coarse=502us fine=2312us merge=663us sort=5us map=0us TOTAL=3515us
+[Stats] checked=178606 refined=6400
+[Timing] coarse=496us fine=2285us merge=675us sort=5us map=1us TOTAL=3492us
+[Stats] checked=156958 refined=6400
+[Timing] coarse=501us fine=2405us merge=589us sort=5us map=0us TOTAL=3532us
+[Stats] checked=172989 refined=6400
+[Timing] coarse=487us fine=2582us merge=632us sort=5us map=0us TOTAL=3738us
+[Stats] checked=175411 refined=6400
+[Timing] coarse=556us fine=2273us merge=655us sort=5us map=0us TOTAL=3516us
+[Stats] checked=166542 refined=6400
+[Timing] coarse=388us fine=2269us merge=657us sort=5us map=0us TOTAL=3345us
+[Stats] checked=176126 refined=6400
+[Timing] coarse=470us fine=2546us merge=606us sort=5us map=0us TOTAL=3659us
+[Stats] checked=201560 refined=6400
+[Timing] coarse=382us fine=2095us merge=577us sort=5us map=0us TOTAL=3079us
+[Stats] checked=185783 refined=6400
+[Timing] coarse=430us fine=2389us merge=605us sort=5us map=0us TOTAL=3451us
+[Stats] checked=189244 refined=6400
+[Timing] coarse=535us fine=2300us merge=610us sort=5us map=0us TOTAL=3482us
+[Stats] checked=181428 refined=6400
+[Timing] coarse=496us fine=2381us merge=966us sort=5us map=0us TOTAL=3877us
+[Stats] checked=189815 refined=6400
+[Timing] coarse=474us fine=2568us merge=604us sort=5us map=0us TOTAL=3677us
+[Stats] checked=179499 refined=6400
+[Timing] coarse=377us fine=2126us merge=642us sort=7us map=0us TOTAL=3174us
+[Stats] checked=184633 refined=6400
+[Timing] coarse=414us fine=2206us merge=633us sort=5us map=0us TOTAL=3281us
+[Stats] checked=181117 refined=6400
+[Timing] coarse=492us fine=2570us merge=671us sort=5us map=0us TOTAL=3767us
+[Stats] checked=182553 refined=6400
+[Timing] coarse=416us fine=2312us merge=646us sort=5us map=0us TOTAL=3405us
+[Stats] checked=183025 refined=6400
+[Timing] coarse=591us fine=2148us merge=629us sort=5us map=0us TOTAL=3406us
+[Stats] checked=172625 refined=6400
+[Timing] coarse=506us fine=2195us merge=615us sort=5us map=0us TOTAL=3354us
+[Stats] checked=164055 refined=6400
+[Timing] coarse=563us fine=2489us merge=764us sort=5us map=0us TOTAL=3859us
+[Stats] checked=163851 refined=6400
+[Timing] coarse=471us fine=2394us merge=691us sort=5us map=0us TOTAL=3591us
+[Stats] checked=169881 refined=6400
+[Timing] coarse=460us fine=2380us merge=727us sort=5us map=1us TOTAL=3599us
+[Stats] checked=163420 refined=6400
+[Timing] coarse=524us fine=2502us merge=726us sort=5us map=0us TOTAL=3785us
+[Stats] checked=164755 refined=6400
+[Timing] coarse=540us fine=2608us merge=618us sort=5us map=0us TOTAL=3812us
+[Stats] checked=190347 refined=6400
+[Timing] coarse=484us fine=2306us merge=601us sort=5us map=0us TOTAL=3428us
+[Stats] checked=182637 refined=6400
+[Timing] coarse=496us fine=2225us merge=615us sort=5us map=0us TOTAL=3374us
+[Stats] checked=174972 refined=6400
+[Timing] coarse=555us fine=2246us merge=621us sort=5us map=0us TOTAL=3464us
+[Stats] checked=183941 refined=6400
+[Timing] coarse=435us fine=2259us merge=581us sort=5us map=1us TOTAL=3307us
+[Stats] checked=190143 refined=6400
+[Timing] coarse=461us fine=2279us merge=627us sort=5us map=0us TOTAL=3400us
+[Stats] checked=174075 refined=6400
+[Timing] coarse=495us fine=2472us merge=612us sort=5us map=0us TOTAL=3630us
+[Stats] checked=167555 refined=6400
+[Timing] coarse=458us fine=2245us merge=654us sort=5us map=0us TOTAL=3391us
+[Stats] checked=187586 refined=6400
+[Timing] coarse=579us fine=2418us merge=639us sort=5us map=0us TOTAL=3677us
+[Stats] checked=179394 refined=6400
+[Timing] coarse=581us fine=2278us merge=610us sort=5us map=0us TOTAL=3504us
+[Stats] checked=214451 refined=6400
+[Timing] coarse=495us fine=2257us merge=576us sort=5us map=0us TOTAL=3363us
+[Stats] checked=186079 refined=6400
+Processed 350 queries[Timing] coarse=577us fine=2167us merge=631us sort=5us map=0us TOTAL=3414us
+[Stats] checked=182480 refined=6400
+[Timing] coarse=500us fine=2259us merge=658us sort=5us map=0us TOTAL=3450us
+[Stats] checked=169333 refined=6400
+[Timing] coarse=489us fine=2083us merge=587us sort=5us map=0us TOTAL=3192us
+[Stats] checked=178984 refined=6400
+[Timing] coarse=448us fine=2081us merge=745us sort=5us map=0us TOTAL=3304us
+[Stats] checked=187680 refined=6400
+[Timing] coarse=474us fine=2369us merge=539us sort=5us map=0us TOTAL=3413us
+[Stats] checked=190330 refined=6400
+[Timing] coarse=475us fine=2220us merge=593us sort=5us map=0us TOTAL=3318us
+[Stats] checked=169134 refined=6400
+[Timing] coarse=483us fine=2356us merge=568us sort=5us map=0us TOTAL=3443us
+[Stats] checked=200637 refined=6400
+[Timing] coarse=846us fine=2267us merge=614us sort=5us map=0us TOTAL=3758us
+[Stats] checked=170771 refined=6400
+[Timing] coarse=481us fine=2179us merge=592us sort=5us map=0us TOTAL=3283us
+[Stats] checked=188921 refined=6400
+[Timing] coarse=394us fine=2356us merge=623us sort=5us map=0us TOTAL=3404us
+[Stats] checked=177952 refined=6400
+[Timing] coarse=496us fine=2231us merge=631us sort=5us map=0us TOTAL=3405us
+[Stats] checked=181825 refined=6400
+[Timing] coarse=522us fine=2406us merge=660us sort=5us map=0us TOTAL=3624us
+[Stats] checked=165207 refined=6400
+[Timing] coarse=500us fine=2302us merge=594us sort=5us map=0us TOTAL=3432us
+[Stats] checked=189485 refined=6400
+[Timing] coarse=465us fine=2330us merge=639us sort=5us map=0us TOTAL=3465us
+[Stats] checked=172824 refined=6400
+[Timing] coarse=525us fine=2625us merge=603us sort=5us map=0us TOTAL=3792us
+[Stats] checked=199239 refined=6400
+[Timing] coarse=461us fine=2456us merge=643us sort=5us map=0us TOTAL=3595us
+[Stats] checked=182301 refined=6400
+[Timing] coarse=523us fine=2176us merge=651us sort=5us map=0us TOTAL=3381us
+[Stats] checked=171403 refined=6400
+[Timing] coarse=434us fine=2236us merge=668us sort=5us map=0us TOTAL=3368us
+[Stats] checked=169076 refined=6400
+[Timing] coarse=383us fine=2673us merge=626us sort=5us map=0us TOTAL=3712us
+[Stats] checked=173655 refined=6400
+[Timing] coarse=414us fine=2148us merge=581us sort=5us map=0us TOTAL=3173us
+[Stats] checked=185221 refined=6400
+[Timing] coarse=365us fine=2193us merge=612us sort=5us map=0us TOTAL=3199us
+[Stats] checked=187780 refined=6400
+[Timing] coarse=380us fine=2371us merge=653us sort=5us map=1us TOTAL=3446us
+[Stats] checked=175200 refined=6400
+[Timing] coarse=514us fine=2532us merge=701us sort=5us map=0us TOTAL=3785us
+[Stats] checked=180344 refined=6400
+[Timing] coarse=484us fine=2293us merge=649us sort=5us map=1us TOTAL=3461us
+[Stats] checked=178075 refined=6400
+[Timing] coarse=428us fine=2257us merge=587us sort=5us map=0us TOTAL=3304us
+[Stats] checked=190053 refined=6400
+[Timing] coarse=415us fine=2596us merge=695us sort=5us map=0us TOTAL=3735us
+[Stats] checked=181167 refined=6400
+[Timing] coarse=395us fine=2389us merge=612us sort=5us map=0us TOTAL=3498us
+[Stats] checked=158608 refined=6400
+[Timing] coarse=373us fine=2253us merge=594us sort=5us map=0us TOTAL=3247us
+[Stats] checked=190443 refined=6400
+[Timing] coarse=380us fine=2066us merge=922us sort=6us map=2us TOTAL=3398us
+[Stats] checked=177285 refined=6400
+[Timing] coarse=413us fine=2231us merge=674us sort=5us map=0us TOTAL=3346us
+[Stats] checked=177432 refined=6400
+[Timing] coarse=382us fine=2296us merge=576us sort=5us map=0us TOTAL=3282us
+[Stats] checked=188013 refined=6400
+[Timing] coarse=399us fine=2151us merge=958us sort=5us map=0us TOTAL=3539us
+[Stats] checked=188807 refined=6400
+[Timing] coarse=387us fine=2197us merge=618us sort=5us map=0us TOTAL=3229us
+[Stats] checked=174000 refined=6400
+[Timing] coarse=464us fine=2392us merge=613us sort=5us map=0us TOTAL=3499us
+[Stats] checked=183677 refined=6400
+[Timing] coarse=412us fine=2388us merge=590us sort=5us map=0us TOTAL=3418us
+[Stats] checked=184549 refined=6400
+[Timing] coarse=490us fine=2273us merge=620us sort=5us map=0us TOTAL=3415us
+[Stats] checked=163809 refined=6400
+[Timing] coarse=354us fine=2216us merge=614us sort=5us map=0us TOTAL=3210us
+[Stats] checked=194017 refined=6400
+[Timing] coarse=377us fine=2204us merge=612us sort=5us map=0us TOTAL=3220us
+[Stats] checked=177650 refined=6400
+[Timing] coarse=464us fine=2466us merge=634us sort=5us map=0us TOTAL=3595us
+[Stats] checked=179889 refined=6400
+[Timing] coarse=561us fine=2292us merge=629us sort=5us map=0us TOTAL=3523us
+[Stats] checked=179401 refined=6400
+[Timing] coarse=504us fine=2267us merge=629us sort=5us map=0us TOTAL=3432us
+[Stats] checked=173769 refined=6400
+[Timing] coarse=404us fine=2185us merge=597us sort=7us map=0us TOTAL=3218us
+[Stats] checked=157592 refined=6400
+[Timing] coarse=349us fine=2403us merge=610us sort=5us map=0us TOTAL=3396us
+[Stats] checked=176350 refined=6400
+[Timing] coarse=483us fine=2432us merge=756us sort=5us map=0us TOTAL=3706us
+[Stats] checked=164543 refined=6400
+[Timing] coarse=436us fine=2282us merge=630us sort=5us map=0us TOTAL=3382us
+[Stats] checked=186016 refined=6400
+[Timing] coarse=434us fine=2265us merge=599us sort=5us map=0us TOTAL=3330us
+[Stats] checked=210129 refined=6400
+[Timing] coarse=558us fine=2774us merge=683us sort=5us map=0us TOTAL=4058us
+[Stats] checked=166937 refined=6400
+[Timing] coarse=536us fine=2375us merge=682us sort=5us map=0us TOTAL=3630us
+[Stats] checked=165477 refined=6400
+[Timing] coarse=601us fine=2547us merge=667us sort=5us map=0us TOTAL=3868us
+[Stats] checked=173510 refined=6400
+[Timing] coarse=570us fine=2404us merge=658us sort=5us map=0us TOTAL=3689us
+[Stats] checked=196605 refined=6400
+Processed 400 queries[Timing] coarse=454us fine=2380us merge=659us sort=4us map=0us TOTAL=3525us
+[Stats] checked=194380 refined=6400
+[Timing] coarse=493us fine=2216us merge=622us sort=5us map=0us TOTAL=3368us
+[Stats] checked=187082 refined=6400
+[Timing] coarse=467us fine=2515us merge=856us sort=5us map=1us TOTAL=3869us
+[Stats] checked=169714 refined=6400
+[Timing] coarse=521us fine=2396us merge=627us sort=5us map=1us TOTAL=3582us
+[Stats] checked=165344 refined=6400
+[Timing] coarse=556us fine=2303us merge=613us sort=5us map=0us TOTAL=3510us
+[Stats] checked=171232 refined=6400
+[Timing] coarse=444us fine=2295us merge=637us sort=5us map=1us TOTAL=3447us
+[Stats] checked=175655 refined=6400
+[Timing] coarse=455us fine=2323us merge=633us sort=5us map=0us TOTAL=3445us
+[Stats] checked=159779 refined=6400
+[Timing] coarse=524us fine=2221us merge=616us sort=5us map=0us TOTAL=3400us
+[Stats] checked=169602 refined=6400
+[Timing] coarse=482us fine=2333us merge=781us sort=5us map=1us TOTAL=3632us
+[Stats] checked=184392 refined=6400
+[Timing] coarse=478us fine=2212us merge=620us sort=5us map=1us TOTAL=3342us
+[Stats] checked=185964 refined=6400
+[Timing] coarse=503us fine=2233us merge=644us sort=5us map=0us TOTAL=3417us
+[Stats] checked=168136 refined=6400
+[Timing] coarse=395us fine=2330us merge=651us sort=5us map=0us TOTAL=3406us
+[Stats] checked=183749 refined=6400
+[Timing] coarse=471us fine=2235us merge=688us sort=5us map=0us TOTAL=3427us
+[Stats] checked=178619 refined=6400
+[Timing] coarse=553us fine=2271us merge=654us sort=5us map=0us TOTAL=3524us
+[Stats] checked=194716 refined=6400
+[Timing] coarse=474us fine=2488us merge=648us sort=5us map=0us TOTAL=3644us
+[Stats] checked=186935 refined=6400
+[Timing] coarse=570us fine=2247us merge=637us sort=5us map=0us TOTAL=3489us
+[Stats] checked=188441 refined=6400
+[Timing] coarse=497us fine=2533us merge=651us sort=5us map=0us TOTAL=3721us
+[Stats] checked=166732 refined=6400
+[Timing] coarse=547us fine=2228us merge=688us sort=5us map=0us TOTAL=3502us
+[Stats] checked=168279 refined=6400
+[Timing] coarse=592us fine=2577us merge=733us sort=5us map=1us TOTAL=3939us
+[Stats] checked=165437 refined=6400
+[Timing] coarse=559us fine=2332us merge=625us sort=5us map=0us TOTAL=3557us
+[Stats] checked=178037 refined=6400
+[Timing] coarse=407us fine=2263us merge=650us sort=5us map=0us TOTAL=3351us
+[Stats] checked=168455 refined=6400
+[Timing] coarse=471us fine=2064us merge=646us sort=5us map=0us TOTAL=3217us
+[Stats] checked=172704 refined=6400
+[Timing] coarse=423us fine=2186us merge=757us sort=5us map=0us TOTAL=3397us
+[Stats] checked=175157 refined=6400
+[Timing] coarse=512us fine=2337us merge=607us sort=5us map=0us TOTAL=3496us
+[Stats] checked=170253 refined=6400
+[Timing] coarse=426us fine=2298us merge=637us sort=5us map=0us TOTAL=3394us
+[Stats] checked=190357 refined=6400
+[Timing] coarse=491us fine=2322us merge=795us sort=5us map=1us TOTAL=3642us
+[Stats] checked=179298 refined=6400
+[Timing] coarse=592us fine=2586us merge=702us sort=6us map=1us TOTAL=3914us
+[Stats] checked=164620 refined=6400
+[Timing] coarse=392us fine=2181us merge=622us sort=5us map=1us TOTAL=3226us
+[Stats] checked=167854 refined=6400
+[Timing] coarse=417us fine=2206us merge=655us sort=5us map=1us TOTAL=3311us
+[Stats] checked=174383 refined=6400
+[Timing] coarse=531us fine=2245us merge=630us sort=5us map=0us TOTAL=3441us
+[Stats] checked=165263 refined=6400
+[Timing] coarse=459us fine=2216us merge=620us sort=5us map=0us TOTAL=3337us
+[Stats] checked=163314 refined=6400
+[Timing] coarse=409us fine=2194us merge=600us sort=5us map=0us TOTAL=3235us
+[Stats] checked=191300 refined=6400
+[Timing] coarse=505us fine=2254us merge=606us sort=5us map=0us TOTAL=3400us
+[Stats] checked=194005 refined=6400
+[Timing] coarse=481us fine=2309us merge=629us sort=5us map=0us TOTAL=3450us
+[Stats] checked=183956 refined=6400
+[Timing] coarse=384us fine=2188us merge=584us sort=5us map=0us TOTAL=3184us
+[Stats] checked=170638 refined=6400
+[Timing] coarse=352us fine=2368us merge=653us sort=5us map=0us TOTAL=3401us
+[Stats] checked=187288 refined=6400
+[Timing] coarse=496us fine=2230us merge=611us sort=5us map=0us TOTAL=3374us
+[Stats] checked=189825 refined=6400
+[Timing] coarse=477us fine=2107us merge=583us sort=5us map=0us TOTAL=3195us
+[Stats] checked=182619 refined=6400
+[Timing] coarse=477us fine=2159us merge=640us sort=5us map=0us TOTAL=3312us
+[Stats] checked=186066 refined=6400
+[Timing] coarse=530us fine=2367us merge=585us sort=5us map=0us TOTAL=3519us
+[Stats] checked=194109 refined=6400
+[Timing] coarse=511us fine=2299us merge=623us sort=5us map=0us TOTAL=3473us
+[Stats] checked=174301 refined=6400
+[Timing] coarse=499us fine=2217us merge=649us sort=6us map=0us TOTAL=3401us
+[Stats] checked=156122 refined=6400
+[Timing] coarse=483us fine=2264us merge=631us sort=6us map=0us TOTAL=3416us
+[Stats] checked=161028 refined=6400
+[Timing] coarse=501us fine=2244us merge=596us sort=5us map=0us TOTAL=3383us
+[Stats] checked=191882 refined=6400
+[Timing] coarse=518us fine=2200us merge=646us sort=5us map=0us TOTAL=3400us
+[Stats] checked=178978 refined=6400
+[Timing] coarse=508us fine=2148us merge=617us sort=5us map=0us TOTAL=3305us
+[Stats] checked=175797 refined=6400
+[Timing] coarse=560us fine=2249us merge=656us sort=5us map=1us TOTAL=3506us
+[Stats] checked=167849 refined=6400
+[Timing] coarse=465us fine=2386us merge=618us sort=5us map=0us TOTAL=3501us
+[Stats] checked=186116 refined=6400
+[Timing] coarse=394us fine=2160us merge=569us sort=5us map=0us TOTAL=3150us
+[Stats] checked=194023 refined=6400
+[Timing] coarse=513us fine=2298us merge=631us sort=5us map=0us TOTAL=3478us
+[Stats] checked=155558 refined=6400
+Processed 450 queries[Timing] coarse=458us fine=2542us merge=693us sort=5us map=0us TOTAL=3726us
+[Stats] checked=165726 refined=6400
+[Timing] coarse=379us fine=2321us merge=579us sort=5us map=0us TOTAL=3307us
+[Stats] checked=201464 refined=6400
+[Timing] coarse=482us fine=2320us merge=643us sort=5us map=0us TOTAL=3479us
+[Stats] checked=166830 refined=6400
+[Timing] coarse=436us fine=2348us merge=654us sort=5us map=0us TOTAL=3468us
+[Stats] checked=159962 refined=6400
+[Timing] coarse=511us fine=2437us merge=785us sort=5us map=0us TOTAL=3774us
+[Stats] checked=189341 refined=6400
+[Timing] coarse=550us fine=2324us merge=666us sort=5us map=0us TOTAL=3587us
+[Stats] checked=165346 refined=6400
+[Timing] coarse=470us fine=2482us merge=731us sort=6us map=0us TOTAL=3719us
+[Stats] checked=186883 refined=6400
+[Timing] coarse=555us fine=2500us merge=651us sort=5us map=1us TOTAL=3770us
+[Stats] checked=190743 refined=6400
+[Timing] coarse=445us fine=2549us merge=566us sort=5us map=1us TOTAL=3592us
+[Stats] checked=202991 refined=6400
+[Timing] coarse=552us fine=2684us merge=666us sort=5us map=0us TOTAL=3968us
+[Stats] checked=186471 refined=6400
+[Timing] coarse=557us fine=2425us merge=603us sort=5us map=0us TOTAL=3627us
+[Stats] checked=199228 refined=6400
+[Timing] coarse=493us fine=2262us merge=608us sort=5us map=0us TOTAL=3401us
+[Stats] checked=177731 refined=6400
+[Timing] coarse=528us fine=2271us merge=703us sort=5us map=0us TOTAL=3538us
+[Stats] checked=176815 refined=6400
+[Timing] coarse=665us fine=2230us merge=635us sort=5us map=0us TOTAL=3566us
+[Stats] checked=181298 refined=6400
+[Timing] coarse=612us fine=2181us merge=621us sort=5us map=0us TOTAL=3455us
+[Stats] checked=193890 refined=6400
+[Timing] coarse=420us fine=2169us merge=615us sort=5us map=0us TOTAL=3233us
+[Stats] checked=185563 refined=6400
+[Timing] coarse=367us fine=2524us merge=598us sort=5us map=0us TOTAL=3518us
+[Stats] checked=193654 refined=6400
+[Timing] coarse=528us fine=2267us merge=617us sort=4us map=0us TOTAL=3452us
+[Stats] checked=196684 refined=6400
+[Timing] coarse=416us fine=2203us merge=563us sort=5us map=0us TOTAL=3209us
+[Stats] checked=180584 refined=6400
+[Timing] coarse=498us fine=2130us merge=603us sort=5us map=0us TOTAL=3261us
+[Stats] checked=162752 refined=6400
+[Timing] coarse=367us fine=2474us merge=654us sort=6us map=0us TOTAL=3524us
+[Stats] checked=176489 refined=6400
+[Timing] coarse=415us fine=2391us merge=645us sort=5us map=0us TOTAL=3479us
+[Stats] checked=170964 refined=6400
+[Timing] coarse=437us fine=2366us merge=701us sort=5us map=0us TOTAL=3535us
+[Stats] checked=190398 refined=6400
+[Timing] coarse=461us fine=2170us merge=622us sort=5us map=0us TOTAL=3297us
+[Stats] checked=172836 refined=6400
+[Timing] coarse=484us fine=2591us merge=769us sort=6us map=0us TOTAL=3874us
+[Stats] checked=182912 refined=6400
+[Timing] coarse=439us fine=2243us merge=601us sort=5us map=0us TOTAL=3311us
+[Stats] checked=168376 refined=6400
+[Timing] coarse=483us fine=2310us merge=647us sort=5us map=1us TOTAL=3475us
+[Stats] checked=197054 refined=6400
+[Timing] coarse=507us fine=2072us merge=650us sort=5us map=1us TOTAL=3260us
+[Stats] checked=155973 refined=6400
+[Timing] coarse=392us fine=2244us merge=659us sort=5us map=0us TOTAL=3325us
+[Stats] checked=181481 refined=6400
+[Timing] coarse=510us fine=2263us merge=616us sort=5us map=0us TOTAL=3470us
+[Stats] checked=160376 refined=6400
+[Timing] coarse=411us fine=2097us merge=666us sort=5us map=0us TOTAL=3207us
+[Stats] checked=176490 refined=6400
+[Timing] coarse=360us fine=2257us merge=660us sort=5us map=0us TOTAL=3306us
+[Stats] checked=191622 refined=6400
+[Timing] coarse=394us fine=2378us merge=630us sort=5us map=0us TOTAL=3432us
+[Stats] checked=184746 refined=6400
+[Timing] coarse=451us fine=2613us merge=659us sort=5us map=0us TOTAL=3757us
+[Stats] checked=164760 refined=6400
+[Timing] coarse=404us fine=2283us merge=617us sort=5us map=0us TOTAL=3334us
+[Stats] checked=182912 refined=6400
+[Timing] coarse=452us fine=2186us merge=746us sort=5us map=0us TOTAL=3416us
+[Stats] checked=187952 refined=6400
+[Timing] coarse=529us fine=2435us merge=617us sort=5us map=0us TOTAL=3617us
+[Stats] checked=177168 refined=6400
+[Timing] coarse=585us fine=2212us merge=673us sort=5us map=0us TOTAL=3511us
+[Stats] checked=156830 refined=6400
+[Timing] coarse=433us fine=2227us merge=584us sort=5us map=0us TOTAL=3275us
+[Stats] checked=181771 refined=6400
+[Timing] coarse=459us fine=2268us merge=615us sort=5us map=1us TOTAL=3373us
+[Stats] checked=184388 refined=6400
+[Timing] coarse=474us fine=2365us merge=689us sort=5us map=0us TOTAL=3561us
+[Stats] checked=176472 refined=6400
+[Timing] coarse=509us fine=2411us merge=775us sort=8us map=1us TOTAL=3736us
+[Stats] checked=171102 refined=6400
+[Timing] coarse=498us fine=2469us merge=686us sort=5us map=0us TOTAL=3690us
+[Stats] checked=206970 refined=6400
+[Timing] coarse=592us fine=2244us merge=665us sort=5us map=0us TOTAL=3542us
+[Stats] checked=157752 refined=6400
+[Timing] coarse=453us fine=2151us merge=681us sort=5us map=0us TOTAL=3317us
+[Stats] checked=182638 refined=6400
+[Timing] coarse=445us fine=2407us merge=606us sort=5us map=0us TOTAL=3491us
+[Stats] checked=165720 refined=6400
+[Timing] coarse=443us fine=2060us merge=651us sort=5us map=1us TOTAL=3185us
+[Stats] checked=165710 refined=6400
+[Timing] coarse=527us fine=2442us merge=606us sort=5us map=0us TOTAL=3609us
+[Stats] checked=181901 refined=6400
+[Timing] coarse=446us fine=2221us merge=772us sort=4us map=0us TOTAL=3469us
+[Stats] checked=196819 refined=6400
+[Timing] coarse=591us fine=2465us merge=710us sort=5us map=0us TOTAL=3813us
+[Stats] checked=191061 refined=6400
+Processed 500 queries[Timing] coarse=501us fine=2298us merge=657us sort=5us map=0us TOTAL=3492us
+[Stats] checked=204738 refined=6400
+[Timing] coarse=513us fine=2173us merge=581us sort=5us map=0us TOTAL=3305us
+[Stats] checked=185351 refined=6400
+[Timing] coarse=470us fine=2316us merge=616us sort=6us map=0us TOTAL=3436us
+[Stats] checked=177472 refined=6400
+[Timing] coarse=500us fine=2254us merge=718us sort=6us map=0us TOTAL=3507us
+[Stats] checked=168400 refined=6400
+[Timing] coarse=456us fine=2194us merge=621us sort=5us map=0us TOTAL=3303us
+[Stats] checked=166106 refined=6400
+[Timing] coarse=475us fine=2288us merge=629us sort=7us map=1us TOTAL=3427us
+[Stats] checked=188701 refined=6400
+[Timing] coarse=523us fine=2292us merge=641us sort=5us map=0us TOTAL=3494us
+[Stats] checked=183920 refined=6400
+[Timing] coarse=497us fine=2222us merge=624us sort=5us map=0us TOTAL=3377us
+[Stats] checked=194432 refined=6400
+[Timing] coarse=501us fine=2366us merge=625us sort=5us map=0us TOTAL=3540us
+[Stats] checked=163437 refined=6400
+[Timing] coarse=389us fine=2301us merge=628us sort=5us map=0us TOTAL=3344us
+[Stats] checked=181569 refined=6400
+[Timing] coarse=484us fine=2989us merge=659us sort=5us map=0us TOTAL=4165us
+[Stats] checked=182582 refined=6400
+[Timing] coarse=471us fine=2287us merge=659us sort=5us map=0us TOTAL=3449us
+[Stats] checked=162150 refined=6400
+[Timing] coarse=463us fine=2504us merge=694us sort=4us map=1us TOTAL=3694us
+[Stats] checked=173479 refined=6400
+[Timing] coarse=427us fine=2244us merge=778us sort=4us map=0us TOTAL=3482us
+[Stats] checked=178500 refined=6400
+[Timing] coarse=584us fine=2249us merge=666us sort=5us map=0us TOTAL=3543us
+[Stats] checked=202814 refined=6400
+[Timing] coarse=552us fine=2219us merge=679us sort=5us map=1us TOTAL=3491us
+[Stats] checked=166113 refined=6400
+[Timing] coarse=505us fine=2390us merge=643us sort=5us map=1us TOTAL=3572us
+[Stats] checked=189825 refined=6400
+[Timing] coarse=583us fine=2395us merge=734us sort=5us map=1us TOTAL=3755us
+[Stats] checked=165059 refined=6400
+[Timing] coarse=529us fine=2212us merge=630us sort=5us map=0us TOTAL=3407us
+[Stats] checked=195748 refined=6400
+[Timing] coarse=447us fine=2491us merge=636us sort=5us map=0us TOTAL=3610us
+[Stats] checked=170602 refined=6400
+[Timing] coarse=501us fine=2332us merge=634us sort=5us map=0us TOTAL=3502us
+[Stats] checked=153214 refined=6400
+[Timing] coarse=448us fine=2557us merge=739us sort=5us map=0us TOTAL=3778us
+[Stats] checked=200802 refined=6400
+[Timing] coarse=483us fine=2186us merge=716us sort=5us map=0us TOTAL=3416us
+[Stats] checked=151289 refined=6400
+[Timing] coarse=459us fine=2236us merge=587us sort=6us map=0us TOTAL=3325us
+[Stats] checked=166250 refined=6400
+[Timing] coarse=482us fine=2124us merge=620us sort=5us map=0us TOTAL=3300us
+[Stats] checked=167309 refined=6400
+[Timing] coarse=430us fine=2083us merge=683us sort=5us map=0us TOTAL=3226us
+[Stats] checked=158155 refined=6400
+[Timing] coarse=381us fine=2280us merge=568us sort=5us map=0us TOTAL=3260us
+[Stats] checked=172169 refined=6400
+[Timing] coarse=436us fine=2054us merge=657us sort=5us map=0us TOTAL=3181us
+[Stats] checked=173570 refined=6400
+[Timing] coarse=414us fine=2197us merge=659us sort=4us map=0us TOTAL=3301us
+[Stats] checked=171409 refined=6400
+[Timing] coarse=488us fine=2154us merge=656us sort=5us map=0us TOTAL=3333us
+[Stats] checked=167353 refined=6400
+[Timing] coarse=401us fine=2356us merge=629us sort=5us map=0us TOTAL=3416us
+[Stats] checked=180001 refined=6400
+[Timing] coarse=469us fine=2168us merge=733us sort=5us map=0us TOTAL=3402us
+[Stats] checked=197151 refined=6400
+[Timing] coarse=404us fine=2228us merge=671us sort=5us map=0us TOTAL=3330us
+[Stats] checked=168198 refined=6400
+[Timing] coarse=407us fine=2731us merge=575us sort=5us map=0us TOTAL=3741us
+[Stats] checked=191095 refined=6400
+[Timing] coarse=548us fine=2223us merge=591us sort=5us map=0us TOTAL=3416us
+[Stats] checked=206270 refined=6400
+[Timing] coarse=411us fine=2098us merge=658us sort=5us map=0us TOTAL=3195us
+[Stats] checked=165221 refined=6400
+[Timing] coarse=554us fine=2166us merge=639us sort=5us map=0us TOTAL=3394us
+[Stats] checked=168734 refined=6400
+[Timing] coarse=384us fine=2500us merge=683us sort=5us map=0us TOTAL=3594us
+[Stats] checked=191773 refined=6400
+[Timing] coarse=484us fine=2299us merge=644us sort=5us map=0us TOTAL=3455us
+[Stats] checked=148600 refined=6400
+[Timing] coarse=430us fine=2344us merge=656us sort=5us map=0us TOTAL=3456us
+[Stats] checked=189797 refined=6400
+[Timing] coarse=377us fine=2168us merge=651us sort=5us map=0us TOTAL=3221us
+[Stats] checked=179644 refined=6400
+[Timing] coarse=401us fine=2438us merge=658us sort=5us map=0us TOTAL=3523us
+[Stats] checked=182725 refined=6400
+[Timing] coarse=455us fine=2143us merge=624us sort=5us map=0us TOTAL=3256us
+[Stats] checked=173980 refined=6400
+[Timing] coarse=418us fine=2337us merge=650us sort=5us map=0us TOTAL=3434us
+[Stats] checked=184645 refined=6400
+[Timing] coarse=399us fine=2331us merge=653us sort=5us map=0us TOTAL=3412us
+[Stats] checked=168910 refined=6400
+[Timing] coarse=433us fine=2778us merge=972us sort=5us map=0us TOTAL=4215us
+[Stats] checked=170564 refined=6400
+[Timing] coarse=612us fine=2395us merge=690us sort=5us map=0us TOTAL=3743us
+[Stats] checked=194254 refined=6400
+[Timing] coarse=534us fine=2364us merge=666us sort=5us map=0us TOTAL=3607us
+[Stats] checked=205377 refined=6400
+[Timing] coarse=464us fine=2277us merge=684us sort=5us map=1us TOTAL=3458us
+[Stats] checked=178056 refined=6400
+[Timing] coarse=486us fine=2604us merge=717us sort=6us map=0us TOTAL=3839us
+[Stats] checked=170976 refined=6400
+Processed 550 queries[Timing] coarse=456us fine=2249us merge=617us sort=5us map=0us TOTAL=3355us
+[Stats] checked=199586 refined=6400
+[Timing] coarse=522us fine=2225us merge=613us sort=5us map=0us TOTAL=3400us
+[Stats] checked=171574 refined=6400
+[Timing] coarse=446us fine=2174us merge=617us sort=5us map=0us TOTAL=3268us
+[Stats] checked=167687 refined=6400
+[Timing] coarse=472us fine=2449us merge=633us sort=5us map=0us TOTAL=3590us
+[Stats] checked=166860 refined=6400
+[Timing] coarse=399us fine=2238us merge=606us sort=5us map=0us TOTAL=3272us
+[Stats] checked=186506 refined=6400
+[Timing] coarse=363us fine=2284us merge=568us sort=5us map=0us TOTAL=3242us
+[Stats] checked=210339 refined=6400
+[Timing] coarse=358us fine=2157us merge=658us sort=5us map=0us TOTAL=3201us
+[Stats] checked=169801 refined=6400
+[Timing] coarse=502us fine=2285us merge=680us sort=5us map=0us TOTAL=3505us
+[Stats] checked=160404 refined=6400
+[Timing] coarse=492us fine=2228us merge=716us sort=5us map=0us TOTAL=3471us
+[Stats] checked=167269 refined=6400
+[Timing] coarse=447us fine=2551us merge=642us sort=5us map=0us TOTAL=3673us
+[Stats] checked=159911 refined=6400
+[Timing] coarse=374us fine=2213us merge=624us sort=5us map=0us TOTAL=3236us
+[Stats] checked=168334 refined=6400
+[Timing] coarse=515us fine=2373us merge=601us sort=6us map=0us TOTAL=3524us
+[Stats] checked=168503 refined=6400
+[Timing] coarse=405us fine=2338us merge=589us sort=5us map=0us TOTAL=3356us
+[Stats] checked=179434 refined=6400
+[Timing] coarse=463us fine=2354us merge=601us sort=5us map=0us TOTAL=3450us
+[Stats] checked=198568 refined=6400
+[Timing] coarse=326us fine=2211us merge=623us sort=5us map=0us TOTAL=3187us
+[Stats] checked=174156 refined=6400
+[Timing] coarse=333us fine=2569us merge=733us sort=5us map=0us TOTAL=3661us
+[Stats] checked=184759 refined=6400
+[Timing] coarse=392us fine=2206us merge=655us sort=5us map=0us TOTAL=3280us
+[Stats] checked=177107 refined=6400
+[Timing] coarse=348us fine=2311us merge=617us sort=5us map=0us TOTAL=3303us
+[Stats] checked=214792 refined=6400
+[Timing] coarse=331us fine=2430us merge=672us sort=5us map=0us TOTAL=3457us
+[Stats] checked=160841 refined=6400
+[Timing] coarse=404us fine=2270us merge=806us sort=5us map=0us TOTAL=3508us
+[Stats] checked=178002 refined=6400
+[Timing] coarse=677us fine=2330us merge=663us sort=5us map=0us TOTAL=3701us
+[Stats] checked=178516 refined=6400
+[Timing] coarse=454us fine=2386us merge=722us sort=5us map=0us TOTAL=3590us
+[Stats] checked=191109 refined=6400
+[Timing] coarse=610us fine=2396us merge=604us sort=5us map=0us TOTAL=3655us
+[Stats] checked=185336 refined=6400
+[Timing] coarse=525us fine=2509us merge=724us sort=6us map=1us TOTAL=3799us
+[Stats] checked=172108 refined=6400
+[Timing] coarse=390us fine=2219us merge=677us sort=5us map=0us TOTAL=3317us
+[Stats] checked=174006 refined=6400
+[Timing] coarse=483us fine=2275us merge=636us sort=5us map=0us TOTAL=3425us
+[Stats] checked=173145 refined=6400
+[Timing] coarse=379us fine=2179us merge=609us sort=5us map=0us TOTAL=3198us
+[Stats] checked=194168 refined=6400
+[Timing] coarse=373us fine=2517us merge=653us sort=5us map=0us TOTAL=3572us
+[Stats] checked=191614 refined=6400
+[Timing] coarse=420us fine=2179us merge=614us sort=5us map=0us TOTAL=3244us
+[Stats] checked=192709 refined=6400
+[Timing] coarse=436us fine=2244us merge=684us sort=5us map=0us TOTAL=3395us
+[Stats] checked=172306 refined=6400
+[Timing] coarse=372us fine=2430us merge=623us sort=5us map=0us TOTAL=3451us
+[Stats] checked=181627 refined=6400
+[Timing] coarse=458us fine=2340us merge=604us sort=5us map=0us TOTAL=3427us
+[Stats] checked=177834 refined=6400
+[Timing] coarse=417us fine=2237us merge=600us sort=5us map=0us TOTAL=3281us
+[Stats] checked=160263 refined=6400
+[Timing] coarse=356us fine=2278us merge=601us sort=5us map=0us TOTAL=3260us
+[Stats] checked=165257 refined=6400
+[Timing] coarse=377us fine=2067us merge=586us sort=5us map=0us TOTAL=3055us
+[Stats] checked=182421 refined=6400
+[Timing] coarse=360us fine=2220us merge=698us sort=5us map=0us TOTAL=3307us
+[Stats] checked=192039 refined=6400
+[Timing] coarse=409us fine=2373us merge=636us sort=5us map=0us TOTAL=3446us
+[Stats] checked=190734 refined=6400
+[Timing] coarse=376us fine=2225us merge=631us sort=5us map=0us TOTAL=3259us
+[Stats] checked=201276 refined=6400
+[Timing] coarse=411us fine=2093us merge=609us sort=5us map=0us TOTAL=3141us
+[Stats] checked=184057 refined=6400
+[Timing] coarse=526us fine=2254us merge=618us sort=5us map=0us TOTAL=3435us
+[Stats] checked=192003 refined=6400
+[Timing] coarse=505us fine=2169us merge=630us sort=5us map=0us TOTAL=3338us
+[Stats] checked=179960 refined=6400
+[Timing] coarse=538us fine=2299us merge=618us sort=5us map=0us TOTAL=3491us
+[Stats] checked=197849 refined=6400
+[Timing] coarse=462us fine=2181us merge=588us sort=5us map=0us TOTAL=3262us
+[Stats] checked=172510 refined=6400
+[Timing] coarse=464us fine=2328us merge=620us sort=5us map=0us TOTAL=3446us
+[Stats] checked=176550 refined=6400
+[Timing] coarse=432us fine=2539us merge=579us sort=5us map=0us TOTAL=3581us
+[Stats] checked=200928 refined=6400
+[Timing] coarse=389us fine=2251us merge=834us sort=5us map=0us TOTAL=3501us
+[Stats] checked=177691 refined=6400
+[Timing] coarse=369us fine=2225us merge=605us sort=5us map=0us TOTAL=3227us
+[Stats] checked=190246 refined=6400
+[Timing] coarse=462us fine=2266us merge=637us sort=5us map=0us TOTAL=3393us
+[Stats] checked=168184 refined=6400
+[Timing] coarse=542us fine=2388us merge=696us sort=6us map=0us TOTAL=3662us
+[Stats] checked=169823 refined=6400
+[Timing] coarse=464us fine=2217us merge=639us sort=17us map=0us TOTAL=3365us
+[Stats] checked=172746 refined=6400
+Processed 600 queries[Timing] coarse=514us fine=2365us merge=655us sort=5us map=0us TOTAL=3570us
+[Stats] checked=164974 refined=6400
+[Timing] coarse=486us fine=2298us merge=646us sort=6us map=0us TOTAL=3467us
+[Stats] checked=171345 refined=6400
+[Timing] coarse=542us fine=2850us merge=635us sort=5us map=0us TOTAL=4060us
+[Stats] checked=197657 refined=6400
+[Timing] coarse=543us fine=2429us merge=758us sort=5us map=0us TOTAL=3773us
+[Stats] checked=173501 refined=6400
+[Timing] coarse=584us fine=2409us merge=710us sort=5us map=0us TOTAL=3749us
+[Stats] checked=170394 refined=6400
+[Timing] coarse=491us fine=2294us merge=668us sort=5us map=0us TOTAL=3490us
+[Stats] checked=185771 refined=6400
+[Timing] coarse=699us fine=2678us merge=702us sort=5us map=0us TOTAL=4123us
+[Stats] checked=178971 refined=6400
+[Timing] coarse=595us fine=2546us merge=622us sort=5us map=0us TOTAL=3813us
+[Stats] checked=189204 refined=6400
+[Timing] coarse=763us fine=2130us merge=609us sort=5us map=0us TOTAL=3539us
+[Stats] checked=198391 refined=6400
+[Timing] coarse=396us fine=2600us merge=632us sort=5us map=0us TOTAL=3657us
+[Stats] checked=165289 refined=6400
+[Timing] coarse=514us fine=2258us merge=607us sort=5us map=0us TOTAL=3418us
+[Stats] checked=187605 refined=6400
+[Timing] coarse=401us fine=2306us merge=619us sort=5us map=0us TOTAL=3358us
+[Stats] checked=178611 refined=6400
+[Timing] coarse=328us fine=2280us merge=590us sort=5us map=0us TOTAL=3224us
+[Stats] checked=176323 refined=6400
+[Timing] coarse=382us fine=2304us merge=611us sort=5us map=0us TOTAL=3328us
+[Stats] checked=173962 refined=6400
+[Timing] coarse=404us fine=2300us merge=580us sort=5us map=0us TOTAL=3311us
+[Stats] checked=202742 refined=6400
+[Timing] coarse=491us fine=2524us merge=627us sort=6us map=1us TOTAL=3677us
+[Stats] checked=157031 refined=6400
+[Timing] coarse=467us fine=2294us merge=647us sort=5us map=0us TOTAL=3439us
+[Stats] checked=164057 refined=6400
+[Timing] coarse=850us fine=2273us merge=694us sort=5us map=0us TOTAL=3845us
+[Stats] checked=168467 refined=6400
+[Timing] coarse=545us fine=2197us merge=632us sort=5us map=0us TOTAL=3413us
+[Stats] checked=181452 refined=6400
+[Timing] coarse=507us fine=2258us merge=721us sort=5us map=0us TOTAL=3520us
+[Stats] checked=170295 refined=6400
+[Timing] coarse=582us fine=2469us merge=600us sort=4us map=1us TOTAL=3693us
+[Stats] checked=186248 refined=6400
+[Timing] coarse=472us fine=2120us merge=613us sort=5us map=0us TOTAL=3241us
+[Stats] checked=164368 refined=6400
+[Timing] coarse=466us fine=2083us merge=602us sort=4us map=0us TOTAL=3182us
+[Stats] checked=174730 refined=6400
+[Timing] coarse=481us fine=2352us merge=598us sort=5us map=0us TOTAL=3469us
+[Stats] checked=171507 refined=6400
+[Timing] coarse=455us fine=2301us merge=577us sort=5us map=0us TOTAL=3367us
+[Stats] checked=182878 refined=6400
+[Timing] coarse=407us fine=2240us merge=612us sort=5us map=0us TOTAL=3290us
+[Stats] checked=162549 refined=6400
+[Timing] coarse=312us fine=2160us merge=582us sort=5us map=0us TOTAL=3078us
+[Stats] checked=175062 refined=6400
+[Timing] coarse=332us fine=2474us merge=672us sort=5us map=0us TOTAL=3501us
+[Stats] checked=177198 refined=6400
+[Timing] coarse=455us fine=2367us merge=748us sort=5us map=0us TOTAL=3600us
+[Stats] checked=152478 refined=6400
+[Timing] coarse=480us fine=2639us merge=773us sort=6us map=0us TOTAL=3925us
+[Stats] checked=170270 refined=6400
+[Timing] coarse=459us fine=2913us merge=908us sort=6us map=1us TOTAL=4313us
+[Stats] checked=184368 refined=6400
+[Timing] coarse=632us fine=2338us merge=649us sort=5us map=0us TOTAL=3660us
+[Stats] checked=182114 refined=6400
+[Timing] coarse=498us fine=2446us merge=823us sort=5us map=0us TOTAL=3805us
+[Stats] checked=185800 refined=6400
+[Timing] coarse=454us fine=2121us merge=615us sort=5us map=0us TOTAL=3224us
+[Stats] checked=170745 refined=6400
+[Timing] coarse=478us fine=2211us merge=632us sort=5us map=0us TOTAL=3356us
+[Stats] checked=193344 refined=6400
+[Timing] coarse=551us fine=2181us merge=684us sort=5us map=0us TOTAL=3453us
+[Stats] checked=167775 refined=6400
+[Timing] coarse=569us fine=2483us merge=794us sort=5us map=0us TOTAL=3885us
+[Stats] checked=184076 refined=6400
+[Timing] coarse=536us fine=2322us merge=655us sort=6us map=0us TOTAL=3549us
+[Stats] checked=164657 refined=6400
+[Timing] coarse=471us fine=2314us merge=613us sort=5us map=0us TOTAL=3430us
+[Stats] checked=182518 refined=6400
+[Timing] coarse=497us fine=2557us merge=615us sort=5us map=0us TOTAL=3698us
+[Stats] checked=171701 refined=6400
+[Timing] coarse=497us fine=2224us merge=645us sort=5us map=0us TOTAL=3404us
+[Stats] checked=166379 refined=6400
+[Timing] coarse=514us fine=2282us merge=625us sort=5us map=0us TOTAL=3461us
+[Stats] checked=167217 refined=6400
+[Timing] coarse=401us fine=2399us merge=882us sort=7us map=0us TOTAL=3713us
+[Stats] checked=181365 refined=6400
+[Timing] coarse=475us fine=2270us merge=676us sort=5us map=0us TOTAL=3455us
+[Stats] checked=177487 refined=6400
+[Timing] coarse=511us fine=2481us merge=651us sort=5us map=0us TOTAL=3683us
+[Stats] checked=198527 refined=6400
+[Timing] coarse=493us fine=2206us merge=682us sort=5us map=0us TOTAL=3413us
+[Stats] checked=171226 refined=6400
+[Timing] coarse=425us fine=2375us merge=646us sort=5us map=0us TOTAL=3475us
+[Stats] checked=182659 refined=6400
+[Timing] coarse=530us fine=2590us merge=637us sort=5us map=1us TOTAL=3796us
+[Stats] checked=171069 refined=6400
+[Timing] coarse=427us fine=2416us merge=667us sort=5us map=0us TOTAL=3540us
+[Stats] checked=170482 refined=6400
+[Timing] coarse=621us fine=2838us merge=710us sort=5us map=1us TOTAL=4213us
+[Stats] checked=205668 refined=6400
+Processed 650 queries[Timing] coarse=538us fine=2388us merge=689us sort=5us map=1us TOTAL=3656us
+[Stats] checked=202296 refined=6400
+[Timing] coarse=619us fine=2477us merge=735us sort=5us map=1us TOTAL=3875us
+[Stats] checked=168026 refined=6400
+[Timing] coarse=485us fine=2460us merge=661us sort=5us map=0us TOTAL=3644us
+[Stats] checked=175280 refined=6400
+[Timing] coarse=546us fine=2408us merge=641us sort=5us map=0us TOTAL=3639us
+[Stats] checked=179156 refined=6400
+[Timing] coarse=536us fine=2198us merge=601us sort=5us map=0us TOTAL=3375us
+[Stats] checked=189159 refined=6400
+[Timing] coarse=538us fine=2357us merge=698us sort=5us map=0us TOTAL=3680us
+[Stats] checked=163207 refined=6400
+[Timing] coarse=483us fine=2125us merge=644us sort=5us map=0us TOTAL=3284us
+[Stats] checked=172683 refined=6400
+[Timing] coarse=415us fine=2275us merge=597us sort=5us map=0us TOTAL=3317us
+[Stats] checked=187773 refined=6400
+[Timing] coarse=479us fine=2119us merge=607us sort=6us map=0us TOTAL=3241us
+[Stats] checked=175247 refined=6400
+[Timing] coarse=428us fine=2203us merge=609us sort=5us map=0us TOTAL=3270us
+[Stats] checked=174787 refined=6400
+[Timing] coarse=512us fine=2101us merge=621us sort=5us map=0us TOTAL=3273us
+[Stats] checked=162748 refined=6400
+[Timing] coarse=468us fine=2252us merge=622us sort=5us map=0us TOTAL=3374us
+[Stats] checked=164243 refined=6400
+[Timing] coarse=422us fine=2196us merge=641us sort=5us map=0us TOTAL=3288us
+[Stats] checked=171915 refined=6400
+[Timing] coarse=397us fine=2364us merge=619us sort=6us map=0us TOTAL=3425us
+[Stats] checked=193228 refined=6400
+[Timing] coarse=409us fine=3080us merge=839us sort=5us map=0us TOTAL=4358us
+[Stats] checked=157070 refined=6400
+[Timing] coarse=460us fine=2439us merge=680us sort=5us map=0us TOTAL=3608us
+[Stats] checked=180552 refined=6400
+[Timing] coarse=483us fine=2291us merge=644us sort=5us map=0us TOTAL=3450us
+[Stats] checked=185413 refined=6400
+[Timing] coarse=465us fine=2508us merge=896us sort=7us map=1us TOTAL=3902us
+[Stats] checked=173180 refined=6400
+[Timing] coarse=520us fine=2416us merge=675us sort=5us map=0us TOTAL=3647us
+[Stats] checked=173730 refined=6400
+[Timing] coarse=589us fine=2419us merge=720us sort=5us map=0us TOTAL=3772us
+[Stats] checked=189514 refined=6400
+[Timing] coarse=543us fine=2520us merge=697us sort=5us map=1us TOTAL=3800us
+[Stats] checked=158331 refined=6400
+[Timing] coarse=504us fine=2256us merge=577us sort=5us map=0us TOTAL=3378us
+[Stats] checked=198995 refined=6400
+[Timing] coarse=499us fine=2239us merge=657us sort=4us map=0us TOTAL=3433us
+[Stats] checked=196930 refined=6400
+[Timing] coarse=520us fine=2233us merge=642us sort=5us map=0us TOTAL=3426us
+[Stats] checked=158585 refined=6400
+[Timing] coarse=468us fine=2277us merge=646us sort=5us map=0us TOTAL=3424us
+[Stats] checked=169210 refined=6400
+[Timing] coarse=449us fine=2332us merge=644us sort=5us map=0us TOTAL=3454us
+[Stats] checked=174458 refined=6400
+[Timing] coarse=386us fine=2124us merge=627us sort=5us map=0us TOTAL=3165us
+[Stats] checked=187482 refined=6400
+[Timing] coarse=408us fine=2301us merge=602us sort=5us map=0us TOTAL=3338us
+[Stats] checked=175372 refined=6400
+[Timing] coarse=506us fine=2152us merge=651us sort=4us map=0us TOTAL=3344us
+[Stats] checked=185794 refined=6400
+[Timing] coarse=493us fine=2770us merge=646us sort=5us map=1us TOTAL=3948us
+[Stats] checked=167499 refined=6400
+[Timing] coarse=510us fine=2572us merge=673us sort=5us map=1us TOTAL=3786us
+[Stats] checked=185563 refined=6400
+[Timing] coarse=550us fine=2300us merge=600us sort=5us map=0us TOTAL=3496us
+[Stats] checked=184050 refined=6400
+[Timing] coarse=464us fine=2553us merge=625us sort=5us map=1us TOTAL=3673us
+[Stats] checked=208336 refined=6400
+[Timing] coarse=559us fine=2233us merge=639us sort=5us map=0us TOTAL=3475us
+[Stats] checked=155383 refined=6400
+[Timing] coarse=432us fine=2144us merge=659us sort=5us map=1us TOTAL=3267us
+[Stats] checked=182379 refined=6400
+[Timing] coarse=402us fine=2212us merge=682us sort=5us map=0us TOTAL=3326us
+[Stats] checked=206650 refined=6400
+[Timing] coarse=374us fine=2329us merge=586us sort=4us map=0us TOTAL=3319us
+[Stats] checked=198540 refined=6400
+[Timing] coarse=544us fine=2304us merge=619us sort=5us map=1us TOTAL=3676us
+[Stats] checked=202802 refined=6400
+[Timing] coarse=419us fine=2165us merge=644us sort=5us map=0us TOTAL=3257us
+[Stats] checked=159233 refined=6400
+[Timing] coarse=353us fine=2256us merge=587us sort=5us map=0us TOTAL=3220us
+[Stats] checked=203197 refined=6400
+[Timing] coarse=503us fine=2392us merge=665us sort=5us map=0us TOTAL=3596us
+[Stats] checked=192774 refined=6400
+[Timing] coarse=420us fine=2185us merge=636us sort=5us map=0us TOTAL=3270us
+[Stats] checked=194878 refined=6400
+[Timing] coarse=409us fine=2274us merge=572us sort=5us map=0us TOTAL=3284us
+[Stats] checked=201938 refined=6400
+[Timing] coarse=555us fine=2187us merge=629us sort=5us map=0us TOTAL=3409us
+[Stats] checked=173667 refined=6400
+[Timing] coarse=365us fine=2183us merge=561us sort=423us map=0us TOTAL=3552us
+[Stats] checked=193971 refined=6400
+[Timing] coarse=412us fine=2196us merge=600us sort=5us map=0us TOTAL=3237us
+[Stats] checked=177530 refined=6400
+[Timing] coarse=428us fine=2382us merge=616us sort=5us map=1us TOTAL=3452us
+[Stats] checked=188537 refined=6400
+[Timing] coarse=348us fine=2336us merge=591us sort=5us map=0us TOTAL=3303us
+[Stats] checked=197924 refined=6400
+[Timing] coarse=364us fine=2311us merge=616us sort=5us map=0us TOTAL=3318us
+[Stats] checked=191774 refined=6400
+[Timing] coarse=400us fine=2252us merge=864us sort=4us map=0us TOTAL=3541us
+[Stats] checked=157195 refined=6400
+Processed 700 queries[Timing] coarse=386us fine=2280us merge=605us sort=5us map=0us TOTAL=3297us
+[Stats] checked=165998 refined=6400
+[Timing] coarse=465us fine=2230us merge=610us sort=5us map=0us TOTAL=3334us
+[Stats] checked=182019 refined=6400
+[Timing] coarse=411us fine=2284us merge=598us sort=5us map=0us TOTAL=3319us
+[Stats] checked=195156 refined=6400
+[Timing] coarse=415us fine=2264us merge=616us sort=5us map=0us TOTAL=3324us
+[Stats] checked=163447 refined=6400
+[Timing] coarse=409us fine=2472us merge=634us sort=5us map=0us TOTAL=3543us
+[Stats] checked=188923 refined=6400
+[Timing] coarse=443us fine=2268us merge=615us sort=5us map=0us TOTAL=3354us
+[Stats] checked=171619 refined=6400
+[Timing] coarse=370us fine=2271us merge=627us sort=5us map=0us TOTAL=3296us
+[Stats] checked=184269 refined=6400
+[Timing] coarse=353us fine=2200us merge=576us sort=5us map=0us TOTAL=3156us
+[Stats] checked=193570 refined=6400
+[Timing] coarse=404us fine=2690us merge=591us sort=5us map=0us TOTAL=3714us
+[Stats] checked=190825 refined=6400
+[Timing] coarse=391us fine=2369us merge=604us sort=5us map=0us TOTAL=3395us
+[Stats] checked=192223 refined=6400
+[Timing] coarse=366us fine=2412us merge=653us sort=5us map=0us TOTAL=3461us
+[Stats] checked=161193 refined=6400
+[Timing] coarse=407us fine=2245us merge=714us sort=5us map=0us TOTAL=3392us
+[Stats] checked=197983 refined=6400
+[Timing] coarse=545us fine=2228us merge=643us sort=5us map=0us TOTAL=3446us
+[Stats] checked=170360 refined=6400
+[Timing] coarse=440us fine=2229us merge=703us sort=5us map=0us TOTAL=3400us
+[Stats] checked=163865 refined=6400
+[Timing] coarse=400us fine=2403us merge=671us sort=5us map=0us TOTAL=3503us
+[Stats] checked=180632 refined=6400
+[Timing] coarse=526us fine=2266us merge=614us sort=5us map=0us TOTAL=3439us
+[Stats] checked=181907 refined=6400
+[Timing] coarse=470us fine=2187us merge=599us sort=5us map=0us TOTAL=3284us
+[Stats] checked=183431 refined=6400
+[Timing] coarse=412us fine=2266us merge=616us sort=5us map=0us TOTAL=3318us
+[Stats] checked=189969 refined=6400
+[Timing] coarse=400us fine=2465us merge=657us sort=5us map=1us TOTAL=3552us
+[Stats] checked=165767 refined=6400
+[Timing] coarse=439us fine=2232us merge=797us sort=5us map=0us TOTAL=3495us
+[Stats] checked=204262 refined=6400
+[Timing] coarse=414us fine=2182us merge=584us sort=5us map=0us TOTAL=3207us
+[Stats] checked=191255 refined=6400
+[Timing] coarse=381us fine=2240us merge=623us sort=5us map=0us TOTAL=3271us
+[Stats] checked=157148 refined=6400
+[Timing] coarse=526us fine=2552us merge=621us sort=5us map=0us TOTAL=3738us
+[Stats] checked=176640 refined=6400
+[Timing] coarse=400us fine=2369us merge=615us sort=5us map=0us TOTAL=3439us
+[Stats] checked=184170 refined=6400
+[Timing] coarse=394us fine=2262us merge=700us sort=7us map=1us TOTAL=3387us
+[Stats] checked=179657 refined=6400
+[Timing] coarse=414us fine=2237us merge=596us sort=5us map=0us TOTAL=3275us
+[Stats] checked=180620 refined=6400
+[Timing] coarse=412us fine=2233us merge=672us sort=5us map=0us TOTAL=3345us
+[Stats] checked=188376 refined=6400
+[Timing] coarse=458us fine=2335us merge=665us sort=5us map=0us TOTAL=3488us
+[Stats] checked=162739 refined=6400
+[Timing] coarse=395us fine=2236us merge=641us sort=5us map=0us TOTAL=3301us
+[Stats] checked=183147 refined=6400
+[Timing] coarse=521us fine=2338us merge=629us sort=5us map=0us TOTAL=3532us
+[Stats] checked=162579 refined=6400
+[Timing] coarse=463us fine=2376us merge=647us sort=5us map=0us TOTAL=3516us
+[Stats] checked=178970 refined=6400
+[Timing] coarse=413us fine=2191us merge=933us sort=5us map=0us TOTAL=3566us
+[Stats] checked=199770 refined=6400
+[Timing] coarse=408us fine=2495us merge=619us sort=5us map=0us TOTAL=3553us
+[Stats] checked=184508 refined=6400
+[Timing] coarse=350us fine=2296us merge=656us sort=5us map=0us TOTAL=3329us
+[Stats] checked=170448 refined=6400
+[Timing] coarse=454us fine=2213us merge=584us sort=5us map=0us TOTAL=3281us
+[Stats] checked=190147 refined=6400
+[Timing] coarse=470us fine=2253us merge=626us sort=5us map=1us TOTAL=3382us
+[Stats] checked=168769 refined=6400
+[Timing] coarse=478us fine=2192us merge=614us sort=5us map=0us TOTAL=3318us
+[Stats] checked=180985 refined=6400
+[Timing] coarse=408us fine=2406us merge=880us sort=5us map=1us TOTAL=3722us
+[Stats] checked=183791 refined=6400
+[Timing] coarse=428us fine=2568us merge=580us sort=5us map=0us TOTAL=3604us
+[Stats] checked=188189 refined=6400
+[Timing] coarse=507us fine=2299us merge=628us sort=5us map=0us TOTAL=3470us
+[Stats] checked=163633 refined=6400
+[Timing] coarse=449us fine=2197us merge=600us sort=5us map=0us TOTAL=3276us
+[Stats] checked=182324 refined=6400
+[Timing] coarse=417us fine=2191us merge=674us sort=5us map=0us TOTAL=3313us
+[Stats] checked=170843 refined=6400
+[Timing] coarse=404us fine=2310us merge=650us sort=5us map=0us TOTAL=3396us
+[Stats] checked=155313 refined=6400
+[Timing] coarse=435us fine=2513us merge=671us sort=6us map=1us TOTAL=3652us
+[Stats] checked=193850 refined=6400
+[Timing] coarse=431us fine=2235us merge=627us sort=5us map=0us TOTAL=3326us
+[Stats] checked=165461 refined=6400
+[Timing] coarse=546us fine=2689us merge=615us sort=5us map=0us TOTAL=3891us
+[Stats] checked=184571 refined=6400
+[Timing] coarse=476us fine=2140us merge=598us sort=5us map=0us TOTAL=3247us
+[Stats] checked=192397 refined=6400
+[Timing] coarse=425us fine=2246us merge=586us sort=6us map=0us TOTAL=3290us
+[Stats] checked=185529 refined=6400
+[Timing] coarse=383us fine=2137us merge=621us sort=5us map=0us TOTAL=3170us
+[Stats] checked=181128 refined=6400
+[Timing] coarse=584us fine=2416us merge=659us sort=5us map=0us TOTAL=3695us
+[Stats] checked=157101 refined=6400
+Processed 750 queries[Timing] coarse=544us fine=2558us merge=728us sort=5us map=1us TOTAL=3863us
+[Stats] checked=167920 refined=6400
+[Timing] coarse=627us fine=2422us merge=787us sort=5us map=1us TOTAL=3879us
+[Stats] checked=188505 refined=6400
+[Timing] coarse=540us fine=2392us merge=674us sort=5us map=1us TOTAL=3648us
+[Stats] checked=177322 refined=6400
+[Timing] coarse=452us fine=2127us merge=626us sort=5us map=0us TOTAL=3239us
+[Stats] checked=168446 refined=6400
+[Timing] coarse=501us fine=2342us merge=626us sort=5us map=0us TOTAL=3505us
+[Stats] checked=183925 refined=6400
+[Timing] coarse=493us fine=2414us merge=599us sort=5us map=0us TOTAL=3536us
+[Stats] checked=195790 refined=6400
+[Timing] coarse=440us fine=2345us merge=647us sort=5us map=0us TOTAL=3463us
+[Stats] checked=163342 refined=6400
+[Timing] coarse=567us fine=2243us merge=621us sort=5us map=1us TOTAL=3474us
+[Stats] checked=166435 refined=6400
+[Timing] coarse=403us fine=2179us merge=709us sort=5us map=0us TOTAL=3321us
+[Stats] checked=195917 refined=6400
+[Timing] coarse=408us fine=2138us merge=613us sort=5us map=0us TOTAL=3189us
+[Stats] checked=169112 refined=6400
+[Timing] coarse=497us fine=2354us merge=638us sort=5us map=0us TOTAL=3529us
+[Stats] checked=178694 refined=6400
+[Timing] coarse=429us fine=2167us merge=652us sort=5us map=0us TOTAL=3277us
+[Stats] checked=160241 refined=6400
+[Timing] coarse=698us fine=2469us merge=672us sort=5us map=0us TOTAL=3880us
+[Stats] checked=174017 refined=6400
+[Timing] coarse=424us fine=2156us merge=604us sort=5us map=0us TOTAL=3214us
+[Stats] checked=185911 refined=6400
+[Timing] coarse=410us fine=2120us merge=632us sort=5us map=1us TOTAL=3190us
+[Stats] checked=158038 refined=6400
+[Timing] coarse=367us fine=2154us merge=575us sort=5us map=0us TOTAL=3123us
+[Stats] checked=167276 refined=6400
+[Timing] coarse=425us fine=2198us merge=626us sort=5us map=0us TOTAL=3279us
+[Stats] checked=169231 refined=6400
+[Timing] coarse=328us fine=2309us merge=681us sort=5us map=0us TOTAL=3345us
+[Stats] checked=194694 refined=6400
+[Timing] coarse=524us fine=2038us merge=698us sort=5us map=0us TOTAL=3299us
+[Stats] checked=174768 refined=6400
+[Timing] coarse=491us fine=2691us merge=598us sort=5us map=0us TOTAL=3812us
+[Stats] checked=175183 refined=6400
+[Timing] coarse=476us fine=2130us merge=680us sort=5us map=0us TOTAL=3321us
+[Stats] checked=169299 refined=6400
+[Timing] coarse=441us fine=2421us merge=640us sort=5us map=0us TOTAL=3531us
+[Stats] checked=169391 refined=6400
+[Timing] coarse=396us fine=2168us merge=672us sort=5us map=0us TOTAL=3261us
+[Stats] checked=180756 refined=6400
+[Timing] coarse=479us fine=2219us merge=628us sort=5us map=0us TOTAL=3358us
+[Stats] checked=173898 refined=6400
+[Timing] coarse=491us fine=2222us merge=622us sort=5us map=0us TOTAL=3362us
+[Stats] checked=180613 refined=6400
+[Timing] coarse=569us fine=2444us merge=778us sort=5us map=0us TOTAL=3824us
+[Stats] checked=174442 refined=6400
+[Timing] coarse=431us fine=2404us merge=615us sort=5us map=0us TOTAL=3479us
+[Stats] checked=168825 refined=6400
+[Timing] coarse=528us fine=2321us merge=702us sort=5us map=0us TOTAL=3594us
+[Stats] checked=178185 refined=6400
+[Timing] coarse=489us fine=2200us merge=637us sort=5us map=0us TOTAL=3361us
+[Stats] checked=192466 refined=6400
+[Timing] coarse=446us fine=2252us merge=604us sort=4us map=0us TOTAL=3333us
+[Stats] checked=180962 refined=6400
+[Timing] coarse=407us fine=2335us merge=606us sort=5us map=0us TOTAL=3378us
+[Stats] checked=155366 refined=6400
+[Timing] coarse=475us fine=2350us merge=632us sort=5us map=0us TOTAL=3490us
+[Stats] checked=182868 refined=6400
+[Timing] coarse=461us fine=2273us merge=608us sort=5us map=1us TOTAL=3372us
+[Stats] checked=192419 refined=6400
+[Timing] coarse=423us fine=2238us merge=608us sort=5us map=0us TOTAL=3298us
+[Stats] checked=178283 refined=6400
+[Timing] coarse=382us fine=2127us merge=582us sort=5us map=0us TOTAL=3119us
+[Stats] checked=174817 refined=6400
+[Timing] coarse=356us fine=2538us merge=610us sort=5us map=1us TOTAL=3532us
+[Stats] checked=203682 refined=6400
+[Timing] coarse=373us fine=2193us merge=567us sort=5us map=0us TOTAL=3161us
+[Stats] checked=199494 refined=6400
+[Timing] coarse=377us fine=2379us merge=640us sort=5us map=0us TOTAL=3423us
+[Stats] checked=163244 refined=6400
+[Timing] coarse=378us fine=2321us merge=612us sort=5us map=0us TOTAL=3339us
+[Stats] checked=182898 refined=6400
+[Timing] coarse=448us fine=2236us merge=671us sort=5us map=0us TOTAL=3386us
+[Stats] checked=158493 refined=6400
+[Timing] coarse=537us fine=2277us merge=625us sort=5us map=0us TOTAL=3475us
+[Stats] checked=184007 refined=6400
+[Timing] coarse=345us fine=2137us merge=636us sort=4us map=0us TOTAL=3143us
+[Stats] checked=195775 refined=6400
+[Timing] coarse=404us fine=2776us merge=629us sort=5us map=0us TOTAL=3837us
+[Stats] checked=181553 refined=6400
+[Timing] coarse=532us fine=2270us merge=669us sort=5us map=0us TOTAL=3528us
+[Stats] checked=170277 refined=6400
+[Timing] coarse=479us fine=2336us merge=641us sort=5us map=0us TOTAL=3485us
+[Stats] checked=163376 refined=6400
+[Timing] coarse=448us fine=2334us merge=605us sort=5us map=0us TOTAL=3415us
+[Stats] checked=194113 refined=6400
+[Timing] coarse=540us fine=2537us merge=599us sort=5us map=0us TOTAL=3713us
+[Stats] checked=204475 refined=6400
+[Timing] coarse=390us fine=2273us merge=577us sort=5us map=0us TOTAL=3266us
+[Stats] checked=172133 refined=6400
+[Timing] coarse=425us fine=2291us merge=600us sort=5us map=0us TOTAL=3344us
+[Stats] checked=189918 refined=6400
+[Timing] coarse=411us fine=2297us merge=604us sort=5us map=0us TOTAL=3339us
+[Stats] checked=177211 refined=6400
+Processed 800 queries[Timing] coarse=370us fine=2693us merge=727us sort=5us map=0us TOTAL=3816us
+[Stats] checked=157297 refined=6400
+[Timing] coarse=450us fine=2223us merge=630us sort=5us map=0us TOTAL=3347us
+[Stats] checked=173490 refined=6400
+[Timing] coarse=439us fine=2426us merge=625us sort=5us map=0us TOTAL=3518us
+[Stats] checked=183869 refined=6400
+[Timing] coarse=396us fine=2303us merge=627us sort=5us map=0us TOTAL=3353us
+[Stats] checked=179339 refined=6400
+[Timing] coarse=346us fine=2437us merge=648us sort=5us map=0us TOTAL=3457us
+[Stats] checked=169637 refined=6400
+[Timing] coarse=492us fine=2488us merge=631us sort=5us map=0us TOTAL=3649us
+[Stats] checked=167077 refined=6400
+[Timing] coarse=501us fine=2235us merge=613us sort=5us map=0us TOTAL=3399us
+[Stats] checked=172364 refined=6400
+[Timing] coarse=548us fine=2283us merge=689us sort=4us map=0us TOTAL=3556us
+[Stats] checked=194464 refined=6400
+[Timing] coarse=587us fine=2359us merge=609us sort=5us map=0us TOTAL=3597us
+[Stats] checked=162904 refined=6400
+[Timing] coarse=533us fine=2274us merge=678us sort=5us map=1us TOTAL=3522us
+[Stats] checked=165415 refined=6400
+[Timing] coarse=548us fine=2249us merge=659us sort=5us map=0us TOTAL=3513us
+[Stats] checked=175545 refined=6400
+[Timing] coarse=494us fine=2599us merge=649us sort=5us map=1us TOTAL=3777us
+[Stats] checked=165735 refined=6400
+[Timing] coarse=775us fine=2506us merge=661us sort=5us map=0us TOTAL=3986us
+[Stats] checked=191795 refined=6400
+[Timing] coarse=533us fine=2249us merge=738us sort=5us map=0us TOTAL=3563us
+[Stats] checked=160764 refined=6400
+[Timing] coarse=467us fine=2289us merge=556us sort=5us map=0us TOTAL=3346us
+[Stats] checked=201027 refined=6400
+[Timing] coarse=438us fine=2714us merge=638us sort=6us map=0us TOTAL=3824us
+[Stats] checked=219074 refined=6400
+[Timing] coarse=538us fine=2335us merge=602us sort=5us map=0us TOTAL=3517us
+[Stats] checked=197750 refined=6400
+[Timing] coarse=451us fine=2423us merge=660us sort=5us map=0us TOTAL=3566us
+[Stats] checked=161366 refined=6400
+[Timing] coarse=476us fine=2287us merge=604us sort=5us map=0us TOTAL=3397us
+[Stats] checked=185102 refined=6400
+[Timing] coarse=393us fine=2279us merge=638us sort=5us map=0us TOTAL=3339us
+[Stats] checked=202977 refined=6400
+[Timing] coarse=507us fine=2229us merge=643us sort=5us map=0us TOTAL=3415us
+[Stats] checked=187039 refined=6400
+[Timing] coarse=434us fine=2195us merge=650us sort=5us map=0us TOTAL=3310us
+[Stats] checked=183916 refined=6400
+[Timing] coarse=398us fine=2213us merge=590us sort=5us map=0us TOTAL=3229us
+[Stats] checked=202161 refined=6400
+[Timing] coarse=400us fine=2102us merge=614us sort=5us map=0us TOTAL=3144us
+[Stats] checked=170314 refined=6400
+[Timing] coarse=443us fine=2440us merge=708us sort=6us map=0us TOTAL=3624us
+[Stats] checked=173924 refined=6400
+[Timing] coarse=554us fine=2541us merge=759us sort=7us map=1us TOTAL=3898us
+[Stats] checked=191028 refined=6400
+[Timing] coarse=661us fine=2546us merge=758us sort=7us map=0us TOTAL=4014us
+[Stats] checked=210358 refined=6400
+[Timing] coarse=494us fine=2626us merge=763us sort=7us map=1us TOTAL=3919us
+[Stats] checked=174385 refined=6400
+[Timing] coarse=462us fine=2273us merge=627us sort=5us map=0us TOTAL=3393us
+[Stats] checked=203714 refined=6400
+[Timing] coarse=584us fine=2226us merge=697us sort=5us map=0us TOTAL=3548us
+[Stats] checked=183256 refined=6400
+[Timing] coarse=568us fine=2186us merge=632us sort=5us map=0us TOTAL=3422us
+[Stats] checked=181143 refined=6400
+[Timing] coarse=388us fine=2450us merge=662us sort=5us map=0us TOTAL=3529us
+[Stats] checked=169117 refined=6400
+[Timing] coarse=452us fine=2277us merge=616us sort=9us map=0us TOTAL=3381us
+[Stats] checked=174838 refined=6400
+[Timing] coarse=403us fine=2237us merge=623us sort=5us map=0us TOTAL=3291us
+[Stats] checked=182651 refined=6400
+[Timing] coarse=446us fine=2498us merge=583us sort=5us map=0us TOTAL=3558us
+[Stats] checked=198414 refined=6400
+[Timing] coarse=486us fine=2462us merge=956us sort=5us map=1us TOTAL=3939us
+[Stats] checked=165267 refined=6400
+[Timing] coarse=502us fine=2215us merge=618us sort=5us map=0us TOTAL=3365us
+[Stats] checked=157833 refined=6400
+[Timing] coarse=508us fine=2259us merge=616us sort=5us map=0us TOTAL=3410us
+[Stats] checked=198336 refined=6400
+[Timing] coarse=487us fine=2237us merge=563us sort=5us map=0us TOTAL=3318us
+[Stats] checked=197666 refined=6400
+[Timing] coarse=322us fine=2285us merge=649us sort=5us map=0us TOTAL=3280us
+[Stats] checked=165591 refined=6400
+[Timing] coarse=340us fine=2139us merge=608us sort=5us map=0us TOTAL=3112us
+[Stats] checked=158255 refined=6400
+[Timing] coarse=338us fine=2128us merge=595us sort=5us map=0us TOTAL=3084us
+[Stats] checked=191570 refined=6400
+[Timing] coarse=411us fine=2181us merge=628us sort=5us map=0us TOTAL=3247us
+[Stats] checked=158256 refined=6400
+[Timing] coarse=463us fine=2197us merge=599us sort=4us map=0us TOTAL=3287us
+[Stats] checked=180316 refined=6400
+[Timing] coarse=441us fine=2432us merge=618us sort=5us map=0us TOTAL=3520us
+[Stats] checked=163095 refined=6400
+[Timing] coarse=464us fine=2364us merge=634us sort=5us map=1us TOTAL=3494us
+[Stats] checked=162347 refined=6400
+[Timing] coarse=485us fine=2293us merge=689us sort=5us map=0us TOTAL=3498us
+[Stats] checked=164738 refined=6400
+[Timing] coarse=438us fine=2423us merge=657us sort=5us map=0us TOTAL=3546us
+[Stats] checked=180092 refined=6400
+[Timing] coarse=583us fine=2225us merge=608us sort=5us map=0us TOTAL=3450us
+[Stats] checked=191485 refined=6400
+[Timing] coarse=467us fine=2015us merge=654us sort=5us map=1us TOTAL=3165us
+[Stats] checked=159931 refined=6400
+Processed 850 queries[Timing] coarse=622us fine=2307us merge=716us sort=5us map=0us TOTAL=3686us
+[Stats] checked=171851 refined=6400
+[Timing] coarse=432us fine=2198us merge=667us sort=5us map=0us TOTAL=3328us
+[Stats] checked=177411 refined=6400
+[Timing] coarse=498us fine=2391us merge=664us sort=5us map=0us TOTAL=3583us
+[Stats] checked=166408 refined=6400
+[Timing] coarse=418us fine=2241us merge=681us sort=5us map=0us TOTAL=3370us
+[Stats] checked=172277 refined=6400
+[Timing] coarse=406us fine=2274us merge=623us sort=5us map=0us TOTAL=3332us
+[Stats] checked=174716 refined=6400
+[Timing] coarse=399us fine=2175us merge=610us sort=5us map=0us TOTAL=3211us
+[Stats] checked=159355 refined=6400
+[Timing] coarse=393us fine=2479us merge=581us sort=5us map=0us TOTAL=3482us
+[Stats] checked=195156 refined=6400
+[Timing] coarse=412us fine=2224us merge=626us sort=5us map=0us TOTAL=3291us
+[Stats] checked=199506 refined=6400
+[Timing] coarse=435us fine=2280us merge=617us sort=5us map=0us TOTAL=3360us
+[Stats] checked=189224 refined=6400
+[Timing] coarse=368us fine=2141us merge=558us sort=5us map=0us TOTAL=3094us
+[Stats] checked=190207 refined=6400
+[Timing] coarse=353us fine=2230us merge=626us sort=4us map=0us TOTAL=3234us
+[Stats] checked=173828 refined=6400
+[Timing] coarse=342us fine=2287us merge=689us sort=5us map=0us TOTAL=3344us
+[Stats] checked=179660 refined=6400
+[Timing] coarse=444us fine=2239us merge=590us sort=5us map=0us TOTAL=3303us
+[Stats] checked=192007 refined=6400
+[Timing] coarse=342us fine=2199us merge=601us sort=148us map=1us TOTAL=3310us
+[Stats] checked=170580 refined=6400
+[Timing] coarse=346us fine=2154us merge=693us sort=5us map=0us TOTAL=3217us
+[Stats] checked=162641 refined=6400
+[Timing] coarse=392us fine=2239us merge=661us sort=5us map=0us TOTAL=3317us
+[Stats] checked=159052 refined=6400
+[Timing] coarse=315us fine=2957us merge=687us sort=5us map=0us TOTAL=3983us
+[Stats] checked=171513 refined=6400
+[Timing] coarse=427us fine=2738us merge=606us sort=5us map=0us TOTAL=3796us
+[Stats] checked=183627 refined=6400
+[Timing] coarse=342us fine=3129us merge=628us sort=5us map=0us TOTAL=4124us
+[Stats] checked=165473 refined=6400
+[Timing] coarse=401us fine=2530us merge=604us sort=5us map=0us TOTAL=3568us
+[Stats] checked=178839 refined=6400
+[Timing] coarse=461us fine=2261us merge=578us sort=5us map=0us TOTAL=3333us
+[Stats] checked=203509 refined=6400
+[Timing] coarse=339us fine=2250us merge=633us sort=5us map=0us TOTAL=3245us
+[Stats] checked=184257 refined=6400
+[Timing] coarse=350us fine=2285us merge=748us sort=5us map=0us TOTAL=3407us
+[Stats] checked=176865 refined=6400
+[Timing] coarse=512us fine=2128us merge=634us sort=5us map=0us TOTAL=3300us
+[Stats] checked=195543 refined=6400
+[Timing] coarse=384us fine=2103us merge=620us sort=5us map=0us TOTAL=3131us
+[Stats] checked=162552 refined=6400
+[Timing] coarse=452us fine=2195us merge=639us sort=5us map=0us TOTAL=3317us
+[Stats] checked=158986 refined=6400
+[Timing] coarse=463us fine=2558us merge=701us sort=5us map=0us TOTAL=3763us
+[Stats] checked=175131 refined=6400
+[Timing] coarse=599us fine=2500us merge=836us sort=5us map=1us TOTAL=3981us
+[Stats] checked=168871 refined=6400
+[Timing] coarse=558us fine=2376us merge=681us sort=6us map=0us TOTAL=3660us
+[Stats] checked=165625 refined=6400
+[Timing] coarse=451us fine=2369us merge=909us sort=8us map=1us TOTAL=3765us
+[Stats] checked=184084 refined=6400
+[Timing] coarse=486us fine=2289us merge=618us sort=5us map=0us TOTAL=3431us
+[Stats] checked=187131 refined=6400
+[Timing] coarse=531us fine=2434us merge=678us sort=5us map=0us TOTAL=3685us
+[Stats] checked=176916 refined=6400
+[Timing] coarse=478us fine=2262us merge=624us sort=5us map=0us TOTAL=3396us
+[Stats] checked=199959 refined=6400
+[Timing] coarse=529us fine=2282us merge=669us sort=5us map=0us TOTAL=3524us
+[Stats] checked=169526 refined=6400
+[Timing] coarse=547us fine=2206us merge=615us sort=5us map=0us TOTAL=3408us
+[Stats] checked=174488 refined=6400
+[Timing] coarse=427us fine=2397us merge=692us sort=5us map=0us TOTAL=3549us
+[Stats] checked=181239 refined=6400
+[Timing] coarse=591us fine=2220us merge=660us sort=5us map=0us TOTAL=3513us
+[Stats] checked=158246 refined=6400
+[Timing] coarse=460us fine=2345us merge=661us sort=5us map=0us TOTAL=3497us
+[Stats] checked=155798 refined=6400
+[Timing] coarse=507us fine=2393us merge=676us sort=5us map=0us TOTAL=3616us
+[Stats] checked=182607 refined=6400
+[Timing] coarse=398us fine=2177us merge=563us sort=5us map=0us TOTAL=3170us
+[Stats] checked=172947 refined=6400
+[Timing] coarse=493us fine=2365us merge=730us sort=5us map=0us TOTAL=3623us
+[Stats] checked=161665 refined=6400
+[Timing] coarse=476us fine=2670us merge=680us sort=5us map=0us TOTAL=3860us
+[Stats] checked=194263 refined=6400
+[Timing] coarse=546us fine=2469us merge=664us sort=5us map=0us TOTAL=3720us
+[Stats] checked=190786 refined=6400
+[Timing] coarse=642us fine=2616us merge=735us sort=5us map=1us TOTAL=4035us
+[Stats] checked=171398 refined=6400
+[Timing] coarse=522us fine=2327us merge=700us sort=5us map=0us TOTAL=3589us
+[Stats] checked=165624 refined=6400
+[Timing] coarse=986us fine=2164us merge=599us sort=5us map=0us TOTAL=3783us
+[Stats] checked=187242 refined=6400
+[Timing] coarse=539us fine=2373us merge=731us sort=5us map=1us TOTAL=3683us
+[Stats] checked=186456 refined=6400
+[Timing] coarse=496us fine=2413us merge=622us sort=5us map=0us TOTAL=3567us
+[Stats] checked=197290 refined=6400
+[Timing] coarse=471us fine=2233us merge=723us sort=5us map=1us TOTAL=3461us
+[Stats] checked=169909 refined=6400
+[Timing] coarse=569us fine=2486us merge=764us sort=8us map=1us TOTAL=3863us
+[Stats] checked=167487 refined=6400
+Processed 900 queries[Timing] coarse=458us fine=2424us merge=634us sort=5us map=0us TOTAL=3549us
+[Stats] checked=181098 refined=6400
+[Timing] coarse=442us fine=2229us merge=594us sort=5us map=0us TOTAL=3295us
+[Stats] checked=196006 refined=6400
+[Timing] coarse=416us fine=2179us merge=610us sort=5us map=0us TOTAL=3234us
+[Stats] checked=182426 refined=6400
+[Timing] coarse=487us fine=2236us merge=625us sort=5us map=0us TOTAL=3381us
+[Stats] checked=170989 refined=6400
+[Timing] coarse=421us fine=2062us merge=615us sort=5us map=0us TOTAL=3128us
+[Stats] checked=156613 refined=6400
+[Timing] coarse=436us fine=2146us merge=594us sort=5us map=0us TOTAL=3208us
+[Stats] checked=189234 refined=6400
+[Timing] coarse=458us fine=2185us merge=608us sort=5us map=0us TOTAL=3280us
+[Stats] checked=187481 refined=6400
+[Timing] coarse=399us fine=2160us merge=651us sort=5us map=1us TOTAL=3240us
+[Stats] checked=162170 refined=6400
+[Timing] coarse=551us fine=2380us merge=612us sort=5us map=0us TOTAL=3579us
+[Stats] checked=179494 refined=6400
+[Timing] coarse=515us fine=2100us merge=613us sort=5us map=0us TOTAL=3267us
+[Stats] checked=162877 refined=6400
+[Timing] coarse=453us fine=2281us merge=617us sort=5us map=0us TOTAL=3381us
+[Stats] checked=176550 refined=6400
+[Timing] coarse=500us fine=2240us merge=713us sort=5us map=1us TOTAL=3488us
+[Stats] checked=163821 refined=6400
+[Timing] coarse=636us fine=2423us merge=658us sort=5us map=1us TOTAL=3759us
+[Stats] checked=174307 refined=6400
+[Timing] coarse=509us fine=2205us merge=622us sort=5us map=0us TOTAL=3371us
+[Stats] checked=185582 refined=6400
+[Timing] coarse=518us fine=2237us merge=656us sort=5us map=0us TOTAL=3448us
+[Stats] checked=162061 refined=6400
+[Timing] coarse=510us fine=2200us merge=634us sort=5us map=0us TOTAL=3382us
+[Stats] checked=175382 refined=6400
+[Timing] coarse=415us fine=2739us merge=657us sort=5us map=0us TOTAL=3870us
+[Stats] checked=165527 refined=6400
+[Timing] coarse=397us fine=2411us merge=644us sort=5us map=0us TOTAL=3480us
+[Stats] checked=183763 refined=6400
+[Timing] coarse=427us fine=2440us merge=617us sort=5us map=0us TOTAL=3512us
+[Stats] checked=175904 refined=6400
+[Timing] coarse=426us fine=2247us merge=657us sort=5us map=0us TOTAL=3358us
+[Stats] checked=155197 refined=6400
+[Timing] coarse=498us fine=2454us merge=620us sort=5us map=0us TOTAL=3609us
+[Stats] checked=199433 refined=6400
+[Timing] coarse=513us fine=2603us merge=649us sort=5us map=1us TOTAL=3803us
+[Stats] checked=185573 refined=6400
+[Timing] coarse=497us fine=2273us merge=595us sort=5us map=0us TOTAL=3409us
+[Stats] checked=188109 refined=6400
+[Timing] coarse=644us fine=2222us merge=598us sort=5us map=0us TOTAL=3498us
+[Stats] checked=175266 refined=6400
+[Timing] coarse=491us fine=2242us merge=639us sort=5us map=0us TOTAL=3407us
+[Stats] checked=178086 refined=6400
+[Timing] coarse=476us fine=2313us merge=685us sort=5us map=0us TOTAL=3505us
+[Stats] checked=172129 refined=6400
+[Timing] coarse=471us fine=2374us merge=697us sort=5us map=0us TOTAL=3574us
+[Stats] checked=171853 refined=6400
+[Timing] coarse=574us fine=2383us merge=735us sort=5us map=0us TOTAL=3730us
+[Stats] checked=153564 refined=6400
+[Timing] coarse=510us fine=2457us merge=744us sort=5us map=1us TOTAL=3745us
+[Stats] checked=186650 refined=6400
+[Timing] coarse=488us fine=2545us merge=641us sort=5us map=0us TOTAL=3720us
+[Stats] checked=211120 refined=6400
+[Timing] coarse=523us fine=2507us merge=605us sort=5us map=0us TOTAL=3682us
+[Stats] checked=193235 refined=6400
+[Timing] coarse=471us fine=2440us merge=646us sort=5us map=0us TOTAL=3589us
+[Stats] checked=207366 refined=6400
+[Timing] coarse=577us fine=2254us merge=614us sort=5us map=0us TOTAL=3486us
+[Stats] checked=168831 refined=6400
+[Timing] coarse=484us fine=2215us merge=603us sort=5us map=0us TOTAL=3335us
+[Stats] checked=174118 refined=6400
+[Timing] coarse=583us fine=2422us merge=758us sort=5us map=1us TOTAL=3806us
+[Stats] checked=165654 refined=6400
+[Timing] coarse=430us fine=2325us merge=655us sort=5us map=0us TOTAL=3441us
+[Stats] checked=180744 refined=6400
+[Timing] coarse=557us fine=2478us merge=646us sort=5us map=0us TOTAL=3723us
+[Stats] checked=186671 refined=6400
+[Timing] coarse=440us fine=2206us merge=560us sort=5us map=0us TOTAL=3237us
+[Stats] checked=177075 refined=6400
+[Timing] coarse=434us fine=2179us merge=605us sort=5us map=0us TOTAL=3249us
+[Stats] checked=175915 refined=6400
+[Timing] coarse=563us fine=2275us merge=607us sort=5us map=0us TOTAL=3486us
+[Stats] checked=165064 refined=6400
+[Timing] coarse=526us fine=2188us merge=669us sort=5us map=1us TOTAL=3421us
+[Stats] checked=179824 refined=6400
+[Timing] coarse=429us fine=2151us merge=622us sort=5us map=0us TOTAL=3233us
+[Stats] checked=170545 refined=6400
+[Timing] coarse=498us fine=2266us merge=997us sort=5us map=0us TOTAL=3797us
+[Stats] checked=162459 refined=6400
+[Timing] coarse=529us fine=2370us merge=619us sort=5us map=1us TOTAL=3561us
+[Stats] checked=174515 refined=6400
+[Timing] coarse=455us fine=2193us merge=638us sort=5us map=0us TOTAL=3315us
+[Stats] checked=161693 refined=6400
+[Timing] coarse=444us fine=2347us merge=602us sort=5us map=0us TOTAL=3424us
+[Stats] checked=188258 refined=6400
+[Timing] coarse=389us fine=2279us merge=638us sort=5us map=1us TOTAL=3336us
+[Stats] checked=193993 refined=6400
+[Timing] coarse=469us fine=2313us merge=601us sort=4us map=0us TOTAL=3413us
+[Stats] checked=188720 refined=6400
+[Timing] coarse=493us fine=2089us merge=663us sort=5us map=1us TOTAL=3280us
+[Stats] checked=176343 refined=6400
+[Timing] coarse=441us fine=2313us merge=650us sort=5us map=0us TOTAL=3433us
+[Stats] checked=184320 refined=6400
+Processed 950 queries[Timing] coarse=544us fine=2389us merge=768us sort=5us map=0us TOTAL=3739us
+[Stats] checked=173170 refined=6400
+[Timing] coarse=625us fine=2516us merge=729us sort=5us map=0us TOTAL=3922us
+[Stats] checked=169225 refined=6400
+[Timing] coarse=604us fine=2515us merge=588us sort=5us map=0us TOTAL=3762us
+[Stats] checked=195641 refined=6400
+[Timing] coarse=561us fine=2404us merge=681us sort=5us map=1us TOTAL=3692us
+[Stats] checked=156098 refined=6400
+[Timing] coarse=475us fine=2206us merge=637us sort=5us map=0us TOTAL=3351us
+[Stats] checked=164573 refined=6400
+[Timing] coarse=553us fine=2299us merge=663us sort=5us map=1us TOTAL=3561us
+[Stats] checked=171718 refined=6400
+[Timing] coarse=491us fine=2313us merge=581us sort=5us map=0us TOTAL=3423us
+[Stats] checked=195092 refined=6400
+[Timing] coarse=496us fine=2434us merge=696us sort=5us map=1us TOTAL=3662us
+[Stats] checked=177391 refined=6400
+[Timing] coarse=487us fine=2183us merge=615us sort=5us map=0us TOTAL=3314us
+[Stats] checked=160229 refined=6400
+[Timing] coarse=438us fine=2218us merge=605us sort=5us map=0us TOTAL=3290us
+[Stats] checked=215654 refined=6400
+[Timing] coarse=378us fine=2404us merge=656us sort=5us map=1us TOTAL=3463us
+[Stats] checked=178212 refined=6400
+[Timing] coarse=338us fine=2281us merge=625us sort=5us map=0us TOTAL=3271us
+[Stats] checked=176682 refined=6400
+[Timing] coarse=568us fine=2168us merge=641us sort=5us map=0us TOTAL=3415us
+[Stats] checked=154981 refined=6400
+[Timing] coarse=398us fine=2183us merge=631us sort=5us map=0us TOTAL=3241us
+[Stats] checked=180750 refined=6400
+[Timing] coarse=432us fine=2285us merge=660us sort=5us map=0us TOTAL=3408us
+[Stats] checked=166248 refined=6400
+[Timing] coarse=427us fine=2146us merge=653us sort=5us map=0us TOTAL=3257us
+[Stats] checked=162844 refined=6400
+[Timing] coarse=375us fine=2364us merge=604us sort=5us map=0us TOTAL=3371us
+[Stats] checked=172192 refined=6400
+[Timing] coarse=386us fine=2594us merge=604us sort=5us map=0us TOTAL=3610us
+[Stats] checked=151095 refined=6400
+[Timing] coarse=371us fine=2353us merge=610us sort=5us map=1us TOTAL=3361us
+[Stats] checked=189552 refined=6400
+[Timing] coarse=375us fine=2204us merge=586us sort=5us map=0us TOTAL=3192us
+[Stats] checked=188874 refined=6400
+[Timing] coarse=372us fine=2070us merge=605us sort=5us map=0us TOTAL=3073us
+[Stats] checked=177135 refined=6400
+[Timing] coarse=356us fine=2165us merge=626us sort=5us map=1us TOTAL=3173us
+[Stats] checked=171603 refined=6400
+[Timing] coarse=468us fine=2218us merge=633us sort=5us map=0us TOTAL=3349us
+[Stats] checked=179352 refined=6400
+[Timing] coarse=344us fine=2103us merge=588us sort=5us map=0us TOTAL=3059us
+[Stats] checked=190380 refined=6400
+[Timing] coarse=355us fine=2164us merge=620us sort=5us map=0us TOTAL=3166us
+[Stats] checked=168902 refined=6400
+[Timing] coarse=442us fine=2211us merge=569us sort=5us map=0us TOTAL=3254us
+[Stats] checked=197346 refined=6400
+[Timing] coarse=489us fine=2452us merge=688us sort=5us map=0us TOTAL=3662us
+[Stats] checked=171033 refined=6400
+[Timing] coarse=343us fine=2117us merge=656us sort=5us map=0us TOTAL=3139us
+[Stats] checked=181610 refined=6400
+[Timing] coarse=424us fine=2305us merge=685us sort=5us map=0us TOTAL=3440us
+[Stats] checked=194256 refined=6400
+[Timing] coarse=397us fine=2360us merge=697us sort=5us map=0us TOTAL=3478us
+[Stats] checked=180737 refined=6400
+[Timing] coarse=372us fine=2335us merge=681us sort=5us map=0us TOTAL=3414us
+[Stats] checked=161129 refined=6400
+[Timing] coarse=343us fine=2411us merge=616us sort=5us map=0us TOTAL=3394us
+[Stats] checked=199120 refined=6400
+[Timing] coarse=398us fine=2209us merge=699us sort=5us map=0us TOTAL=3331us
+[Stats] checked=206308 refined=6400
+[Timing] coarse=350us fine=2461us merge=657us sort=5us map=1us TOTAL=3493us
+[Stats] checked=184001 refined=6400
+[Timing] coarse=393us fine=2213us merge=592us sort=5us map=0us TOTAL=3223us
+[Stats] checked=175136 refined=6400
+[Timing] coarse=407us fine=2101us merge=786us sort=5us map=0us TOTAL=3319us
+[Stats] checked=166287 refined=6400
+[Timing] coarse=395us fine=2296us merge=657us sort=5us map=0us TOTAL=3374us
+[Stats] checked=181605 refined=6400
+[Timing] coarse=422us fine=2271us merge=704us sort=5us map=0us TOTAL=3424us
+[Stats] checked=168290 refined=6400
+[Timing] coarse=512us fine=2217us merge=652us sort=7us map=1us TOTAL=3416us
+[Stats] checked=175553 refined=6400
+[Timing] coarse=420us fine=2327us merge=594us sort=5us map=0us TOTAL=3372us
+[Stats] checked=207594 refined=6400
+[Timing] coarse=396us fine=2157us merge=599us sort=5us map=0us TOTAL=3178us
+[Stats] checked=173100 refined=6400
+[Timing] coarse=518us fine=2711us merge=749us sort=5us map=0us TOTAL=4041us
+[Stats] checked=164034 refined=6400
+[Timing] coarse=528us fine=2628us merge=759us sort=5us map=0us TOTAL=3961us
+[Stats] checked=170818 refined=6400
+[Timing] coarse=437us fine=2489us merge=688us sort=5us map=1us TOTAL=3700us
+[Stats] checked=167838 refined=6400
+[Timing] coarse=591us fine=2560us merge=717us sort=5us map=1us TOTAL=3908us
+[Stats] checked=177980 refined=6400
+[Timing] coarse=579us fine=2471us merge=650us sort=5us map=0us TOTAL=3766us
+[Stats] checked=167320 refined=6400
+[Timing] coarse=507us fine=2567us merge=672us sort=5us map=0us TOTAL=3787us
+[Stats] checked=161525 refined=6400
+[Timing] coarse=608us fine=2375us merge=687us sort=6us map=1us TOTAL=3715us
+[Stats] checked=158691 refined=6400
+[Timing] coarse=540us fine=2476us merge=630us sort=5us map=0us TOTAL=3679us
+[Stats] checked=179208 refined=6400
+[Timing] coarse=546us fine=2201us merge=651us sort=5us map=1us TOTAL=3434us
+[Stats] checked=163877 refined=6400
+Processed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9809
+Average query time: 4.24 ms
+Index build time: 66 seconds

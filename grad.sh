@@ -42,12 +42,12 @@ generate_neighbors() {
     local p=$2
     
     # 定义搜索步长
-    local c_step=$(( c / 10 ))
-    local p_step=$(( p / 8 ))
+    local c_step=$(( c / 4 ))
+    local p_step=$(( p / 4 ))
     
     #  确保最小步长
-    c_step=$(( c_step < 32 ? 32 : c_step ))
-    p_step=$(( p_step < 4 ? 4 : p_step ))
+    c_step=$(( c_step < 4 ? 4 : c_step ))
+    p_step=$(( p_step < 1 ? 1 : p_step ))
     
     # 生成邻居点
     echo "$((c + c_step)) $p"

@@ -14,6 +14,7 @@ struct BucketItem {
 struct Bucket {
     std::vector<BucketItem> items;
     float max_radius = 0.0f;
+    int max_radius_sq8 = 0;
 };
 
 class solution {
@@ -66,7 +67,7 @@ private:
 
     int find_closest_centroid_linear(const float* vec) const;
     float compute_distance_simd(const float* a, const float* b) const;
-    int compute_distance_sq8(const uint8_t* a, const uint8_t* b) const;
+    int compute_distance_sq8(const uint8_t* a, const uint8_t* b, int limit = std::numeric_limits<int>::max()) const;
 
     std::vector<std::pair<int, float>> find_closest_centroids_simd(const std::vector<float>& query, int nprobe) const;
     int build_kdtree(std::vector<int>& indices, int begin, int end, int depth);
@@ -76,7 +77,7 @@ private:
 
 class Solution {
 public:
-    Solution(int num_centroid = 5422, int kmean_iter = 16, int nprob = 1024);
+    Solution(int num_centroid = 10240, int kmean_iter = 16, int nprob = 1024);
     void build(int d, const std::vector<float>& base);
     void search(const std::vector<float>& query, int* res);
 private:
