@@ -10,24 +10,6 @@
 // 将解析函数对外声明，供其它翻译单元使用（例如 test_solution.cpp）
 bool parse_vector_line(const std::string& line, std::string& out_id, std::vector<float>& out_vec);
 
-// --- 量化数据结构（从 cpp 移入头文件）---
-struct QuantizedData {
-    std::vector<uint8_t> codes;
-    std::vector<float> scales;
-    std::vector<float> mins;
-    
-    void quantize(const std::vector<float>& data, int n, int d);
-    float compute_distance_dequant_avx2(const float* query, int idx, int dim) const;
-};
-
-// --- SoA 倒排索引结构（从 cpp 移入头文件）---
-struct CompactBucket {
-    uint32_t start_offset;
-    uint32_t count;
-    std::vector<float> sorted_dists;
-    std::vector<int> original_ids;
-};
-
 struct BucketItem {
     int index;
     float dist_to_centroid;
@@ -63,12 +45,7 @@ private:
     std::vector<int> point_ids_;
     std::vector<float> point_data_;
     std::vector<float> centroid_data_;
-    std::vector<std::vector<BucketItem>> inverted_index; // 旧版（已废弃）
-    
-    // --- 新增 ---
-    std::vector<CompactBucket> compact_inverted_index;
-    QuantizedData quantized_data_;
-    
+
     struct KDNode {
         int axis;
         int centroid_index;
@@ -78,6 +55,8 @@ private:
     };
     std::vector<KDNode> kd_nodes_;
     int kd_root_;
+
+    std::vector<std::vector<BucketItem>> inverted_index;
 
     inline const float* point_ptr(int idx) const { return point_data_.data() + static_cast<size_t>(idx) * dim; }
     inline float* point_ptr(int idx) { return point_data_.data() + static_cast<size_t>(idx) * dim; }
@@ -110,7 +89,7 @@ private:
 
 class Solution {
 public:
-    Solution(int num_centroid = 4045, int kmean_iter = 16, int nprob = 161);
+    Solution(int num_centroid = 5422, int kmean_iter = 16, int nprob = 1024);
     void build(int d, const std::vector<float>& base);
     void search(const std::vector<float>& query, int* res);
     // 包装批量查询

@@ -4,14 +4,14 @@
 set -euo pipefail
 
 # 初始参数（从您的出发点开始）
-CURRENT_C=5022
-CURRENT_P=1064
+CURRENT_C=2560
+CURRENT_P=2560
 CURRENT_I=16
 
 # 搜索设置
 MAX_STEPS=50000
 MIN_RECALL=0.990
-PENALTY_COEFF=80
+PENALTY_COEFF=200
 NUM_RUNS=2                 # 新增：每个点运行次数
 
 BIN="testg"

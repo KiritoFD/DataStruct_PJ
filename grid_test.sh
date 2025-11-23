@@ -1,28 +1,23 @@
 #!/usr/bin/env bash
-# grid_test.sh - compile & run test over a grid of NUM_CENTROIDS, KMEANS_ITER, NPROBE
+# grid_test.sh - run test over a grid of NUM_CENTROIDS, KMEANS_ITER, NPROBE
 
 set -euo pipefail
 
 # Edit these arrays for the grid you want to try
 NUM_CENTROIDS_ARR=(
- 2048 2200 2300 2400 2500 2560 2600 2700 2888 2960 3076 3200 3400 3600 4000 4200 4242 4800 5000 5600 5800 6000 6400 6600
+ 1024 2048 4096 5600 8192 10240 12800 15360 20480
 )
-KMEANS_ITER_ARR=(16 32)
+KMEANS_ITER_ARR=(16 )
 NPROBE_ARR=(
-   64 66 68 70 72 74 76 80 84 90 96 100 105 110 115 
+   256 512 1024 2048 4096 6000
   
 )
 
 # Other settings
-SRC="MySolution.cpp"
-TEST_SRC="test_solution.cpp"
-BIN="test"
-BIN_G="testg"                       # 新增：第二个可执行文件
+BIN="testg"
 RESULTS_DIR="results"
-LOG_DIR="${RESULTS_DIR}/Log"            # 新增：日志子目录
+LOG_DIR="${RESULTS_DIR}/Log"
 TIMEOUT_SEC=${TIMEOUT_SEC:-1800}  # allow override from env
-CXX=${CXX:-g++}
-CXXFLAGS="-O3 -std=c++17 -mavx -fopenmp -ffast-math"
 SLEEP_BETWEEN_RUNS=${SLEEP_BETWEEN_RUNS:-0}  # 默认不 sleep
 
 # Check if timeout is available
@@ -34,26 +29,12 @@ else
 fi
 
 mkdir -p "$RESULTS_DIR"
-mkdir -p "$LOG_DIR"                      # 确保 Log 目录存在
+mkdir -p "$LOG_DIR"
 
 # ensure CSV summary exists with header
-SUMMARY_CSV="${RESULTS_DIR}/summary.csv"
+SUMMARY_CSV="${RESULTS_DIR}/summaryg.csv"
 if [ ! -f "$SUMMARY_CSV" ]; then
-  # 移除 STATUS 列
   echo "STAMP,NUM_CENTROIDS,KMEANS_ITER,NPROBE,ELAPSED_s,RECALL,AVG_QUERY_TIME_ms,INDEX_BUILD_TIME_s" > "$SUMMARY_CSV"
-fi
-
-# 新增：检查 testg 可执行文件并准备独立的 summary CSV
-SUMMARY_CSV_G="${RESULTS_DIR}/summary_g.csv"
-if [ ! -x "$BIN_G" ]; then
-  echo "Warning: executable '$BIN_G' not found or not executable. Skipping testg runs."
-  RUN_TESTG="0"
-else
-  RUN_TESTG="1"
-  if [ ! -f "$SUMMARY_CSV_G" ]; then
-    # 同样移除 STATUS 列
-    echo "STAMP,NUM_CENTROIDS,KMEANS_ITER,NPROBE,ELAPSED_s,RECALL,AVG_QUERY_TIME_ms,INDEX_BUILD_TIME_s" > "$SUMMARY_CSV_G"
-  fi
 fi
 
 echo "Grid test starting: $(date)"
@@ -63,10 +44,10 @@ echo "NPROBE: ${NPROBE_ARR[*]}"
 echo "Timeout per run: ${TIMEOUT_SEC}s"
 echo
 
-# 不编译，直接验证可执行文件存在
+# 验证可执行文件存在
 if [ ! -x "$BIN" ]; then
   echo "Error: executable '$BIN' not found or not executable."
-  echo "Please build the binary manually before running this script (e.g. g++ ... -o $BIN)."
+  echo "Please build the binary manually before running this script."
   exit 1
 fi
 
@@ -74,15 +55,15 @@ for ki in "${KMEANS_ITER_ARR[@]}"; do
   for np in "${NPROBE_ARR[@]}"; do
     for nc in "${NUM_CENTROIDS_ARR[@]}"; do
       stamp="c${nc}_i${ki}_p${np}"
-      logfile="${LOG_DIR}/run_${stamp}.log"    # 改为写入 Log 子目录
+      logfile="${LOG_DIR}/run_${stamp}.log"
 
-      # 缓存检查：若在任一 summary CSV 中已存在该 stamp，则跳过运行
-      if grep -q -F "${stamp}," "$SUMMARY_CSV" 2>/dev/null || ( [ -f "$SUMMARY_CSV_G" ] && grep -q -F "${stamp}," "$SUMMARY_CSV_G" 2>/dev/null ); then
+      # 缓存检查：若在 summary CSV 中已存在该 stamp，则跳过运行
+      if grep -q -F "${stamp}," "$SUMMARY_CSV" 2>/dev/null; then
         echo "=== Skipping ${stamp} (cached) ==="
         continue
       fi
       
-      echo "=== Running ${stamp} (test) ==="
+      echo "=== Running ${stamp} ==="
       echo "Run: --n ${nc}, --k ${ki}, --p ${np}"
       echo "Log: ${logfile}"
 
@@ -142,13 +123,13 @@ for ki in "${KMEANS_ITER_ARR[@]}"; do
         index_build_time_s="NA"
       fi
 
-      # Append CSV summary line (去掉 status 列)
+      # Append CSV summary line
       echo "${stamp},${nc},${ki},${np},${elapsed},${recall},${avg_query_time_ms},${index_build_time_s}" >> "$SUMMARY_CSV"
 
-      # Also append a human-readable note to summary.txt for quick glance (移除 STATUS 字段)
+      # Also append a human-readable note to summary.txt for quick glance
       echo "NUM_CENTROIDS=${nc} KMEANS_ITER=${ki} NPROBE=${np} ELAPSED=${elapsed}s RECALL=${recall} AVG_QUERY_TIME_ms=${avg_query_time_ms} INDEX_BUILD_s=${index_build_time_s}" >> "${RESULTS_DIR}/summary.txt"
 
-      echo "=== Finished ${stamp} (test) ==="
+      echo "=== Finished ${stamp} ==="
       echo
 
       # small pause to let system settle (make configurable)
@@ -156,69 +137,11 @@ for ki in "${KMEANS_ITER_ARR[@]}"; do
         sleep "$SLEEP_BETWEEN_RUNS"
       fi
 
-      # 如果 testg 可用，则用相同参数运行 testg 并记录到独立的 CSV/log
-      if [ "$RUN_TESTG" = "1" ]; then
-        logfile_g="${LOG_DIR}/run_${stamp}_g.log"    # 改为写入 Log 子目录
-        echo "=== Running ${stamp} (testg) ==="
-        start_ts_g=$(date +%s)
-        if [ -n "$TIMEOUT_CMD" ]; then
-          if $TIMEOUT_CMD "${TIMEOUT_SEC}"s ./"$BIN_G" --n "${nc}" --k "${ki}" --p "${np}" &>> "$logfile_g"; then
-            status_g="OK"
-          else
-            rc=$?
-            if [ $rc -eq 124 ] || [ $rc -eq 137 ]; then
-              status_g="TIMEOUT_KILLED"
-              echo "[RUN] exited with $rc (timeout/kill)" >> "$logfile_g"
-            else
-              status_g="ERROR_${rc}"
-              echo "[RUN] exited with $rc" >> "$logfile_g"
-            fi
-          fi
-        else
-          if ./"$BIN_G" --n "${nc}" --k "${ki}" --p "${np}" &>> "$logfile_g"; then
-            status_g="OK"
-          else
-            rc=$?
-            status_g="ERROR_${rc}"
-            echo "[RUN] exited with $rc" >> "$logfile_g"
-          fi
-        fi
-        end_ts_g=$(date +%s)
-        elapsed_g=$((end_ts_g - start_ts_g))
-        echo "Result (testg): ${status_g}, elapsed ${elapsed_g}s"
-
-        # 解析 testg logfile（与 test 相同的解析策略）
-        recall_line_g=$(grep -m1 "Average recall@" "$logfile_g" 2>/dev/null || true)
-        if [ -n "$recall_line_g" ]; then
-          recall_g=$(echo "$recall_line_g" | sed -E 's/.*: *([0-9]*\.?[0-9]+).*/\1/')
-        else
-          recall_g="NA"
-        fi
-        avg_query_line_g=$(grep -m1 "Average query time" "$logfile_g" 2>/dev/null || true)
-        if [ -n "$avg_query_line_g" ]; then
-          avg_query_time_ms_g=$(echo "$avg_query_line_g" | sed -E 's/.*: *([0-9]*\.?[0-9]+) *ms.*/\1/')
-        else
-          avg_query_time_ms_g="NA"
-        fi
-        index_build_line_g=$(grep -m1 "Index build time" "$logfile_g" 2>/dev/null || true)
-        if [ -n "$index_build_line_g" ]; then
-          index_build_time_s_g=$(echo "$index_build_line_g" | sed -E 's/.*: *([0-9]*\.?[0-9]+) *seconds.*/\1/')
-        else
-          index_build_time_s_g="NA"
-        fi
-
-        # 将 testg 的结果追加到独立 CSV 与 summary 文件（去掉 status 列）
-        echo "${stamp},${nc},${ki},${np},${elapsed_g},${recall_g},${avg_query_time_ms_g},${index_build_time_s_g}" >> "$SUMMARY_CSV_G"
-        echo "NUM_CENTROIDS=${nc} KMEANS_ITER=${ki} NPROBE=${np} ELAPSED=${elapsed_g}s RECALL=${recall_g} AVG_QUERY_TIME_ms=${avg_query_time_ms_g} INDEX_BUILD_s=${index_build_time_s_g}" >> "${RESULTS_DIR}/summary_g.txt"
-        echo "=== Finished ${stamp} (testg) ==="
-        echo
-      fi
-
-      # 跳出所有循环（break 3）如果召回率低于0.98
+      # 如果召回率低于0.98，停止当前 nprobe 的后续 num_centroids 测试，继续下一个 nprobe
       awk_recall=$(awk "BEGIN {print ($recall < 0.98) ? 1 : 0}")
       if [ "$awk_recall" -eq 1 ]; then
-        echo "Recall is below threshold, stopping early."
-        break 1
+        echo "Recall is below 0.98 for NPROBE=${np}, skipping larger NUM_CENTROIDS for this NPROBE."
+        break  # 只跳出最内层循环 (num_centroids)
       fi
     done
   done
