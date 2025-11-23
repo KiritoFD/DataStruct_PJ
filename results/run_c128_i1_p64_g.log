@@ -1,7 +1,0 @@
-[cache] loaded base vectors from data_o/glove/base.txt.bin
-Building index...
-Index built in 1 seconds
-Loading queries and ground truth...
-Loaded 1000 ground truth entries
-Running queries...
-Processed 50 queriesProcessed 100 queriesProcessed 150 queriesProcessed 200 queries

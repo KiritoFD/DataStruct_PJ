@@ -5,27 +5,12 @@ set -euo pipefail
 
 # Edit these arrays for the grid you want to try
 NUM_CENTROIDS_ARR=(
-  # === 破坏性小值 (5组) - 低于常规最小值
-  64 96 128 192 256
-  
-  # === 传统最优区加密 (15组) - 从历史数据提炼
-  384 512 640 768 896 
-  1024 1280 1536 2048 2560 
-  3072 4096 5120 6144 8192
-  
-  # === 大规模区 (10组) - 覆盖你的原始范围
-  10240  16384 18432 
-  20480 
+ 2048 2200 2300 2400 2500 2560 2600 2700 2888 2960 3076 3200 3400 3600 4000 4200 4242 4800 5000 5600 5800 6000 6400 6600
 )
-KMEANS_ITER_ARR=(1 16)
+KMEANS_ITER_ARR=(16 32)
 NPROBE_ARR=(
-   32 64 128 224 256
+   64 66 68 70 72 74 76 80 84 90 96 100 105 110 115 
   
-  # === 高性能区 (5组) - 低延迟高召回
-  324 400 512 648 800
-  
-  # === 疯狂大值 (3组) - 接近全表扫描
-  1024 2048 3000 4096 
 )
 
 # Other settings
@@ -34,6 +19,7 @@ TEST_SRC="test_solution.cpp"
 BIN="test"
 BIN_G="testg"                       # 新增：第二个可执行文件
 RESULTS_DIR="results"
+LOG_DIR="${RESULTS_DIR}/Log"            # 新增：日志子目录
 TIMEOUT_SEC=${TIMEOUT_SEC:-1800}  # allow override from env
 CXX=${CXX:-g++}
 CXXFLAGS="-O3 -std=c++17 -mavx -fopenmp -ffast-math"
@@ -48,6 +34,7 @@ else
 fi
 
 mkdir -p "$RESULTS_DIR"
+mkdir -p "$LOG_DIR"                      # 确保 Log 目录存在
 
 # ensure CSV summary exists with header
 SUMMARY_CSV="${RESULTS_DIR}/summary.csv"
@@ -87,7 +74,7 @@ for ki in "${KMEANS_ITER_ARR[@]}"; do
   for np in "${NPROBE_ARR[@]}"; do
     for nc in "${NUM_CENTROIDS_ARR[@]}"; do
       stamp="c${nc}_i${ki}_p${np}"
-      logfile="${RESULTS_DIR}/run_${stamp}.log"
+      logfile="${LOG_DIR}/run_${stamp}.log"    # 改为写入 Log 子目录
 
       # 缓存检查：若在任一 summary CSV 中已存在该 stamp，则跳过运行
       if grep -q -F "${stamp}," "$SUMMARY_CSV" 2>/dev/null || ( [ -f "$SUMMARY_CSV_G" ] && grep -q -F "${stamp}," "$SUMMARY_CSV_G" 2>/dev/null ); then
@@ -158,8 +145,8 @@ for ki in "${KMEANS_ITER_ARR[@]}"; do
       # Append CSV summary line (去掉 status 列)
       echo "${stamp},${nc},${ki},${np},${elapsed},${recall},${avg_query_time_ms},${index_build_time_s}" >> "$SUMMARY_CSV"
 
-      # Also append a human-readable note to summary.txt for quick glance
-      echo "NUM_CENTROIDS=${nc} KMEANS_ITER=${ki} NPROBE=${np} STATUS=${status} ELAPSED=${elapsed}s RECALL=${recall} AVG_QUERY_TIME_ms=${avg_query_time_ms} INDEX_BUILD_s=${index_build_time_s}" >> "${RESULTS_DIR}/summary.txt"
+      # Also append a human-readable note to summary.txt for quick glance (移除 STATUS 字段)
+      echo "NUM_CENTROIDS=${nc} KMEANS_ITER=${ki} NPROBE=${np} ELAPSED=${elapsed}s RECALL=${recall} AVG_QUERY_TIME_ms=${avg_query_time_ms} INDEX_BUILD_s=${index_build_time_s}" >> "${RESULTS_DIR}/summary.txt"
 
       echo "=== Finished ${stamp} (test) ==="
       echo
@@ -171,7 +158,7 @@ for ki in "${KMEANS_ITER_ARR[@]}"; do
 
       # 如果 testg 可用，则用相同参数运行 testg 并记录到独立的 CSV/log
       if [ "$RUN_TESTG" = "1" ]; then
-        logfile_g="${RESULTS_DIR}/run_${stamp}_g.log"
+        logfile_g="${LOG_DIR}/run_${stamp}_g.log"    # 改为写入 Log 子目录
         echo "=== Running ${stamp} (testg) ==="
         start_ts_g=$(date +%s)
         if [ -n "$TIMEOUT_CMD" ]; then
@@ -222,7 +209,7 @@ for ki in "${KMEANS_ITER_ARR[@]}"; do
 
         # 将 testg 的结果追加到独立 CSV 与 summary 文件（去掉 status 列）
         echo "${stamp},${nc},${ki},${np},${elapsed_g},${recall_g},${avg_query_time_ms_g},${index_build_time_s_g}" >> "$SUMMARY_CSV_G"
-        echo "NUM_CENTROIDS=${nc} KMEANS_ITER=${ki} NPROBE=${np} STATUS=${status_g} ELAPSED=${elapsed_g}s RECALL=${recall_g} AVG_QUERY_TIME_ms=${avg_query_time_ms_g} INDEX_BUILD_s=${index_build_time_s_g}" >> "${RESULTS_DIR}/summary_g.txt"
+        echo "NUM_CENTROIDS=${nc} KMEANS_ITER=${ki} NPROBE=${np} ELAPSED=${elapsed_g}s RECALL=${recall_g} AVG_QUERY_TIME_ms=${avg_query_time_ms_g} INDEX_BUILD_s=${index_build_time_s_g}" >> "${RESULTS_DIR}/summary_g.txt"
         echo "=== Finished ${stamp} (testg) ==="
         echo
       fi
