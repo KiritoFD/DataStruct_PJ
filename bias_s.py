@@ -12,8 +12,8 @@ BIN_PATH = "./test"
 MIN_RECALL = 0.998
 NUM_RUNS = 1           
 FIXED_I = 16             
-INITIAL_C = 5242        
-INITIAL_P = 191         
+INITIAL_C =  4045       
+INITIAL_P = 324         
 N_TRIALS = 50000           
 
 RESULT_CSV = "optuna_search_sift_log.csv"

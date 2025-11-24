@@ -18,12 +18,142 @@
 #include <condition_variable>
 #include <functional>
 #include <future>
-#include <cstdint> // 新增，确保 uint8_t 可用
 
-constexpr int SEARCH_THREADS =16;
+// --- 配置与常量 ---
+constexpr int SEARCH_THREADS = 8;
 const bool debug = false;
+constexpr bool USE_QUANTIZATION = true;
+constexpr bool USE_RESIDUALS = true;
+constexpr int PREFETCH_DIST_VEC = 16;
+constexpr int PREFETCH_DIST_SCALAR = 64;
 
-// --- 简易线程池 ---
+// --- 内存对齐分配器 ---
+template <typename T>
+struct AlignedAllocator {
+    using value_type = T;
+    AlignedAllocator() = default;
+    template <class U> constexpr AlignedAllocator(const AlignedAllocator<U>&) noexcept {}
+    T* allocate(std::size_t n) {
+        if (n > std::size_t(-1) / sizeof(T)) throw std::bad_alloc();
+        if (auto p = static_cast<T*>(_mm_malloc(n * sizeof(T), 32))) return p;
+        throw std::bad_alloc();
+    }
+    void deallocate(T* p, std::size_t) noexcept { _mm_free(p); }
+};
+template <typename T, typename U>
+bool operator==(const AlignedAllocator<T>&, const AlignedAllocator<U>&) { return true; }
+template <typename T, typename U>
+bool operator!=(const AlignedAllocator<T>&, const AlignedAllocator<U>&) { return false; }
+
+// --- 量化数据结构实现 ---
+void QuantizedData::quantize(const std::vector<float>& data, int n, int d) {
+    // Padding 到 32 的倍数（AVX2 一次处理 8 个 float，展开 4 次）
+    dim_padded = (d + 31) & ~31;
+    
+    codes.resize(n * dim_padded, 0); // 初始化为 0
+    scales.resize(dim_padded, 0.0f);
+    mins.resize(dim_padded, 0.0f);
+    
+    // 统计每维 min/max（只计算有效维度）
+    for (int j = 0; j < d; ++j) {
+        float minv = std::numeric_limits<float>::max();
+        float maxv = std::numeric_limits<float>::lowest();
+        for (int i = 0; i < n; ++i) {
+            float val = data[i * d + j];
+            minv = std::min(minv, val);
+            maxv = std::max(maxv, val);
+        }
+        mins[j] = minv;
+        float range = maxv - minv;
+        scales[j] = (range > 1e-8f) ? (range / 255.0f) : 1.0f;
+    }
+    
+    // Padding 区域：scale=1, min=0（保证 padding 区域距离贡献为 0）
+    for (int j = d; j < dim_padded; ++j) {
+        scales[j] = 1.0f;
+        mins[j] = 0.0f;
+    }
+    
+    // 编码（只编码有效数据，padding 区域已初始化为 0）
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < d; ++j) {
+            float val = data[i * d + j];
+            int code = static_cast<int>((val - mins[j]) / scales[j]);
+            codes[i * dim_padded + j] = static_cast<uint8_t>(std::clamp(code, 0, 255));
+        }
+    }
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((target("avx2,fma")))
+#endif
+float QuantizedData::compute_distance_dequant_avx2(const float* query, int idx, int dim) const {
+    const uint8_t* code_ptr = codes.data() + idx * dim_padded;
+    
+    // 4-way 循环展开，减少依赖链
+    __m256 sum0 = _mm256_setzero_ps();
+    __m256 sum1 = _mm256_setzero_ps();
+    __m256 sum2 = _mm256_setzero_ps();
+    __m256 sum3 = _mm256_setzero_ps();
+    
+    // dim_padded 保证是 32 的倍数
+    for (int i = 0; i < dim_padded; i += 32) {
+        // Block 0 (i+0 ~ i+7)
+        __m128i codes_i8_0 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(code_ptr + i));
+        __m256i codes_i32_0 = _mm256_cvtepu8_epi32(codes_i8_0);
+        __m256 codes_f32_0 = _mm256_cvtepi32_ps(codes_i32_0);
+        __m256 scale_0 = _mm256_loadu_ps(scales.data() + i);
+        __m256 minv_0 = _mm256_loadu_ps(mins.data() + i);
+        __m256 decoded_0 = _mm256_fmadd_ps(codes_f32_0, scale_0, minv_0);
+        __m256 q_0 = _mm256_loadu_ps(query + i);
+        __m256 diff_0 = _mm256_sub_ps(q_0, decoded_0);
+        sum0 = _mm256_fmadd_ps(diff_0, diff_0, sum0);
+        
+        // Block 1 (i+8 ~ i+15)
+        __m128i codes_i8_1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(code_ptr + i + 8));
+        __m256i codes_i32_1 = _mm256_cvtepu8_epi32(codes_i8_1);
+        __m256 codes_f32_1 = _mm256_cvtepi32_ps(codes_i32_1);
+        __m256 scale_1 = _mm256_loadu_ps(scales.data() + i + 8);
+        __m256 minv_1 = _mm256_loadu_ps(mins.data() + i + 8);
+        __m256 decoded_1 = _mm256_fmadd_ps(codes_f32_1, scale_1, minv_1);
+        __m256 q_1 = _mm256_loadu_ps(query + i + 8);
+        __m256 diff_1 = _mm256_sub_ps(q_1, decoded_1);
+        sum1 = _mm256_fmadd_ps(diff_1, diff_1, sum1);
+        
+        // Block 2 (i+16 ~ i+23)
+        __m128i codes_i8_2 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(code_ptr + i + 16));
+        __m256i codes_i32_2 = _mm256_cvtepu8_epi32(codes_i8_2);
+        __m256 codes_f32_2 = _mm256_cvtepi32_ps(codes_i32_2);
+        __m256 scale_2 = _mm256_loadu_ps(scales.data() + i + 16);
+        __m256 minv_2 = _mm256_loadu_ps(mins.data() + i + 16);
+        __m256 decoded_2 = _mm256_fmadd_ps(codes_f32_2, scale_2, minv_2);
+        __m256 q_2 = _mm256_loadu_ps(query + i + 16);
+        __m256 diff_2 = _mm256_sub_ps(q_2, decoded_2);
+        sum2 = _mm256_fmadd_ps(diff_2, diff_2, sum2);
+        
+        // Block 3 (i+24 ~ i+31)
+        __m128i codes_i8_3 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(code_ptr + i + 24));
+        __m256i codes_i32_3 = _mm256_cvtepu8_epi32(codes_i8_3);
+        __m256 codes_f32_3 = _mm256_cvtepi32_ps(codes_i32_3);
+        __m256 scale_3 = _mm256_loadu_ps(scales.data() + i + 24);
+        __m256 minv_3 = _mm256_loadu_ps(mins.data() + i + 24);
+        __m256 decoded_3 = _mm256_fmadd_ps(codes_f32_3, scale_3, minv_3);
+        __m256 q_3 = _mm256_loadu_ps(query + i + 24);
+        __m256 diff_3 = _mm256_sub_ps(q_3, decoded_3);
+        sum3 = _mm256_fmadd_ps(diff_3, diff_3, sum3);
+    }
+    
+    // 汇总 4 个累加器
+    __m256 sum_01 = _mm256_add_ps(sum0, sum1);
+    __m256 sum_23 = _mm256_add_ps(sum2, sum3);
+    __m256 sum_total = _mm256_add_ps(sum_01, sum_23);
+    
+    alignas(32) float tmp[8];
+    _mm256_store_ps(tmp, sum_total);
+    return tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
+}
+
+// --- 简易线程池定义 ---
 class ThreadPool {
 public:
     explicit ThreadPool(size_t threads) : stop(false) {
@@ -44,8 +174,9 @@ public:
     }
 
     template <class F, class... Args>
-    auto enqueue(F&& f, Args&&... args) {
-        using return_type = typename std::invoke_result_t<F, Args...>;
+    auto enqueue(F&& f, Args&&... args)
+        -> std::future<typename std::result_of<F(Args...)>::type> {
+        using return_type = typename std::result_of<F(Args...)>::type;
         auto task = std::make_shared<std::packaged_task<return_type()>>(
             std::bind(std::forward<F>(f), std::forward<Args>(args)...));
         std::future<return_type> res = task->get_future();
@@ -75,130 +206,13 @@ private:
     bool stop;
 };
 
+// 全局线程池实例
 static std::unique_ptr<ThreadPool> g_pool;
+
+// 全局辅助：缓存每个点到其最终质心距离（可选，主要依赖 inverted_index 内的数据）
 static std::vector<float> g_point_centroid_dist;
 
-// 新增: CPU 特性检测与 per-function target 封装
-#if defined(__GNUC__) || defined(__clang__)
-  #define ATTR_TARGET(x) __attribute__((target(x)))
-  #define CPU_SUPPORTS(x) __builtin_cpu_supports(x)
-#else
-  #define ATTR_TARGET(x)
-  #define CPU_SUPPORTS(x) (false)
-#endif
-
-static bool g_has_avx = false;
-static bool g_has_avx2 = false;
-static bool g_has_avx512f = false;
-static std::once_flag g_cpu_init_flag;
-
-static inline float l2_scalar(const float* a, const float* b, int dim) {
-    float s = 0.0f;
-    for (int i = 0; i < dim; ++i) {
-        float d = a[i] - b[i];
-        s += d * d;
-    }
-    return s;
-}
-
-static inline int sq8_scalar(const uint8_t* a, const uint8_t* b, int len, int limit) {
-    int s = 0;
-    for (int i = 0; i < len; ++i) {
-        int d = int(a[i]) - int(b[i]);
-        s += d * d;
-        if (s > limit) return std::numeric_limits<int>::max();
-    }
-    return s;
-}
-
-#if defined(__GNUC__) || defined(__clang__)
-ATTR_TARGET("avx")
-static inline float l2_avx(const float* a, const float* b, int dim) {
-    __m256 sumv = _mm256_setzero_ps();
-    int i = 0;
-    for (; i <= dim - 8; i += 8) {
-        __m256 va = _mm256_loadu_ps(a + i);
-        __m256 vb = _mm256_loadu_ps(b + i);
-        __m256 diff = _mm256_sub_ps(va, vb);
-        sumv = _mm256_add_ps(sumv, _mm256_mul_ps(diff, diff));
-    }
-    alignas(32) float tmp[8];
-    _mm256_store_ps(tmp, sumv);
-    float total = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
-    for (; i < dim; ++i) {
-        float d = a[i] - b[i];
-        total += d * d;
-    }
-    return total;
-}
-
-ATTR_TARGET("avx512f")
-static inline float l2_avx512(const float* a, const float* b, int dim) {
-    __m512 sum512 = _mm512_setzero_ps();
-    int i = 0;
-    for (; i <= dim - 16; i += 16) {
-        __m512 va = _mm512_loadu_ps(a + i);
-        __m512 vb = _mm512_loadu_ps(b + i);
-        __m512 diff = _mm512_sub_ps(va, vb);
-        sum512 = _mm512_add_ps(sum512, _mm512_mul_ps(diff, diff));
-    }
-    float total = _mm512_reduce_add_ps(sum512);
-    for (; i < dim; ++i) {
-        float d = a[i] - b[i];
-        total += d * d;
-    }
-    return total;
-}
-
-ATTR_TARGET("avx2")
-static inline int sq8_avx2(const uint8_t* a, const uint8_t* b, int len, int limit) {
-    __m256i sum = _mm256_setzero_si256();
-    for (int i = 0; i < len; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-
-        __m128i va_lo = _mm256_castsi256_si128(va);
-        __m128i va_hi = _mm256_extracti128_si256(va, 1);
-        __m128i vb_lo = _mm256_castsi256_si128(vb);
-        __m128i vb_hi = _mm256_extracti128_si256(vb, 1);
-
-        __m256i va_16_lo = _mm256_cvtepu8_epi16(va_lo);
-        __m256i vb_16_lo = _mm256_cvtepu8_epi16(vb_lo);
-        __m256i diff_lo = _mm256_sub_epi16(va_16_lo, vb_16_lo);
-        __m256i sq_lo = _mm256_madd_epi16(diff_lo, diff_lo);
-        sum = _mm256_add_epi32(sum, sq_lo);
-
-        __m256i va_16_hi = _mm256_cvtepu8_epi16(va_hi);
-        __m256i vb_16_hi = _mm256_cvtepu8_epi16(vb_hi);
-        __m256i diff_hi = _mm256_sub_epi16(va_16_hi, vb_16_hi);
-        __m256i sq_hi = _mm256_madd_epi16(diff_hi, diff_hi);
-        sum = _mm256_add_epi32(sum, sq_hi);
-
-        // 早停：用 store + 标量求和，避免依赖额外指令集
-        alignas(32) int partial_v[8];
-        _mm256_store_si256((__m256i*)partial_v, sum);
-        int partial = partial_v[0] + partial_v[1] + partial_v[2] + partial_v[3]
-                    + partial_v[4] + partial_v[5] + partial_v[6] + partial_v[7];
-        if (partial > limit) return std::numeric_limits<int>::max();
-    }
-
-    alignas(32) int v[8];
-    _mm256_store_si256((__m256i*)v, sum);
-    return v[0] + v[1] + v[2] + v[3] + v[4] + v[5] + v[6] + v[7];
-}
-#else
-// 非 GCC/Clang 环境下，回退标量实现，避免编译期报错
-static inline float l2_avx(const float* a, const float* b, int dim) { return l2_scalar(a, b, dim); }
-static inline float l2_avx512(const float* a, const float* b, int dim) { return l2_scalar(a, b, dim); }
-static inline int sq8_avx2(const uint8_t* a, const uint8_t* b, int len, int limit) { return sq8_scalar(a, b, len, limit); }
-#endif
-
-static void init_cpu_caps_once() {
-    g_has_avx      = CPU_SUPPORTS("avx");
-    g_has_avx2     = CPU_SUPPORTS("avx2");
-    g_has_avx512f  = CPU_SUPPORTS("avx512f");
-}
-
+// --- 字符串解析辅助 ---
 namespace {
     bool try_stod(const std::string& s, float& out) {
         try {
@@ -211,24 +225,52 @@ namespace {
     }
 }
 
-// --- Solution 实现 ---
 
 solution::solution(const std::string& metric_type, int num_centroid, int kmean_iter, int nprob)
-    : metric(metric_type), dim(0), num_threads(1), num_centroid(num_centroid),
-      kmean_iter(kmean_iter), nprob(nprob), kd_root_(-1) {
+    : metric(metric_type),
+      dim(0),
+      num_threads(1),
+      num_centroid(num_centroid),
+      kmean_iter(kmean_iter),
+      nprob(nprob),
+      kd_root_(-1) {
     unsigned int hc = std::thread::hardware_concurrency();
     num_threads = static_cast<int>(hc > 0 ? hc : 1);
-    if (debug) {
-        std::cout << "[solution] threads=" << num_threads << ", centroid=" << num_centroid
-                  << ", iter=" << kmean_iter << ", nprob=" << nprob << "\n";
-    }
     
     static std::once_flag pool_flag;
     std::call_once(pool_flag, []() {
-        g_pool = std::make_unique<ThreadPool>(std::max(1, SEARCH_THREADS));
+        int t_cnt = std::max(1, SEARCH_THREADS);
+        g_pool = std::make_unique<ThreadPool>(t_cnt);
     });
-    // 新增：初始化 CPU 指令集能力
-    std::call_once(g_cpu_init_flag, init_cpu_caps_once);
+}
+
+void solution::build(const std::string& base_file) {
+    auto t0 = std::chrono::high_resolution_clock::now();
+    std::ifstream fin(base_file);
+    if (!fin) return;
+    
+    std::vector<std::vector<float>> vectors;
+    std::string line;
+    int local_dim = 0;
+    while (std::getline(fin, line)) {
+        std::string id;
+        std::vector<float> vec;
+        if (local_dim == 0) local_dim = static_cast<int>(vec.size());
+        if (vec.size() != static_cast<size_t>(local_dim)) continue;
+        vectors.push_back(std::move(vec));
+    }
+
+    if (vectors.empty()) {
+        point_ids_.clear();
+        point_data_.clear();
+        centroid_data_.clear();
+        inverted_index.clear();
+        kd_nodes_.clear();
+        kd_root_ = -1;
+        dim = 0;
+        return;
+    }
+    build_from_memory(local_dim, std::move(vectors));
 }
 
 void solution::build_from_memory(int d, std::vector<std::vector<float>> data) {
@@ -237,6 +279,7 @@ void solution::build_from_memory(int d, std::vector<std::vector<float>> data) {
     point_ids_.resize(n);
     point_data_.assign(n * static_cast<size_t>(dim), 0.0f);
     
+    // 初始数据拷贝
     for (size_t i = 0; i < n; ++i) {
         point_ids_[i] = static_cast<int>(i);
         float* dst = point_ptr(static_cast<int>(i));
@@ -252,7 +295,7 @@ void solution::finalize_build() {
     const int total = static_cast<int>(point_ids_.size());
     if (total <= 0 || dim == 0) return;
 
-    // 1. 初始化质心
+    // 1. 初始化质心（不变）
     centroid_data_.assign(static_cast<size_t>(num_centroid) * dim, 0.0f);
     std::mt19937 rng(42);
     std::uniform_int_distribution<int> dist(0, total - 1);
@@ -260,7 +303,7 @@ void solution::finalize_build() {
         std::memcpy(centroid_ptr(i), point_ptr(dist(rng)), sizeof(float) * dim);
     }
 
-    // 2. K-Means 迭代
+    // 2. K-Means（不变）
     std::vector<int> assignments(total, 0);
     for (int iter = 0; iter < kmean_iter; ++iter) {
         kmeans_assign_parallel(assignments);
@@ -269,157 +312,102 @@ void solution::finalize_build() {
         centroid_data_.swap(new_centroids);
     }
 
-    // 3. 构建 KD-Tree
-    kd_nodes_.clear();
-    if (num_centroid > 0) {
-        std::vector<int> ids(num_centroid);
-        std::iota(ids.begin(), ids.end(), 0);
-        kd_root_ = build_kdtree(ids, 0, num_centroid, 0);
-    } else {
-        kd_root_ = -1;
-    }
-
-    // 4. 构建倒排索引
-    int threads_to_use = std::min(num_threads, std::max(1, total));
-    int chunk_size = (total + threads_to_use - 1) / threads_to_use;
-    std::vector<std::vector<std::vector<BucketItem>>> thread_results(
-        threads_to_use, std::vector<std::vector<BucketItem>>(num_centroid));
+    // 3. 构建倒排（SoA + 残差）
+    std::vector<std::vector<int>> temp_buckets(num_centroid);
+    std::vector<std::vector<float>> temp_dists(num_centroid);
+    std::vector<std::vector<float>> temp_residuals; // 若使用残差
     
-    g_point_centroid_dist.assign(total, 0.0f);
+    if (USE_RESIDUALS) {
+        temp_residuals.resize(num_centroid);
+    }
 
-    std::vector<std::thread> workers;
-    workers.reserve(threads_to_use);
-    for (int t = 0; t < threads_to_use; ++t) {
-        int start = t * chunk_size;
-        int end = std::min(start + chunk_size, total);
-        if (start < end) {
-            workers.emplace_back([this, &thread_results, &assignments, start, end, t]() {
-                for (int i = start; i < end; ++i) {
-                    int c = assignments[i];
-                    float d = compute_distance_simd(point_ptr(i), centroid_ptr(c));
-                    thread_results[t][c].push_back({i, d});
-                    g_point_centroid_dist[i] = d;
-                }
-            });
+    for (int i = 0; i < total; ++i) {
+        int c = assignments[i];
+        float dist = compute_distance_simd(point_ptr(i), centroid_ptr(c));
+        temp_buckets[c].push_back(i);
+        temp_dists[c].push_back(dist);
+        
+        if (USE_RESIDUALS) {
+            // 计算残差向量：point - centroid
+            std::vector<float> residual(dim);
+            const float* pt = point_ptr(i);
+            const float* ct = centroid_ptr(c);
+            for (int d = 0; d < dim; ++d) {
+                residual[d] = pt[d] - ct[d];
+            }
+            temp_residuals[c].insert(temp_residuals[c].end(), residual.begin(), residual.end());
         }
     }
-    for (auto& th : workers) th.join();
 
-    // 5. 合并倒排索引并排序
-    inverted_index.clear();
-    inverted_index.resize(num_centroid);
+    // 4. 按距离排序并重排
+    std::vector<int> new_order;
+    new_order.reserve(total);
+    std::vector<int> new_ids;
+    new_ids.reserve(total);
+    std::vector<float> new_data_flat;
+    new_data_flat.reserve(total * dim);
+
+    compact_inverted_index.clear();
+    compact_inverted_index.resize(num_centroid);
+
     for (int c = 0; c < num_centroid; ++c) {
-        size_t total_bucket = 0;
-        for (int t = 0; t < threads_to_use; ++t) {
-            total_bucket += thread_results[t][c].size();
-        }
-        if (total_bucket == 0) continue;
-        
-        auto& dest = inverted_index[c].items;
-        dest.reserve(total_bucket);
-        for (int t = 0; t < threads_to_use; ++t) {
-            auto& src = thread_results[t][c];
-            dest.insert(dest.end(), std::make_move_iterator(src.begin()), 
-                       std::make_move_iterator(src.end()));
-        }
-        
-        std::sort(dest.begin(), dest.end(),
-                  [](const BucketItem& a, const BucketItem& b) { 
-                      return a.dist_to_centroid < b.dist_to_centroid; 
-                  });
-        
-        inverted_index[c].max_radius = dest.empty() ? 0.0f : dest.back().dist_to_centroid;
-        inverted_index[c].max_radius_sq8 = static_cast<int>(inverted_index[c].max_radius * global_scale_ * global_scale_ * dim);
-    }
+        auto& bucket_indices = temp_buckets[c];
+        auto& bucket_dists = temp_dists[c];
+        if (bucket_indices.empty()) continue;
 
-    // 6. 物理内存重排
-    {
-        std::vector<int> old2new(total, -1);
-        std::vector<float> new_points(static_cast<size_t>(total) * dim);
-        std::vector<int> new_ids(total);
-        int write = 0;
-        
-        for (int c = 0; c < num_centroid; ++c) {
-            auto& bucket = inverted_index[c].items;
-            for (auto& bi : bucket) {
-                int old = bi.index;
-                float* src = point_ptr(old);
-                float* dst = new_points.data() + static_cast<size_t>(write) * dim;
-                std::memcpy(dst, src, sizeof(float) * dim);
-                
-                old2new[old] = write;
-                new_ids[write] = point_ids_[old];
-                bi.index = write;
-                write++;
+        // 排序
+        std::vector<size_t> order(bucket_indices.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+            return bucket_dists[a] < bucket_dists[b];
+        });
+
+        CompactBucket& cb = compact_inverted_index[c];
+        cb.start_offset = static_cast<uint32_t>(new_order.size());
+        cb.count = static_cast<uint32_t>(bucket_indices.size());
+        cb.sorted_dists.reserve(cb.count);
+        cb.original_ids.reserve(cb.count);
+
+        for (size_t idx : order) {
+            int old_i = bucket_indices[idx];
+            cb.sorted_dists.push_back(bucket_dists[idx]);
+            cb.original_ids.push_back(point_ids_[old_i]);
+            new_order.push_back(old_i);
+
+            if (USE_RESIDUALS) {
+                // 从 temp_residuals[c] 中提取残差
+                const float* res_ptr = temp_residuals[c].data() + idx * dim;
+                new_data_flat.insert(new_data_flat.end(), res_ptr, res_ptr + dim);
+            } else {
+                const float* pt = point_ptr(old_i);
+                new_data_flat.insert(new_data_flat.end(), pt, pt + dim);
             }
-        }
-        
-        for (int old = 0; old < total; ++old) {
-            if (old2new[old] == -1) {
-                int nw = write++;
-                float* src = point_ptr(old);
-                float* dst = new_points.data() + static_cast<size_t>(nw) * dim;
-                std::memcpy(dst, src, sizeof(float) * dim);
-                old2new[old] = nw;
-                new_ids[nw] = point_ids_[old];
-            }
-        }
-        point_data_.swap(new_points);
-        point_ids_.swap(new_ids);
-        
-        if (!g_point_centroid_dist.empty()) {
-            std::vector<float> new_dist(total);
-            for (int old = 0; old < total; ++old) {
-                int nw = old2new[old];
-                if (nw >= 0 && nw < total) new_dist[nw] = g_point_centroid_dist[old];
-            }
-            g_point_centroid_dist.swap(new_dist);
+            new_ids.push_back(point_ids_[old_i]);
         }
     }
 
-    // 7. SQ8 Quantization
-    {
-        float min_val = std::numeric_limits<float>::max();
-        float max_val = std::numeric_limits<float>::lowest();
-        for (float v : point_data_) {
-            if (v < min_val) min_val = v;
-            if (v > max_val) max_val = v;
-        }
-        global_min_ = min_val;
-        global_scale_ = 255.0f / (max_val - min_val + 1e-9f);
-        
-        padded_dim = (dim + 31) / 32 * 32; // Align to 32 bytes
-        quantized_point_data_.resize(static_cast<size_t>(total) * padded_dim, 0);
-        
-        int threads_to_use = std::min(num_threads, std::max(1, total));
-        int chunk_size = (total + threads_to_use - 1) / threads_to_use;
-        std::vector<std::thread> q_workers;
-        for(int t=0; t<threads_to_use; ++t) {
-            int start = t * chunk_size;
-            int end = std::min(start + chunk_size, total);
-            if(start < end) {
-                q_workers.emplace_back([this, start, end]() {
-                    for(int i=start; i<end; ++i) {
-                        const float* src = point_ptr(i);
-                        uint8_t* dst = const_cast<uint8_t*>(quantized_ptr(i));
-                        for(int j=0; j<dim; ++j) {
-                            float val = (src[j] - global_min_) * global_scale_;
-                            dst[j] = static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, val)));
-                        }
-                    }
-                });
-            }
-        }
-        for(auto& w : q_workers) w.join();
+    // 5. 量化（可选）
+    if (USE_QUANTIZATION) {
+        quantized_data_.quantize(new_data_flat, total, dim);
+        point_data_.clear(); // 释放原始浮点数据
+    } else {
+        point_data_ = std::move(new_data_flat);
     }
+    point_ids_ = std::move(new_ids);
+
+    // 6. 移除 KD-Tree（小规模质心用线性扫描更快）
+    kd_root_ = -1;
+    kd_nodes_.clear();
 
     if (debug) {
         auto t1 = std::chrono::high_resolution_clock::now();
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
-        std::cout << "[finalize_build] " << ms << " ms\n";
+        std::cout << "[finalize_build] total time: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                  << " ms\n";
     }
 }
 
+// --- K-Means Helpers ---
 void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
     const int total = static_cast<int>(point_ids_.size());
     if (total == 0) return;
@@ -433,6 +421,7 @@ void solution::kmeans_assign_parallel(std::vector<int>& assignments) {
         if (start < end) {
             threads.emplace_back([this, &assignments, start, end]() {
                 for (int i = start; i < end; ++i) {
+                    _mm_prefetch(reinterpret_cast<const char*>(point_ptr(std::min(i + 1, end - 1))), _MM_HINT_T0);
                     assignments[i] = find_closest_centroid_linear(point_ptr(i));
                 }
             });
@@ -447,10 +436,8 @@ void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::
     int threads_to_use = std::min(num_threads, std::max(1, total));
     int chunk_size = (total + threads_to_use - 1) / threads_to_use;
 
-    std::vector<std::vector<float>> thread_sums(threads_to_use, 
-        std::vector<float>(static_cast<size_t>(num_centroid) * dim, 0.0f));
-    std::vector<std::vector<int>> thread_counts(threads_to_use, 
-        std::vector<int>(num_centroid, 0));
+    std::vector<std::vector<float>> thread_sums(threads_to_use, std::vector<float>(static_cast<size_t>(num_centroid) * dim, 0.0f));
+    std::vector<std::vector<int>> thread_counts(threads_to_use, std::vector<int>(num_centroid, 0));
 
     std::vector<std::thread> threads;
     for (int t = 0; t < threads_to_use; ++t) {
@@ -465,7 +452,7 @@ void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::
                     float* dst = sums.data() + static_cast<size_t>(c) * dim;
                     const float* src = point_ptr(i);
                     for (int d = 0; d < dim; ++d) dst[d] += src[d];
-                    counts[c]++;
+                    counts[c] += 1;
                 }
             });
         }
@@ -490,6 +477,8 @@ void solution::kmeans_update_parallel(const std::vector<int>& assignments, std::
     }
 }
 
+// --- 距离计算 Kernels (优化版) ---
+
 int solution::find_closest_centroid_linear(const float* vec) const {
     if (centroid_data_.empty()) return 0;
     float best = std::numeric_limits<float>::max();
@@ -504,18 +493,61 @@ int solution::find_closest_centroid_linear(const float* vec) const {
     return best_idx;
 }
 
-float solution::compute_distance_simd(const float* a, const float* b) const {
-    // 运行时分发，按支持从强到弱选择
-    if (g_has_avx512f && dim >= 16) return l2_avx512(a, b, dim);
-    if (g_has_avx)                  return l2_avx(a, b, dim);
-    return l2_scalar(a, b, dim);
+int solution::find_closest_centroid(const std::vector<float>& vec) const {
+    // 兼容接口，实际指向 SIMD 版本
+    return find_closest_centroid_linear(vec.data());
 }
 
-int solution::compute_distance_sq8(const uint8_t* a, const uint8_t* b, int limit) const {
-    // 运行时分发，支持 AVX2 则用 AVX2，否则回退标量
-    if (g_has_avx2) return sq8_avx2(a, b, padded_dim, limit);
-    return sq8_scalar(a, b, padded_dim, limit);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((target("avx2,fma")))
+#endif
+float solution::compute_distance_simd(const float* a, const float* b) const {
+    __m256 sumv = _mm256_setzero_ps();
+    int i = 0;
+    for (; i <= dim - 8; i += 8) {
+        __m256 va = _mm256_loadu_ps(a + i);
+        __m256 vb = _mm256_loadu_ps(b + i);
+        __m256 diff = _mm256_sub_ps(va, vb);
+        __m256 sq = _mm256_mul_ps(diff, diff);
+        sumv = _mm256_add_ps(sumv, sq);
+    }
+    alignas(32) float tmp[8];
+    _mm256_store_ps(tmp, sumv);
+    float total = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
+    for (; i < dim; ++i) {
+        float diff = a[i] - b[i];
+        total += diff * diff;
+    }
+    return total;
 }
+
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((target("avx2,fma")))
+#endif
+float solution::compute_distance_capped_simd(const float* a, const float* b, float cap) const {
+    float total = 0.0f;
+    int i = 0;
+    for (; i <= dim - 8; i += 8) {
+        __m256 va = _mm256_loadu_ps(a + i);
+        __m256 vb = _mm256_loadu_ps(b + i);
+        __m256 diff = _mm256_sub_ps(va, vb);
+        __m256 sq = _mm256_mul_ps(diff, diff);
+        alignas(32) float tmp[8];
+        _mm256_store_ps(tmp, sq);
+        for (int k = 0; k < 8; ++k) {
+            total += tmp[k];
+            if (total >= cap) return total;
+        }
+    }
+    for (; i < dim; ++i) {
+        float d = a[i] - b[i];
+        total += d * d;
+        if (total >= cap) return total;
+    }
+    return total;
+}
+
+// --- KD-Tree Helpers ---
 
 int solution::build_kdtree(std::vector<int>& indices, int begin, int end, int depth) {
     if (begin >= end) return -1;
@@ -560,188 +592,193 @@ void solution::search_kdtree(const float* query, int node_idx, int nprobe,
 std::vector<std::pair<int, float>> solution::find_closest_centroids_simd(const std::vector<float>& query, int nprobe) const {
     if (centroid_data_.empty() || nprobe <= 0) return {};
     nprobe = std::min(nprobe, num_centroid);
-    std::priority_queue<std::pair<float, int>> best;
-    if (kd_root_ >= 0) {
-        search_kdtree(query.data(), kd_root_, nprobe, best);
-    } else {
-        for (int c = 0; c < num_centroid; ++c) {
-            float dist = compute_distance_simd(query.data(), centroid_ptr(c));
-            if (static_cast<int>(best.size()) < nprobe) {
-                best.emplace(dist, c);
-            } else if (dist < best.top().first) {
-                best.pop();
-                best.emplace(dist, c);
-            }
-        }
+
+    // 小规模质心：直接暴力 SIMD 扫描（比 KD-Tree 快）
+    std::vector<std::pair<float, int>> dists;
+    dists.reserve(num_centroid);
+    for (int c = 0; c < num_centroid; ++c) {
+        float d = compute_distance_simd(query.data(), centroid_ptr(c));
+        dists.emplace_back(d, c);
     }
+
+    std::partial_sort(dists.begin(), dists.begin() + nprobe, dists.end());
+    dists.resize(nprobe);
+
     std::vector<std::pair<int, float>> result;
-    result.reserve(best.size());
-    while (!best.empty()) {
-        result.push_back({best.top().second, best.top().first});
-        best.pop();
-    }
-    std::sort(result.begin(), result.end(),
-              [](const auto& a, const auto& b) { return a.second < b.second; });
-    if (result.size() > static_cast<size_t>(nprobe)) result.resize(nprobe);
+    result.reserve(nprobe);
+    for (auto& p : dists) result.push_back({p.second, p.first});
     return result;
 }
 
-std::vector<std::pair<int, float>> solution::search(const std::vector<float>& query, int k) {
-    auto t_search_start = std::chrono::high_resolution_clock::now();
-    
-    if (point_ids_.empty() || inverted_index.empty() || k <= 0) return {};
+// --- Search 核心入口 (修复版) ---
 
-    // Phase 1: 粗排 - 找最近的质心
-    auto t_coarse_start = std::chrono::high_resolution_clock::now();
+std::vector<std::pair<int, float>> solution::search(const std::vector<float>& query, int k) {
+    if (point_ids_.empty() || compact_inverted_index.empty() || k <= 0) return {};
+
+    // 1. 粗排 (Top NPROB centroids)
     auto close_centroids = find_closest_centroids_simd(query, std::min(nprob, num_centroid));
-    auto t_coarse_end = std::chrono::high_resolution_clock::now();
-    
     if (close_centroids.empty()) return {};
 
-    int total_centroids = static_cast<int>(close_centroids.size());
-
-    // Quantize Query
-    std::vector<uint8_t> q_quant(padded_dim, 0);
-    for(int j=0; j<dim; ++j) {
-        float val = (query[j] - global_min_) * global_scale_;
-        q_quant[j] = static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, val)));
-    }
-
-    std::vector<int> centroid_sq8_dists(total_centroids);
-    for(int idx=0; idx<total_centroids; ++idx){
-        int c_id = close_centroids[idx].first;
-        std::vector<uint8_t> c_quant(padded_dim, 0);
-        for(int j=0; j<dim; ++j){
-            float val = (centroid_ptr(c_id)[j] - global_min_) * global_scale_;
-            c_quant[j] = static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, val)));
-        }
-        centroid_sq8_dists[idx] = compute_distance_sq8(q_quant.data(), c_quant.data());
-    }
-
-    unsigned int hw_threads = std::thread::hardware_concurrency();
-    int threads_to_use = std::max(1u, std::min(hw_threads, static_cast<unsigned int>(total_centroids)));
-    int buckets_per_thread = (total_centroids + threads_to_use - 1) / threads_to_use;
-
-    // Use a larger K for refinement (SQ8 -> Float)
-    int k_refine = std::max(k * 20, 200);
-
-    struct ThreadResult {
-        std::vector<std::pair<int, int>> local_candidates; // <sq8_dist, index>
-        int checked = 0;
-    };
-    std::vector<ThreadResult> results(threads_to_use);
-
-    // Phase 2: Fine Search (SQ8)
-    auto t_fine_start = std::chrono::high_resolution_clock::now();
+    // 2. 准备查询向量 (修复内存越界和频繁分配问题)
+    // 确保传递给 compute_distance 的指针空间至少有 dim_padded 大小，且 Padding 区域为 0
     
-    std::vector<std::thread> workers;
+    std::vector<float> aligned_query_buffer; // 用于非残差模式下的 Query Padding
+    std::vector<float> flattened_residuals;  // 用于残差模式下的连续内存
+
+    int actual_dim_for_calc = dim;
+    if (USE_QUANTIZATION) {
+        actual_dim_for_calc = quantized_data_.dim_padded;
+    }
+
+    if (USE_RESIDUALS) {
+        // 分配一大块连续内存，避免循环内频繁 malloc
+        flattened_residuals.resize(close_centroids.size() * actual_dim_for_calc, 0.0f);
+        
+        for (size_t i = 0; i < close_centroids.size(); ++i) {
+            int c_id = close_centroids[i].first;
+            const float* ct = centroid_ptr(c_id);
+            float* res_dst = flattened_residuals.data() + i * actual_dim_for_calc;
+            
+            // 计算残差 (只计算有效维度 dim)
+            for (int d = 0; d < dim; ++d) {
+                res_dst[d] = query[d] - ct[d];
+            }
+            // Padding 区域已经在 resize 时初始化为 0.0f，保证距离计算正确
+        }
+    } else if (USE_QUANTIZATION) {
+        // 非残差但用了量化：必须拷贝 Query 并 Padding，防止越界读取
+        aligned_query_buffer.resize(actual_dim_for_calc, 0.0f);
+        std::memcpy(aligned_query_buffer.data(), query.data(), dim * sizeof(float));
+        // Padding 区域为 0
+    }
+
+    std::vector<float> centroid_dists(close_centroids.size());
+    for (size_t i = 0; i < close_centroids.size(); ++i) centroid_dists[i] = close_centroids[i].second;
+
+    int threads_to_use = std::max(1, SEARCH_THREADS);
+    int total_centroids = static_cast<int>(close_centroids.size());
+    int chunk_size = (total_centroids + threads_to_use - 1) / threads_to_use;
+
+    std::vector<std::future<std::vector<std::pair<float, int>>>> futures;
+    futures.reserve(threads_to_use);
+
     for (int t = 0; t < threads_to_use; ++t) {
-        int start = t * buckets_per_thread;
-        int end = std::min(start + buckets_per_thread, total_centroids);
+        int start = t * chunk_size;
+        int end = std::min(start + chunk_size, total_centroids);
         if (start >= end) continue;
 
-        workers.emplace_back([this, start, end, k_refine, &q_quant, &close_centroids, &results, t, &centroid_sq8_dists]() {
-            auto& res = results[t];
-            std::vector<std::pair<int, int>> heap;
-            heap.reserve(k_refine + 1);
-            int limit = std::numeric_limits<int>::max();
-            bool has_k = false;
+        futures.push_back(g_pool->enqueue([this, start, end, k, actual_dim_for_calc,
+                                           &query, &aligned_query_buffer, &flattened_residuals, 
+                                           &close_centroids, &centroid_dists]() {
+            std::vector<std::pair<float, int>> local_top;
+            local_top.reserve(k + 1);
+            float current_limit = std::numeric_limits<float>::max();
 
             for (int idx = start; idx < end; ++idx) {
                 int c_id = close_centroids[idx].first;
-                const auto& bucket = inverted_index[c_id];
-                
-                // Bucket-level early prune
-                if (centroid_sq8_dists[idx] - bucket.max_radius_sq8 > limit) continue;
-                
-                for (const auto& item : bucket.items) {
-                    res.checked++;
-                    int dist_sq8 = compute_distance_sq8(q_quant.data(), quantized_ptr(item.index), limit);
+                float d_qc = centroid_dists[idx];
+                const CompactBucket& bucket = compact_inverted_index[c_id];
+                if (bucket.count == 0) continue;
 
-                    if (!has_k) {
-                        heap.emplace_back(dist_sq8, item.index);
-                        if (static_cast<int>(heap.size()) == k_refine) {
-                            std::make_heap(heap.begin(), heap.end());
-                            limit = heap.front().first;
-                            has_k = true;
+                // 确定当前使用的 Query 指针
+                const float* query_ptr = nullptr;
+                if (USE_RESIDUALS) {
+                    query_ptr = flattened_residuals.data() + idx * actual_dim_for_calc;
+                } else if (USE_QUANTIZATION) {
+                    query_ptr = aligned_query_buffer.data();
+                } else {
+                    query_ptr = query.data(); // 不量化也不残差，直接用原始指针
+                }
+
+                // --- 预取标量数组（距离） ---
+                const float* dist_array = bucket.sorted_dists.data();
+                for (uint32_t prefetch_i = 0; prefetch_i < bucket.count; prefetch_i += PREFETCH_DIST_SCALAR) {
+                    _mm_prefetch(reinterpret_cast<const char*>(dist_array + prefetch_i), _MM_HINT_T0);
+                }
+
+                // --- 二分跳过头部 (小桶优化) ---
+                float min_dist_pc = d_qc - current_limit;
+                uint32_t start_j = 0;
+                if (min_dist_pc > 0 && bucket.count > 32) {
+                    // 只对大桶使用二分查找
+                    auto it = std::lower_bound(bucket.sorted_dists.begin(), bucket.sorted_dists.end(), min_dist_pc);
+                    start_j = static_cast<uint32_t>(std::distance(bucket.sorted_dists.begin(), it));
+                }
+
+                float max_dist_pc = d_qc + current_limit;
+
+                for (uint32_t j = start_j; j < bucket.count; ++j) {
+                    // --- 激进预取向量数据 ---
+                    if (j + PREFETCH_DIST_VEC < bucket.count) {
+                        uint32_t prefetch_idx = bucket.start_offset + j + PREFETCH_DIST_VEC;
+                        const char* prefetch_addr;
+                        if (USE_QUANTIZATION) {
+                            prefetch_addr = reinterpret_cast<const char*>(quantized_data_.codes.data() + prefetch_idx * actual_dim_for_calc);
+                        } else {
+                            prefetch_addr = reinterpret_cast<const char*>(point_data_.data() + prefetch_idx * dim);
                         }
-                    } else if (dist_sq8 < limit) {
-                        std::pop_heap(heap.begin(), heap.end());
-                        heap.back() = {dist_sq8, item.index};
-                        std::push_heap(heap.begin(), heap.end());
-                        limit = heap.front().first;
+                        _mm_prefetch(prefetch_addr, _MM_HINT_T0);
+                    }
+
+                    // 标量剪枝
+                    float dist_pc = bucket.sorted_dists[j];
+                    if (dist_pc > max_dist_pc) break;
+                    if (std::fabs(d_qc - dist_pc) >= current_limit) continue;
+
+                    // --- 计算精确距离 ---
+                    float exact;
+                    uint32_t global_idx = bucket.start_offset + j;
+                    if (USE_QUANTIZATION) {
+                        exact = quantized_data_.compute_distance_dequant_avx2(query_ptr, global_idx, dim);
+                    } else {
+                        const float* vec_ptr = point_data_.data() + global_idx * dim;
+                        exact = compute_distance_capped_simd(query_ptr, vec_ptr, current_limit);
+                    }
+
+                    // --- 堆维护 ---
+                    if (exact < current_limit) {
+                        local_top.emplace_back(exact, global_idx);
+                        std::push_heap(local_top.begin(), local_top.end());
+                        if (local_top.size() > static_cast<size_t>(k)) {
+                            std::pop_heap(local_top.begin(), local_top.end());
+                            local_top.pop_back();
+                        }
+                        if (local_top.size() == static_cast<size_t>(k)) {
+                            current_limit = local_top.front().first;
+                            max_dist_pc = d_qc + current_limit;
+                        }
                     }
                 }
             }
-            res.local_candidates = std::move(heap);
-        });
+            return local_top;
+        }));
     }
-    
-    for (auto& w : workers) w.join();
-    auto t_fine_end = std::chrono::high_resolution_clock::now();
 
-    // Phase 3: Merge & Refine
-    auto t_merge_start = std::chrono::high_resolution_clock::now();
-    std::vector<int> candidate_indices;
-    candidate_indices.reserve(threads_to_use * k_refine);
-    int total_checked = 0;
-    for (const auto& res : results) {
-        total_checked += res.checked;
-        for (const auto& p : res.local_candidates) {
-            candidate_indices.push_back(p.second);
-        }
+    std::vector<std::pair<float, int>> all_candidates;
+    for (auto& f : futures) {
+        auto res = f.get();
+        all_candidates.insert(all_candidates.end(), res.begin(), res.end());
     }
-    
-    // Refine: Compute float distance for candidates
-    std::vector<std::pair<float, int>> refined_results;
-    refined_results.reserve(candidate_indices.size());
-    
-    for (int idx : candidate_indices) {
-        float d = compute_distance_simd(query.data(), point_ptr(idx));
-        refined_results.push_back({d, idx});
-    }
-    auto t_merge_end = std::chrono::high_resolution_clock::now();
+    if (all_candidates.empty()) return {};
 
-    if (refined_results.empty()) return {};
-
-    // Phase 4: 最终排序
-    auto t_sort_start = std::chrono::high_resolution_clock::now();
-    if (static_cast<int>(refined_results.size()) > k) {
-        std::partial_sort(refined_results.begin(), refined_results.begin() + k, refined_results.end());
-        refined_results.resize(k);
+    if (static_cast<int>(all_candidates.size()) > k) {
+        std::partial_sort(all_candidates.begin(), all_candidates.begin() + k, all_candidates.end());
+        all_candidates.resize(k);
     } else {
-        std::sort(refined_results.begin(), refined_results.end());
-    }
-    auto t_sort_end = std::chrono::high_resolution_clock::now();
-
-    // Phase 5: ID 映射
-    auto t_map_start = std::chrono::high_resolution_clock::now();
-    std::vector<std::pair<int, float>> final;
-    final.reserve(refined_results.size());
-    for (const auto& c : refined_results) {
-        final.push_back({point_ids_[c.second], c.first});
-    }
-    auto t_map_end = std::chrono::high_resolution_clock::now();
-    
-    auto t_search_end = std::chrono::high_resolution_clock::now();
-
-    if (debug) {
-        auto us_coarse = std::chrono::duration_cast<std::chrono::microseconds>(t_coarse_end - t_coarse_start).count();
-        auto us_fine = std::chrono::duration_cast<std::chrono::microseconds>(t_fine_end - t_fine_start).count();
-        auto us_merge = std::chrono::duration_cast<std::chrono::microseconds>(t_merge_end - t_merge_start).count();
-        auto us_sort = std::chrono::duration_cast<std::chrono::microseconds>(t_sort_end - t_sort_start).count();
-        auto us_map = std::chrono::duration_cast<std::chrono::microseconds>(t_map_end - t_map_start).count();
-        auto us_total = std::chrono::duration_cast<std::chrono::microseconds>(t_search_end - t_search_start).count();
-        
-        std::cout << "[Timing] coarse=" << us_coarse << "us fine=" << us_fine << "us merge=" << us_merge 
-                  << "us sort=" << us_sort << "us map=" << us_map << "us TOTAL=" << us_total << "us\n";
-        std::cout << "[Stats] checked=" << total_checked << " refined=" << candidate_indices.size() << "\n";
+        std::sort(all_candidates.begin(), all_candidates.end());
     }
 
-    return final;
+    // --- O(1) ID 映射 ---
+    std::vector<std::pair<int, float>> final_result;
+    final_result.reserve(all_candidates.size());
+    for (auto& cand : all_candidates) {
+        final_result.push_back({point_ids_[cand.second], cand.first});
+    }
+    return final_result;
 }
 
-// 外部接口
+// --- 外部接口封装 ---
+
 static solution* g_impl = nullptr;
 
 Solution::Solution(int num_centroid, int kmean_iter, int nprob) 

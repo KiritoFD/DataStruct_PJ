@@ -12,8 +12,8 @@ BIN_PATH = "./testg"
 MIN_RECALL = 0.985
 NUM_RUNS = 2             
 FIXED_I = 16             
-INITIAL_C = 3707         
-INITIAL_P = 1103         
+INITIAL_C = 4333         
+INITIAL_P = 1125         
 N_TRIALS = 50000           
 
 RESULT_CSV = "optuna_search_log.csv"

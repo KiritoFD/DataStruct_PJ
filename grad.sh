@@ -5,12 +5,12 @@ set -euo pipefail
 
 # 初始参数（从您的出发点开始）
 CURRENT_C=5422
-CURRENT_P=1024
+CURRENT_P=324
 CURRENT_I=16
 
 # 搜索设置
 MAX_STEPS=50000
-MIN_RECALL=0.985
+MIN_RECALL=0.90
 PENALTY_COEFF=200
 NUM_RUNS=2                 # 新增：每个点运行次数
 
