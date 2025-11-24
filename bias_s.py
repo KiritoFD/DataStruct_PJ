@@ -8,15 +8,15 @@ from typing import Tuple, Dict
 from datetime import datetime
 
 # --- 配置 ---
-BIN_PATH = "./testg"
-MIN_RECALL = 0.985
-NUM_RUNS = 2             
+BIN_PATH = "./test"
+MIN_RECALL = 0.998
+NUM_RUNS = 1           
 FIXED_I = 16             
-INITIAL_C = 3707         
-INITIAL_P = 1103         
+INITIAL_C = 5242        
+INITIAL_P = 191         
 N_TRIALS = 50000           
 
-RESULT_CSV = "optuna_search_log.csv"
+RESULT_CSV = "optuna_search_sift_log.csv"
 PRECISION_DIGITS = 6     # 统一使用 6 位小数精度
 
 # --- 奖励/惩罚常量 (用于最大化目标) ---
@@ -142,7 +142,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     
     # 1. 定义搜索空间
     c = trial.suggest_int("c", 102, 10240) 
-    p_max = min(2048, c)
+    p_max = 600
     p = trial.suggest_int("p", 1, p_max)
     
     # 2. 运行测试并获取平均指标

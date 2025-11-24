@@ -10,7 +10,49 @@
 #include <vector>
 #include <utility>
 #include <sys/stat.h>
+
 const std::string dataset = "sift";
+
+// --- 本地辅助函数：解析向量行 ---
+static bool parse_vector_line(const std::string& line, std::string& out_id, std::vector<float>& out_vec) {
+    out_id.clear();
+    out_vec.clear();
+    std::istringstream iss(line);
+    std::vector<std::string> toks;
+    std::string t;
+    while (iss >> t) toks.push_back(t);
+    if (toks.empty()) return false;
+
+    auto try_stod = [](const std::string& s, float& out) -> bool {
+        try {
+            size_t pos = 0;
+            out = std::stod(s, &pos);
+            return pos == s.size();
+        } catch (...) {
+            return false;
+        }
+    };
+
+    float val = 0.0;
+    bool allnum = true;
+    for (const auto& s : toks) {
+        if (!try_stod(s, val)) { allnum = false; break; }
+    }
+    if (allnum) {
+        out_vec.reserve(toks.size());
+        for (const auto& s : toks) out_vec.push_back(std::stod(s));
+        return true;
+    }
+
+    if (toks.size() < 2) return false;
+    out_id = toks[0];
+    out_vec.reserve(toks.size() - 1);
+    for (size_t i = 1; i < toks.size(); ++i) {
+        if (!try_stod(toks[i], val)) return false;
+        out_vec.push_back(std::stod(toks[i]));
+    }
+    return true;
+}
 
 // 简单的JSON解析器
 struct SimpleJSON {
@@ -243,7 +285,7 @@ int main(int argc, char* argv[]) {
     const std::string gt_file = std::string("data_o/") + dataset + "/test.json";
     const int K = 10;  // top-k
 
-    // 加载底库为一维 float 向量
+    // 解析底库并构建一维向量
     int d = 0;
     std::vector<std::pair<int, std::vector<float>>> queries;
     auto base_flat = load_base_flat_cached(base_file, d, &queries);

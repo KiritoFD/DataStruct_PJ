@@ -18,9 +18,10 @@
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include <cstdint> // 新增，确保 uint8_t 可用
 
 constexpr int SEARCH_THREADS =16;
-const bool debug = true;
+const bool debug = false;
 
 // --- 简易线程池 ---
 class ThreadPool {
@@ -77,6 +78,127 @@ private:
 static std::unique_ptr<ThreadPool> g_pool;
 static std::vector<float> g_point_centroid_dist;
 
+// 新增: CPU 特性检测与 per-function target 封装
+#if defined(__GNUC__) || defined(__clang__)
+  #define ATTR_TARGET(x) __attribute__((target(x)))
+  #define CPU_SUPPORTS(x) __builtin_cpu_supports(x)
+#else
+  #define ATTR_TARGET(x)
+  #define CPU_SUPPORTS(x) (false)
+#endif
+
+static bool g_has_avx = false;
+static bool g_has_avx2 = false;
+static bool g_has_avx512f = false;
+static std::once_flag g_cpu_init_flag;
+
+static inline float l2_scalar(const float* a, const float* b, int dim) {
+    float s = 0.0f;
+    for (int i = 0; i < dim; ++i) {
+        float d = a[i] - b[i];
+        s += d * d;
+    }
+    return s;
+}
+
+static inline int sq8_scalar(const uint8_t* a, const uint8_t* b, int len, int limit) {
+    int s = 0;
+    for (int i = 0; i < len; ++i) {
+        int d = int(a[i]) - int(b[i]);
+        s += d * d;
+        if (s > limit) return std::numeric_limits<int>::max();
+    }
+    return s;
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+ATTR_TARGET("avx")
+static inline float l2_avx(const float* a, const float* b, int dim) {
+    __m256 sumv = _mm256_setzero_ps();
+    int i = 0;
+    for (; i <= dim - 8; i += 8) {
+        __m256 va = _mm256_loadu_ps(a + i);
+        __m256 vb = _mm256_loadu_ps(b + i);
+        __m256 diff = _mm256_sub_ps(va, vb);
+        sumv = _mm256_add_ps(sumv, _mm256_mul_ps(diff, diff));
+    }
+    alignas(32) float tmp[8];
+    _mm256_store_ps(tmp, sumv);
+    float total = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
+    for (; i < dim; ++i) {
+        float d = a[i] - b[i];
+        total += d * d;
+    }
+    return total;
+}
+
+ATTR_TARGET("avx512f")
+static inline float l2_avx512(const float* a, const float* b, int dim) {
+    __m512 sum512 = _mm512_setzero_ps();
+    int i = 0;
+    for (; i <= dim - 16; i += 16) {
+        __m512 va = _mm512_loadu_ps(a + i);
+        __m512 vb = _mm512_loadu_ps(b + i);
+        __m512 diff = _mm512_sub_ps(va, vb);
+        sum512 = _mm512_add_ps(sum512, _mm512_mul_ps(diff, diff));
+    }
+    float total = _mm512_reduce_add_ps(sum512);
+    for (; i < dim; ++i) {
+        float d = a[i] - b[i];
+        total += d * d;
+    }
+    return total;
+}
+
+ATTR_TARGET("avx2")
+static inline int sq8_avx2(const uint8_t* a, const uint8_t* b, int len, int limit) {
+    __m256i sum = _mm256_setzero_si256();
+    for (int i = 0; i < len; i += 32) {
+        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
+        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
+
+        __m128i va_lo = _mm256_castsi256_si128(va);
+        __m128i va_hi = _mm256_extracti128_si256(va, 1);
+        __m128i vb_lo = _mm256_castsi256_si128(vb);
+        __m128i vb_hi = _mm256_extracti128_si256(vb, 1);
+
+        __m256i va_16_lo = _mm256_cvtepu8_epi16(va_lo);
+        __m256i vb_16_lo = _mm256_cvtepu8_epi16(vb_lo);
+        __m256i diff_lo = _mm256_sub_epi16(va_16_lo, vb_16_lo);
+        __m256i sq_lo = _mm256_madd_epi16(diff_lo, diff_lo);
+        sum = _mm256_add_epi32(sum, sq_lo);
+
+        __m256i va_16_hi = _mm256_cvtepu8_epi16(va_hi);
+        __m256i vb_16_hi = _mm256_cvtepu8_epi16(vb_hi);
+        __m256i diff_hi = _mm256_sub_epi16(va_16_hi, vb_16_hi);
+        __m256i sq_hi = _mm256_madd_epi16(diff_hi, diff_hi);
+        sum = _mm256_add_epi32(sum, sq_hi);
+
+        // 早停：用 store + 标量求和，避免依赖额外指令集
+        alignas(32) int partial_v[8];
+        _mm256_store_si256((__m256i*)partial_v, sum);
+        int partial = partial_v[0] + partial_v[1] + partial_v[2] + partial_v[3]
+                    + partial_v[4] + partial_v[5] + partial_v[6] + partial_v[7];
+        if (partial > limit) return std::numeric_limits<int>::max();
+    }
+
+    alignas(32) int v[8];
+    _mm256_store_si256((__m256i*)v, sum);
+    return v[0] + v[1] + v[2] + v[3] + v[4] + v[5] + v[6] + v[7];
+}
+#else
+// 非 GCC/Clang 环境下，回退标量实现，避免编译期报错
+static inline float l2_avx(const float* a, const float* b, int dim) { return l2_scalar(a, b, dim); }
+static inline float l2_avx512(const float* a, const float* b, int dim) { return l2_scalar(a, b, dim); }
+static inline int sq8_avx2(const uint8_t* a, const uint8_t* b, int len, int limit) { return sq8_scalar(a, b, len, limit); }
+#endif
+
+static void init_cpu_caps_once() {
+    g_has_avx      = CPU_SUPPORTS("avx");
+    g_has_avx2     = CPU_SUPPORTS("avx2");
+    g_has_avx512f  = CPU_SUPPORTS("avx512f");
+}
+
 namespace {
     bool try_stod(const std::string& s, float& out) {
         try {
@@ -105,6 +227,8 @@ solution::solution(const std::string& metric_type, int num_centroid, int kmean_i
     std::call_once(pool_flag, []() {
         g_pool = std::make_unique<ThreadPool>(std::max(1, SEARCH_THREADS));
     });
+    // 新增：初始化 CPU 指令集能力
+    std::call_once(g_cpu_init_flag, init_cpu_caps_once);
 }
 
 void solution::build_from_memory(int d, std::vector<std::vector<float>> data) {
@@ -381,85 +505,16 @@ int solution::find_closest_centroid_linear(const float* vec) const {
 }
 
 float solution::compute_distance_simd(const float* a, const float* b) const {
-#if defined(__AVX512F)
-    if (dim >= 16) {
-        __m512 sum512 = _mm512_setzero_ps();
-        int i = 0;
-        for (; i <= dim - 16; i += 16) {
-            __m512 va = _mm512_loadu_ps(a + i);
-            __m512 vb = _mm512_loadu_ps(b + i);
-            __m512 diff = _mm512_sub_ps(va, vb);
-            sum512 = _mm512_add_ps(sum512, _mm512_mul_ps(diff, diff));
-        }
-        float total = _mm512_reduce_add_ps(sum512);
-        for (; i <= dim - 8; i += 8) {
-            __m256 va = _mm256_loadu_ps(a + i);
-            __m256 vb = _mm256_loadu_ps(b + i);
-            __m256 diff = _mm256_sub_ps(va, vb);
-            alignas(32) float tmp[8];
-            _mm256_store_ps(tmp, _mm256_mul_ps(diff, diff));
-            for (int k = 0; k < 8; ++k) total += tmp[k];
-        }
-        for (; i < dim; ++i) {
-            float d = a[i] - b[i];
-            total += d * d;
-        }
-        return total;
-    }
-#endif
-    __m256 sumv = _mm256_setzero_ps();
-    int i = 0;
-    for (; i <= dim - 8; i += 8) {
-        __m256 va = _mm256_loadu_ps(a + i);
-        __m256 vb = _mm256_loadu_ps(b + i);
-        __m256 diff = _mm256_sub_ps(va, vb);
-        sumv = _mm256_add_ps(sumv, _mm256_mul_ps(diff, diff));
-    }
-    alignas(32) float tmp[8];
-    _mm256_store_ps(tmp, sumv);
-    float total = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
-    for (; i < dim; ++i) {
-        float d = a[i] - b[i];
-        total += d * d;
-    }
-    return total;
+    // 运行时分发，按支持从强到弱选择
+    if (g_has_avx512f && dim >= 16) return l2_avx512(a, b, dim);
+    if (g_has_avx)                  return l2_avx(a, b, dim);
+    return l2_scalar(a, b, dim);
 }
 
 int solution::compute_distance_sq8(const uint8_t* a, const uint8_t* b, int limit) const {
-    __m256i sum = _mm256_setzero_si256();
-    for (int i = 0; i < padded_dim; i += 32) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        
-        __m128i va_lo = _mm256_castsi256_si128(va);
-        __m128i va_hi = _mm256_extracti128_si256(va, 1);
-        __m128i vb_lo = _mm256_castsi256_si128(vb);
-        __m128i vb_hi = _mm256_extracti128_si256(vb, 1);
-
-        __m256i va_16_lo = _mm256_cvtepu8_epi16(va_lo);
-        __m256i vb_16_lo = _mm256_cvtepu8_epi16(vb_lo);
-        __m256i diff_lo = _mm256_sub_epi16(va_16_lo, vb_16_lo);
-        __m256i sq_lo = _mm256_madd_epi16(diff_lo, diff_lo);
-        sum = _mm256_add_epi32(sum, sq_lo);
-
-        __m256i va_16_hi = _mm256_cvtepu8_epi16(va_hi);
-        __m256i vb_16_hi = _mm256_cvtepu8_epi16(vb_hi);
-        __m256i diff_hi = _mm256_sub_epi16(va_16_hi, vb_16_hi);
-        __m256i sq_hi = _mm256_madd_epi16(diff_hi, diff_hi);
-        sum = _mm256_add_epi32(sum, sq_hi);
-
-        // Early break check
-        __m128i sum128_partial = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extracti128_si256(sum, 1));
-        __m128i tmp1_partial = _mm_hadd_epi32(sum128_partial, sum128_partial);
-        __m128i tmp2_partial = _mm_hadd_epi32(tmp1_partial, tmp1_partial);
-        int partial = _mm_cvtsi128_si32(tmp2_partial);
-        if (partial > limit) return std::numeric_limits<int>::max();
-    }
-    
-    __m128i sum128 = _mm_add_epi32(_mm256_castsi256_si128(sum), _mm256_extracti128_si256(sum, 1));
-    __m128i tmp1 = _mm_hadd_epi32(sum128, sum128);
-    __m128i tmp2 = _mm_hadd_epi32(tmp1, tmp1);
-    return _mm_cvtsi128_si32(tmp2);
+    // 运行时分发，支持 AVX2 则用 AVX2，否则回退标量
+    if (g_has_avx2) return sq8_avx2(a, b, padded_dim, limit);
+    return sq8_scalar(a, b, padded_dim, limit);
 }
 
 int solution::build_kdtree(std::vector<int>& indices, int begin, int end, int depth) {
