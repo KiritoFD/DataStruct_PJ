@@ -1,4 +1,4 @@
-// hnsw_solution_parallel_optimized.cpp
+// hnsw_solution_parallel_final.cpp
 #include <vector>
 #include <queue>
 #include <cmath>
@@ -9,14 +9,23 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
-#include <shared_mutex> // C++17 读写锁，关键优化
+#include <shared_mutex>
 #include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include <xmmintrin.h> // _mm_prefetch
+#include <cstdint> // 新增：距离统计相关全局变量
+
+// 新增：距离统计相关全局变量
+static std::atomic<uint64_t> g_dist_count{0};
+static std::atomic<uint64_t> g_total_dist_count{0};
+static std::atomic<uint64_t> g_total_query_count{0};
+static std::atomic<uint64_t> g_last_query_dist{0};
+static std::atomic<bool>   g_count_dist_enabled{true};
 
 // ---------------------------------------------------------
-// 全局线程池 (保持不变，用于并行构建)
+// 全局线程池 (保持不变)
 // ---------------------------------------------------------
 class ThreadPool {
 public:
@@ -61,8 +70,13 @@ private:
     bool stop;
 };
 
-// 硬件并发数
-static int HNSW_BUILD_THREADS = [](){
+static std::atomic<int> g_HNSW_M{36};
+static std::atomic<int> g_HNSW_MAX_LAYER{16};
+static std::atomic<int> g_HNSW_EF_CONSTRUCTION{371};
+static std::atomic<int> g_HNSW_EF_SEARCH{35};
+
+// 把线程计数也改为atomic，允许在运行时重建线程池
+static std::atomic<int> HNSW_BUILD_THREADS = [](){
     unsigned t = std::thread::hardware_concurrency();
     return t ? (int)t : 8;
 }();
@@ -77,20 +91,19 @@ static ThreadPool* getThreadPool() {
 }
 
 // ---------------------------------------------------------
-// 配置参数
+// 参数设置
 // ---------------------------------------------------------
-constexpr int HNSW_M = 16;
-constexpr int HNSW_MAX_LAYER = 16; // 稍微增加最大层数限制以适应大规模数据
-constexpr int HNSW_EF_CONSTRUCTION = 200;
-constexpr int HNSW_EF_SEARCH = 256;
-static bool DEBUG_TIMING = true;
+static bool DEBUG_TIMING = false; // 默认关闭调试输出，运行时可通过接口打开
 
 // ---------------------------------------------------------
-// SIMD 距离计算 (保持 AVX2 优化)
+// SIMD 距离计算
 // ---------------------------------------------------------
 #if defined(__AVX2__)
 #include <immintrin.h>
 static inline float l2sq_dense(const float* a, const float* b, int dim) {
+    // 统计（仅在搜索阶段开启时累加）
+    if (g_count_dist_enabled.load(std::memory_order_relaxed)) g_dist_count.fetch_add(1, std::memory_order_relaxed);
+
     int i = 0;
     __m256 sumv = _mm256_setzero_ps();
     for (; i <= dim - 8; i += 8) {
@@ -100,7 +113,7 @@ static inline float l2sq_dense(const float* a, const float* b, int dim) {
         sumv = _mm256_add_ps(sumv, _mm256_mul_ps(d, d));
     }
     alignas(32) float tmp[8];
-    // 使用非对齐存储，避免未满足 32 字节对齐时导致崩溃/栈损坏
+    // 使用非对齐存储，避免对齐不满足时导致未定义行为/栈破坏
     _mm256_storeu_ps(tmp, sumv);
     float s = tmp[0]+tmp[1]+tmp[2]+tmp[3]+tmp[4]+tmp[5]+tmp[6]+tmp[7];
     for (; i < dim; ++i) {
@@ -111,9 +124,10 @@ static inline float l2sq_dense(const float* a, const float* b, int dim) {
 }
 #else
 static inline float l2sq_dense(const float* a, const float* b, int dim) {
+    if (g_count_dist_enabled.load(std::memory_order_relaxed)) g_dist_count.fetch_add(1, std::memory_order_relaxed);
+
     float s = 0.0f;
     const float* end = a + dim;
-    // 简单的循环展开优化
     while (a < end) {
         float t = *a++ - *b++;
         s += t * t;
@@ -123,9 +137,8 @@ static inline float l2sq_dense(const float* a, const float* b, int dim) {
 #endif
 
 // ---------------------------------------------------------
-// 访问标记优化 (Visited List)
+// Visited List
 // ---------------------------------------------------------
-// 避免每次搜索都 malloc/memset
 class VisitedList {
 public:
     std::vector<unsigned short> visited_tags;
@@ -142,33 +155,30 @@ public:
 
     void advance() {
         curr_tag++;
-        if (curr_tag == 0) { // 溢出回绕
+        if (curr_tag == 0) {
             std::fill(visited_tags.begin(), visited_tags.end(), 0);
             curr_tag = 1;
         }
     }
 
-    bool isVisited(int id) const {
+    inline bool isVisited(int id) const {
         if (id < 0 || (size_t)id >= visited_tags.size()) return false;
         return visited_tags[id] == curr_tag;
     }
 
-    void mark(int id) {
+    inline void mark(int id) {
         if (id < 0 || (size_t)id >= visited_tags.size()) return;
         visited_tags[id] = curr_tag;
     }
 };
 
 // ---------------------------------------------------------
-// HNSW 节点与图结构
+// Node Structure
 // ---------------------------------------------------------
 struct HNSWNode {
-    // 数据分离：向量数据通常是只读的，放在一起；
-    // 连接关系需要加锁修改。
     std::vector<std::vector<int>> links;
-    mutable std::shared_mutex lock; // 细粒度锁：每个节点一把锁
+    mutable std::shared_mutex lock; 
     
-    // 初始化时预留空间，减少 vector 扩容带来的锁内耗时
     HNSWNode(int max_level, int M) {
         links.resize(max_level + 1);
         for(auto& l : links) l.reserve(M + 1); 
@@ -176,20 +186,19 @@ struct HNSWNode {
 };
 
 class SimpleHNSW {
-public:
+ public:
     int dim;
     int M;
     int maxLayer;
     
-    // 节点数据分开存储以优化缓存和锁
     std::vector<std::vector<float>> data_vecs; 
     std::vector<HNSWNode*> nodes; 
     
-    // 入口点保护
     int enter_point; 
-    std::shared_mutex global_mutex; // 保护 enter_point 和节点插入的整体结构
+    std::shared_mutex global_mutex; 
 
-    SimpleHNSW(int d, int m = HNSW_M, int ml = HNSW_MAX_LAYER)
+    // 使用编译时常量作为默认值（运行时参数通过 g_HNSW_* 传入）
+    SimpleHNSW(int d, int m = 16, int ml = 16)
         : dim(d), M(m), maxLayer(ml), enter_point(-1) {}
 
     ~SimpleHNSW() {
@@ -202,54 +211,67 @@ public:
         static thread_local std::minstd_rand rng((unsigned)std::random_device{}());
         static thread_local std::uniform_real_distribution<float> ud(0.f, 1.f);
         float r = ud(rng);
-        // -ln(r) * (1 / ln(M)) 实现
         return (int)(-std::log(r) * (1.0 / std::log((float)M)));
     }
 
-    float dist(int id, const float* v) const {
+    inline float dist(int id, const float* v) const {
+        if (id < 0 || id >= (int)data_vecs.size()) return std::numeric_limits<float>::infinity();
         return l2sq_dense(data_vecs[id].data(), v, dim);
     }
 
-    // 贪婪搜索 (Greedy Search)
+    // -------------------------------------------------------
+    // 关键修复：模板化锁控制
+    // UseLock = true  -> 构建时使用，安全但稍慢
+    // UseLock = false -> 搜索时使用，极速但非线程安全(不可写)
+    // -------------------------------------------------------
+    
+    template<bool UseLock>
     int greedySearch(int ep, const float* q, int l) const {
         if (ep < 0 || ep >= size()) return -1;
         float curd = dist(ep, q);
         bool changed = true;
-        
         while (changed) {
             changed = false;
-            // 读锁：读取邻居列表
-            std::shared_lock<std::shared_mutex> lock(nodes[ep]->lock);
-            const auto& neighbors = nodes[ep]->links[l];
-            
-            for (int nb : neighbors) {
-                if (nb < 0 || nb >= size()) continue; // 防止越界
-                float nd = dist(nb, q);
-                if (nd < curd) {
-                    curd = nd;
-                    ep = nb;
-                    changed = true;
-                    // 这里的逻辑可以优化：不需要立即跳出，可以遍历完当前节点所有邻居找最好的
-                    // 但标准的 greedy 是找到一个更优就跳，或者遍历完找最优。
-                    // 为了并发安全，我们不能一直持有锁，所以这里复制邻居列表或快速遍历是关键。
-                    // 鉴于 M 很小，持有读锁遍历完是安全的。
+            {
+                std::shared_lock<std::shared_mutex> lock_guard;
+                const std::vector<int>* neighbors_ptr;
+                if constexpr (UseLock) {
+                    lock_guard = std::shared_lock<std::shared_mutex>(nodes[ep]->lock);
+                    neighbors_ptr = &nodes[ep]->links[l];
+                } else {
+                    neighbors_ptr = &nodes[ep]->links[l];
+                }
+                const auto& neighbors = *neighbors_ptr;
+                if (!neighbors.empty()) {
+                    _mm_prefetch((const char*)data_vecs[neighbors[0]].data(), _MM_HINT_T0);
+                }
+                for (size_t i = 0; i < neighbors.size(); ++i) {
+                    int nb = neighbors[i];
+                    if (nb < 0 || nb >= size()) continue; // 防止越界访问导致崩溃/栈破坏
+                    if (i + 1 < neighbors.size()) {
+                        _mm_prefetch((const char*)data_vecs[neighbors[i+1]].data(), _MM_HINT_T0);
+                    }
+                    float nd = dist(nb, q);
+                    if (nd < curd) {
+                        curd = nd;
+                        ep = nb;
+                        changed = true;
+                    }
                 }
             }
         }
         return ep;
     }
 
-    // 搜索层 (Search Layer)
-    // 使用 thread_local 的 VisitedList 避免内存分配
+    template<bool UseLock>
     std::vector<std::pair<float, int>> searchLayer(const float* q, int ep, int l, int ef) const {
-        if (ep < 0) return {};
+        if (ep < 0 || ep >= size()) return {};
         
         using Pair = std::pair<float, int>;
-        auto cmp = [](const Pair& a, const Pair& b) { return a.first > b.first; }; // Min heap
+        auto cmp = [](const Pair& a, const Pair& b) { return a.first > b.first; }; 
         std::priority_queue<Pair, std::vector<Pair>, decltype(cmp)> candidates(cmp);
-        std::priority_queue<Pair> top_results; // Max heap by default
+        std::priority_queue<Pair> top_results; 
 
-        // 线程局部存储 VisitedList
         static thread_local VisitedList visited_list;
         visited_list.init(size());
         visited_list.advance();
@@ -269,23 +291,39 @@ public:
 
             if (curd > lowerBound) break;
 
-            // 关键：加读锁获取邻居
-            std::shared_lock<std::shared_mutex> lock(nodes[curid]->lock);
-            const auto& neighbors = nodes[curid]->links[l];
-            
-            // 预取（可选，但在并发下可能不需要）
-            // for(int nb : neighbors) __builtin_prefetch(data_vecs[nb].data());
+            {
+                std::shared_lock<std::shared_mutex> lock_guard;
+                const std::vector<int>* neighbors_ptr;
 
-            for (int nb : neighbors) {
-                if (nb < 0 || nb >= size()) continue;
-                if (!visited_list.isVisited(nb)) {
-                    visited_list.mark(nb);
-                    float nd = dist(nb, q);
-                    if (top_results.size() < ef || nd < lowerBound) {
-                        candidates.push({nd, nb});
-                        top_results.push({nd, nb});
-                        if (top_results.size() > ef) top_results.pop();
-                        lowerBound = top_results.top().first;
+                if constexpr (UseLock) {
+                    lock_guard = std::shared_lock<std::shared_mutex>(nodes[curid]->lock);
+                    neighbors_ptr = &nodes[curid]->links[l];
+                } else {
+                    neighbors_ptr = &nodes[curid]->links[l];
+                }
+
+                const auto& neighbors = *neighbors_ptr;
+
+                if (!neighbors.empty()) {
+                    _mm_prefetch((const char*)data_vecs[neighbors[0]].data(), _MM_HINT_T0);
+                }
+
+                for (size_t i = 0; i < neighbors.size(); ++i) {
+                    int nb = neighbors[i];
+                    if (nb < 0 || nb >= size()) continue; // 防止越界
+                    if (i + 1 < neighbors.size()) {
+                        _mm_prefetch((const char*)data_vecs[neighbors[i+1]].data(), _MM_HINT_T0);
+                    }
+
+                    if (!visited_list.isVisited(nb)) {
+                        visited_list.mark(nb);
+                        float nd = dist(nb, q);
+                        if (top_results.size() < ef || nd < lowerBound) {
+                            candidates.push({nd, nb});
+                            top_results.push({nd, nb});
+                            if (top_results.size() > ef) top_results.pop();
+                            lowerBound = top_results.top().first;
+                        }
                     }
                 }
             }
@@ -297,59 +335,48 @@ public:
             res.push_back(top_results.top());
             top_results.pop();
         }
-        // 结果此时是反序的（距离大的在前），如果需要距离小的在前，需要反转
         std::reverse(res.begin(), res.end());
         return res;
     }
 
-    // 连接节点 (加写锁)
+    // ConnectNode 始终需要写锁
     void connectNode(int id, const std::vector<std::pair<float, int>>& candidates, int l) {
-        int m_max = (l == 0) ? M * 2 : M; // 第0层允许更多连接
-        
-        // 选出最近的 M 个
-        std::vector<std::pair<float, int>> selected = candidates;
-        if ((int)selected.size() > m_max) selected.resize(m_max);
+        if (id < 0 || id >= size()) return;
+         int m_max = (l == 0) ? M * 2 : M; 
+         std::vector<std::pair<float, int>> selected = candidates;
+         if ((int)selected.size() > m_max) selected.resize(m_max);
 
-        // 1. 将 selected 添加到 id 的连接表 (无需锁，因为 id 是新插入的，其他线程还不可见，或者由调用者保证)
-        // 但为了通用性，我们还是加锁
-        {
-            std::unique_lock<std::shared_mutex> lock(nodes[id]->lock);
-            auto& links = nodes[id]->links[l];
-            for (auto& p : selected) links.push_back(p.second);
-        }
+         {
+             std::unique_lock<std::shared_mutex> lock(nodes[id]->lock);
+             auto& links = nodes[id]->links[l];
+             for (auto& p : selected) links.push_back(p.second);
+         }
 
-        // 2. 反向连接：把 id 添加到邻居的连接表
-        for (auto& p : selected) {
-            int nb = p.second;
-            if (nb < 0 || nb >= size()) continue;
-            std::unique_lock<std::shared_mutex> lock(nodes[nb]->lock);
-            auto& links = nodes[nb]->links[l];
-            
-            bool exists = false;
-            for(int x : links) if(x == id) { exists=true; break; }
-            if(!exists) links.push_back(id);
+         for (auto& p : selected) {
+             int nb = p.second;
+             if (nb < 0 || nb >= size()) continue;
+             std::unique_lock<std::shared_mutex> lock(nodes[nb]->lock);
+             auto& links = nodes[nb]->links[l];
+             bool exists = false;
+             for(int x : links) if(x == id) { exists=true; break; }
+             if(!exists) links.push_back(id);
 
-            // 如果邻居连接数超限，需要修剪
-            if ((int)links.size() > m_max) {
-                // 重新计算距离并保留最近的 m_max 个
-                // 注意：此时持有 nb 的写锁，不能调用需要 nb 锁的其他函数
-                std::vector<std::pair<float, int>> nbr_dists;
-                nbr_dists.reserve(links.size());
-                for (int n_nb : links) {
-                    nbr_dists.push_back({dist(n_nb, data_vecs[nb].data()), n_nb});
-                }
-                std::sort(nbr_dists.begin(), nbr_dists.end()); // 按距离排序
-                
-                links.clear();
-                for(int i=0; i<m_max; ++i) links.push_back(nbr_dists[i].second);
-            }
-        }
-    }
+             if ((int)links.size() > m_max) {
+                 std::vector<std::pair<float, int>> nbr_dists;
+                 nbr_dists.reserve(links.size());
+                 for (int n_nb : links) {
+                    if (n_nb < 0 || n_nb >= size()) continue;
+                     nbr_dists.push_back({dist(n_nb, data_vecs[nb].data()), n_nb});
+                 }
+                 std::sort(nbr_dists.begin(), nbr_dists.end());
+                 
+                 links.clear();
+                 for(int i=0; i<m_max; ++i) links.push_back(nbr_dists[i].second);
+             }
+         }
+     }
 
-    // 并行插入的核心实现
-    // 注意：addPoint 不直接接受 vector，而是接受索引，假定数据已预分配
     void insertPointParallel(int id, int level) {
-        // 1. 保护性读取入口点
         int ep_curr;
         {
             std::shared_lock<std::shared_mutex> lock(global_mutex);
@@ -357,28 +384,21 @@ public:
         }
 
         if (ep_curr != -1) {
-            // 2. 从顶层搜索到插入层
-            // 这里需要获取 ep 节点的层数，注意多线程下节点可能被修改，但层数通常不变
             int max_l = (int)nodes[ep_curr]->links.size() - 1;
             int curr = ep_curr;
             
+            // 【构建阶段】：UseLock = true
             for (int l = max_l; l > level; l--) {
-                curr = greedySearch(curr, data_vecs[id].data(), l);
+                curr = greedySearch<true>(curr, data_vecs[id].data(), l);
             }
 
-            // 3. 在每层进行插入
             for (int l = std::min(level, max_l); l >= 0; l--) {
-                // 搜索 candidates
-                auto top = searchLayer(data_vecs[id].data(), curr, l, HNSW_EF_CONSTRUCTION);
-                // 更新 curr 为下一层的最近点
+                auto top = searchLayer<true>(data_vecs[id].data(), curr, l, g_HNSW_EF_CONSTRUCTION.load());
                 if (!top.empty()) curr = top[0].second;
-                // 建立双向连接
                 connectNode(id, top, l);
             }
         }
 
-        // 4. 更新全局入口点
-        // 如果新节点层级更高，它可能成为新的入口
         {
             std::unique_lock<std::shared_mutex> lock(global_mutex);
             if (enter_point == -1 || level > (int)nodes[enter_point]->links.size() - 1) {
@@ -394,48 +414,39 @@ public:
 class HnswSolutionParallel {
 public:
     SimpleHNSW* hnsw = nullptr;
-    std::vector<int> point_ids; // 映射内部 ID 到外部 ID
+    std::vector<int> point_ids; 
 
     ~HnswSolutionParallel(){ delete hnsw; }
 
     void build_from_memory(int d, const std::vector<std::vector<float>>& data) {
         int n = (int)data.size();
         delete hnsw;
-        hnsw = new SimpleHNSW(d, HNSW_M, HNSW_MAX_LAYER);
+        hnsw = new SimpleHNSW(d, g_HNSW_M.load(), g_HNSW_MAX_LAYER.load());
         
-        // 1. 预分配所有内存
-        // 这一步非常重要，避免多线程运行时 resize data_vecs 或 nodes 导致迭代器失效或锁竞争
-        hnsw->data_vecs = data; // 拷贝数据
+        hnsw->data_vecs = data; 
         hnsw->nodes.reserve(n);
         
-        // 预生成每个节点的 Level，并构建 Node 对象
-        // 这样可以提前分配好 links 的内存
         std::vector<int> levels(n);
         for(int i=0; i<n; ++i) {
             levels[i] = hnsw->randomLevel();
-            if(levels[i] > HNSW_MAX_LAYER) levels[i] = HNSW_MAX_LAYER;
-            hnsw->nodes.push_back(new HNSWNode(levels[i], HNSW_M));
+            if(levels[i] > g_HNSW_MAX_LAYER) levels[i] = g_HNSW_MAX_LAYER;
+            hnsw->nodes.push_back(new HNSWNode(levels[i], g_HNSW_M.load()));
         }
         
         point_ids.resize(n);
         for(int i=0; i<n; ++i) point_ids[i] = i;
 
-        // 2. 并行插入
-        // 第一个点必须串行插入以初始化 enter_point
         if (n > 0) {
             hnsw->enter_point = 0;
-            // 第0个点已“逻辑”插入（它是入口，暂无邻居）
         }
 
-        auto build_start = std::chrono::steady_clock::now();
+        auto build_start = std::chrono::high_resolution_clock::now();
 
         ThreadPool* pool = getThreadPool();
-        std::atomic<int> processed(1); // 0号已处理
+        std::atomic<int> processed(1); 
 
-        // 将剩余点分块并行处理
-        // HNSW 并行构建通常不需要严格顺序，但分块有助于利用缓存
         int start_idx = 1;
-        int chunk_size = 1000; // 批次大小
+        int chunk_size = 1000; 
 
         for (int i = start_idx; i < n; i += chunk_size) {
             int end = std::min(i + chunk_size, n);
@@ -443,28 +454,24 @@ public:
                 for (int j = i; j < end; ++j) {
                     hnsw->insertPointParallel(j, levels[j]);
                     
-                    // 可选：打印进度
-                    if (DEBUG_TIMING) {
-                        int p = processed.fetch_add(1, std::memory_order_relaxed);
-                        if (p % 10000 == 0) {
-                            // std::cerr << "Built " << p << "/" << n << "\n";
-                        }
-                    }
+                    // 可选：调试输出进度，如果不需要可注释掉
+                    // if (DEBUG_TIMING) {
+                    //    int p = processed.fetch_add(1, std::memory_order_relaxed);
+                    // } else {
+                       // processed.fetch_add(1, std::memory_order_relaxed);
+                    // }
                 }
+                // 批量增加计数，减少原子操作争用
+                processed.fetch_add(end - i, std::memory_order_release);
             });
         }
         
-        // 等待队列清空（简单的 barrier 实现）
-        // 注意：ThreadPool 的 wait() 并不是标准接口，这里简单通过析构或者智能指针控制
-        // 由于原 ThreadPool 没有完善的 wait，我们利用析构或者额外的原子计数器等待
-        // 简单修改：我们在外部等待所有任务完成。
-        // 为简化代码，这里使用比较笨的方法：等待 processed 计数
-        // 实际生产中应使用 std::future 或 ThreadPool 提供的 wait
-        while (processed < n) {
+        // 修正等待逻辑：processed 初始为 1，因为 0 号点已处理
+        while (processed.load(std::memory_order_acquire) < n) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
-        auto build_end = std::chrono::steady_clock::now();
+        auto build_end = std::chrono::high_resolution_clock::now();
         if (DEBUG_TIMING) {
             double total_ms = std::chrono::duration<double, std::milli>(build_end - build_start).count();
             std::cout << "[Timing] Parallel Build: " << total_ms << " ms for " << n << " points." << std::endl;
@@ -472,32 +479,39 @@ public:
     }
 
     std::vector<std::pair<int,float>> search(const std::vector<float>& query, int k) {
-        if(!hnsw || hnsw->nodes.empty()) return {};
-        
-        // search 过程是只读的，本身不需要加全局锁
-        // 但需要加节点的读锁（在 searchLayer 内部已处理）
-        int ep = -1;
-        {
-            std::shared_lock<std::shared_mutex> lock(hnsw->global_mutex);
-            ep = hnsw->enter_point;
-        }
-        if (ep < 0 || ep >= hnsw->size()) return {}; // 防御性返回
-        
-        int max_l = (int)hnsw->nodes[ep]->links.size() - 1;
-        int curr = ep;
-        
-        for(int l = max_l; l > 0; l--) curr = hnsw->greedySearch(curr, query.data(), l);
-        
-        auto top = hnsw->searchLayer(query.data(), curr, 0, HNSW_EF_SEARCH);
+        // 开启距离计数（仅对本次搜索计数）
+        g_dist_count.store(0, std::memory_order_relaxed);
+        g_count_dist_enabled.store(true, std::memory_order_release);
+
+        // 原有搜索逻辑
+        int ep = hnsw->enter_point;
+        if (ep < 0 || ep >= hnsw->size()) return {}; // 防御性检查
+
+         int max_l = (int)hnsw->nodes[ep]->links.size() - 1;
+         int curr = ep;
+         
+         // 【搜索阶段】：UseLock = false (极速模式)
+         for(int l = max_l; l > 0; l--) curr = hnsw->greedySearch<false>(curr, query.data(), l);
+         
+        auto top = hnsw->searchLayer<false>(query.data(), curr, 0, g_HNSW_EF_SEARCH.load());
         
         std::vector<std::pair<int,float>> out;
         if((int)top.size() > k) top.resize(k);
         out.reserve(top.size());
         for(const auto &p: top){
+            if (p.second < 0 || p.second >= (int)point_ids.size()) continue;
             out.push_back({point_ids[p.second], p.first});
         }
+
+        // 关闭计数并记录
+        g_count_dist_enabled.store(false, std::memory_order_release);
+        uint64_t last = g_dist_count.load(std::memory_order_relaxed);
+        g_last_query_dist.store(last, std::memory_order_relaxed);
+        g_total_dist_count.fetch_add(last, std::memory_order_relaxed);
+        g_total_query_count.fetch_add(1, std::memory_order_relaxed);
+
         return out;
-    }
+     }
 };
 
 // ---------------------------------------------------------
@@ -508,7 +522,6 @@ static HnswSolutionParallel* g_impl = nullptr;
 void build_hnsw(int d, const std::vector<float>& base) {
     int n = (int)base.size() / d;
     std::vector<std::vector<float>> data(n, std::vector<float>(d));
-    // 简单的并行化数据拷贝（可选优化）
     #pragma omp parallel for if(n > 10000)
     for(int i = 0; i < n; i++) {
         std::memcpy(data[i].data(), &base[i*d], d * sizeof(float));
@@ -527,12 +540,11 @@ std::vector<std::pair<int,float>> search_hnsw(const std::vector<float>& query, i
 class Solution {
     int k;
 public:
-    Solution(int d, int n, int kk); // 改为声明
+    Solution(int d, int n, int kk); // 改为声明，类外定义以生成链接符号
     void build(int d, const std::vector<float>& base);
     void search(const std::vector<float>& query, int* result);
 };
 
-// Solution 类方法定义
 void Solution::build(int d, const std::vector<float>& base) {
     build_hnsw(d, base);
 }
@@ -544,5 +556,48 @@ void Solution::search(const std::vector<float>& query, int* result) {
     }
 }
 
-// 在类外添加构造函数定义以生成链接符号
+// 在文件末尾添加类外构造函数定义（生成外部符号）
 Solution::Solution(int d, int n, int kk) : k(kk) {}
+
+// ---------------------------------------------------------
+// 设置参数接口
+// ---------------------------------------------------------
+extern "C" {
+
+// 运行时批量设置（支持部分设置)
+void set_hnsw_params(int M, int max_layer, int ef_construction, int ef_search, int build_threads) {
+    if (M > 0) g_HNSW_M.store(M);
+    if (max_layer > 0) g_HNSW_MAX_LAYER.store(max_layer);
+    if (ef_construction > 0) g_HNSW_EF_CONSTRUCTION.store(ef_construction);
+    if (ef_search > 0) g_HNSW_EF_SEARCH.store(ef_search);
+
+    if (build_threads > 0) {
+        int old = HNSW_BUILD_THREADS.load();
+        if (build_threads != old) {
+            // 保护并重建线程池
+            std::lock_guard<std::mutex> lock(g_pool_mutex);
+            HNSW_BUILD_THREADS.store(build_threads);
+            if (g_thread_pool) {
+                delete g_thread_pool;
+                g_thread_pool = new ThreadPool(build_threads);
+            }
+        }
+    }
+}
+
+void set_hnsw_debug(int dbg) { DEBUG_TIMING = (dbg != 0); }
+
+// 新增：对外查询接口
+uint64_t get_total_queries() { return g_total_query_count.load(std::memory_order_relaxed); }
+double get_avg_dists_per_query() {
+    uint64_t q = g_total_query_count.load(std::memory_order_relaxed);
+    if (q == 0) return 0.0;
+    return double(g_total_dist_count.load(std::memory_order_relaxed)) / double(q);
+}
+uint64_t get_last_query_dists() { return g_last_query_dist.load(std::memory_order_relaxed); }
+void reset_dist_counters() {
+    g_total_dist_count.store(0, std::memory_order_relaxed);
+    g_total_query_count.store(0, std::memory_order_relaxed);
+    g_last_query_dist.store(0, std::memory_order_relaxed);
+}
+} // extern "C"
