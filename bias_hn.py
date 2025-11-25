@@ -3,246 +3,243 @@ import subprocess
 import re
 import csv
 import os
-import math
-from typing import Tuple, Dict
+import random
+import time
+from typing import Tuple, Dict, Any
 from datetime import datetime
 
-# --- 配置 ---
-BIN_PATH = "./hn"           # HNSW 可执行文件的路径
-MIN_RECALL = 0.985          # 最小召回率约束 (目标: 98.5%)
-NUM_RUNS = 1                # 每次参数组合运行的次数 (建议 > 3 以取平均值，但为了快速测试可设为 1)
-FIXED_K = 10                # 固定的 Top-K 搜索结果数
-N_TRIALS = 50000            # Optuna 最大试验次数
+# ==================== 配置区 ====================
+BIN_PATH = "./hng"
+MIN_RECALL = 0.985          # 目标召回率
+FIXED_K = 10                # Top-K
+BATCH_SIZE = 20             # 每次 optimize 运行多少次后进行状态检查和扰动
 
-RESULT_CSV = "optuna_search_hn.csv"
-PRECISION_DIGITS = 6        # 统一使用 6 位小数精度
+# ！！！ 补回了漏掉的配置 ！！！
+NUM_RUNS = 1                # 每次参数组合运行取平均值的次数 (设为1最快，设为3更准)
 
-# --- 奖励/惩罚常量 (用于最大化目标) ---
-SUCCESS_FACTOR = 1000.0     # 奖励缩放系数，用于放大 1/Time (主导因素)
-RECALL_BONUS_SCALE = 1000.0 # 溢出召回率的奖励系数 (次要因素)
+# 扩展的搜索范围 (适应高召回率)
+M_RANGE = (12, 64)
+EFC_RANGE = (200, 1200)     
+EFS_RANGE = (100, 2000)     
 
-LARGE_PENALTY = 100000.0    # 巨大的负数，确保失败的奖励远低于成功的奖励
-RECALL_SCALE_NEG = 100.0    # 召回率差距的惩罚缩放
+LOG_DIR = "Log"
+RESULT_CSV = "optuna_adaptive_hng.csv"
+PRECISION_DIGITS = 6
 
+# --- 奖励/惩罚常量 ---
+SUCCESS_FACTOR = 10000.0    
+RECALL_BONUS_SCALE = 500.0  
+LARGE_PENALTY = 1e9         
 
-# --- 全局缓存字典 (key: m, efc, efs, k) ---
-# k 必须是 key 的一部分，因为 K 值变化会影响 Recall 和 Time
-CACHE: Dict[Tuple[int, int, int, int], Tuple[float, float]] = {}
-
+# --- 全局缓存 ---
+CACHE: Dict[Tuple[int, int, int], Tuple[float, float, float]] = {}
 
 def load_cache_data():
-    """从 CSV 文件加载历史测试结果到内存缓存中，Key 结构为 (m, efc, efs, k)。"""
+    """加载历史数据，避免重复计算"""
     global CACHE
     if not os.path.exists(RESULT_CSV):
         return
+    
+    print(f"Loading history from {RESULT_CSV}...")
+    try:
+        with open(RESULT_CSV, 'r', newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    status = (row.get('status') or '').strip().upper()
+                    if status != 'COMPLETE': continue
 
-    with open(RESULT_CSV, 'r', newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            try:
-                if row.get('status') == 'COMPLETE':
-                    m = int(row.get('m') or -1)
-                    efc = int(row.get('efc') or -1)
-                    efs = int(row.get('efs') or -1)
-                    # 关键：将 K (I) 加入 Key
-                    k = int(row.get('K') or FIXED_K) 
-                    key = (m, efc, efs, k)
-
-                    recall = round(float(row['avg_recall']), PRECISION_DIGITS)
-                    time_ms = round(float(row['avg_time_ms']), PRECISION_DIGITS)
-                    CACHE[key] = (recall, time_ms)
-            except (ValueError, KeyError):
-                continue
-    print(f"Loaded {len(CACHE)} unique results from {RESULT_CSV} cache.")
-
+                    def p(v, t): return t(float(str(v).replace(',', '.'))) if v else None
+                    
+                    vals = {
+                        'm': p(row.get('m'), int), 'efc': p(row.get('efc'), int), 'efs': p(row.get('efs'), int),
+                        'rec': p(row.get('avg_recall'), float), 'time': p(row.get('avg_time_ms'), float),
+                        'build': p(row.get('build_time_ms'), float)
+                    }
+                    
+                    if all(v is not None for v in vals.values()):
+                        CACHE[(vals['m'], vals['efc'], vals['efs'])] = (vals['rec'], vals['time'], vals['build'])
+                except: continue
+    except Exception as e:
+        print(f"Cache load warning: {e}")
+    print(f"Loaded {len(CACHE)} unique historical records.")
 
 def csv_logger(study: optuna.Study, trial: optuna.trial.Trial):
-    """
-    Optuna 回调函数：在每次试验完成后，将结果记录到 CSV 文件中。
-    """
+    """写入 CSV 日志"""
     if trial.state.is_finished():
         data = {
             'timestamp': datetime.now().isoformat(),
             'trial_id': trial.number,
-            'm': trial.params.get('m'),
-            'efc': trial.params.get('efc'),
-            'efs': trial.params.get('efs'),
-            'K': FIXED_K, # 使用全局 K 值
+            'm': trial.params.get('m'), 'efc': trial.params.get('efc'), 'efs': trial.params.get('efs'),
+            'K': FIXED_K,
             'avg_recall': trial.user_attrs.get('avg_recall'),
             'avg_time_ms': trial.user_attrs.get('avg_time_ms'),
+            'build_time_ms': trial.user_attrs.get('build_time_ms'),
             'reward_score': trial.value if trial.value is not None else -float('inf'),
             'status': trial.state.name,
         }
         
-        fieldnames = list(data.keys())
         file_exists = os.path.exists(RESULT_CSV)
-        
         try:
             with open(RESULT_CSV, 'a', newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                if not file_exists:
-                    writer.writeheader()
+                writer = csv.DictWriter(f, fieldnames=data.keys(), extrasaction='ignore')
+                if not file_exists: writer.writeheader()
                 writer.writerow(data)
-        except IOError as e:
-            print(f"Error writing to CSV file: {e}")
+        except IOError: pass
 
-
-def run_test(k: int, m: int, efc: int, efs: int) -> Tuple[float, float]:
-    """
-    运行外部测试程序并返回平均召回率和平均查询时间。
-    """
-    key = (m, efc, efs, k)
+def run_test(m: int, efc: int, efs: int) -> Tuple[float, float, float]:
+    """执行测试，含缓存和健壮解析"""
+    key = (m, efc, efs)
     if key in CACHE:
-        recall, time_ms = CACHE[key]
-        print(f"  [CACHE HIT] m={m}, efc={efc}, efs={efs}, k={k} -> Recall={recall:.4f}, Time={time_ms:.{PRECISION_DIGITS}f}ms")
-        return recall, time_ms
-        
-    total_recall = 0.0
-    total_time_ms = 0.0
-    BASE_FAIL_METRIC = 100000.0 # 失败时的默认高时间
-    
-    # 构造 CLI 命令
-    cmd = [BIN_PATH, "--k", str(k), "--m", str(m), "--efc", str(efc), "--efs", str(efs)]
+        return CACHE[key]
 
-    for run_num in range(1, NUM_RUNS + 1):
+    os.makedirs(LOG_DIR, exist_ok=True)
+    cmd = [BIN_PATH, "-m", str(m), "-efc", str(efc), "-efs", str(efs)]
+    
+    total_rec, total_time, total_build = 0.0, 0.0, 0.0
+    
+    # 这里需要 NUM_RUNS，现在已在上方定义
+    for _ in range(NUM_RUNS):
         try:
-            # 运行子进程，设置超时
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=2000)
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+            if res.returncode != 0: 
+                print(f"   [Error] Process returned {res.returncode}")
+                return 0.0, 1e6, 1e6 
             
-            if result.returncode != 0:
-                print(f"  Run {run_num}: Test failed (Code {result.returncode}). Output: {result.stdout.strip()[:100]}...")
-                return 0.0, BASE_FAIL_METRIC
+            txt = res.stdout or ""
             
-            # 正则表达式解析 Recall 和 Time
-            recall_match = re.search(r"Average recall@.*: *([0-9]*\.?[0-9]+)", result.stdout)
-            time_match = re.search(r"Average query time.*: *([0-9]*\.?[0-9]+) *ms", result.stdout)
+            # 解析逻辑 (适配您的格式)
+            b_m = re.search(r"(?:Parallel\s*Build|build_time\(internal\))[^0-9]*([0-9]+(?:[.,][0-9]+)?)\s*ms", txt, re.I)
+            t_m = re.search(r"avg_query_time\s*=\s*([0-9]+(?:[.,][0-9]+)?)\s*ms", txt, re.I)
+            r_m = re.search(r"avg\s*recall@\d+\s*=\s*([0-9]+(?:[.,][0-9]+)?)", txt, re.I)
 
-            if recall_match and time_match:
-                recall = float(recall_match.group(1))
-                time_ms = float(time_match.group(1))
-                total_recall += recall
-                total_time_ms += time_ms
+            if b_m and t_m and r_m:
+                total_build += float(b_m.group(1).replace(',', '.'))
+                total_time += float(t_m.group(1).replace(',', '.'))
+                total_rec += float(r_m.group(1).replace(',', '.'))
             else:
-                print(f"  Run {run_num}: Could not parse output.")
-                return 0.0, BASE_FAIL_METRIC
-                
-        except subprocess.TimeoutExpired:
-            print(f"  Run {run_num}: Timeout.")
-            return 0.0, BASE_FAIL_METRIC
-        except FileNotFoundError:
-            print(f"Error: Executable '{BIN_PATH}' not found.")
-            exit(1)
+                print(f"   [Parse Error] Output: {txt[:100]}...")
+                return 0.0, 1e6, 1e6 
+        except Exception as e:
+            print(f"   [Exception] {e}")
+            return 0.0, 1e6, 1e6 
 
-    avg_recall = total_recall / NUM_RUNS
-    avg_time_ms = total_time_ms / NUM_RUNS
-    
-    # 四舍五入和更新缓存
-    rounded_recall = round(avg_recall, PRECISION_DIGITS)
-    rounded_time_ms = round(avg_time_ms, PRECISION_DIGITS)
-
-    print(f"  Avg Result: m={m}, efc={efc}, efs={efs} -> Recall={rounded_recall:.4f}, Time={rounded_time_ms:.{PRECISION_DIGITS}f}ms (NEW RUN)")
-    
-    CACHE[key] = (rounded_recall, rounded_time_ms)
-    
-    return rounded_recall, rounded_time_ms
-
-
-def objective(trial: optuna.trial.Trial) -> float:
-    # 1. 定义 HNSW 参数搜索范围 (基于合理范围设置)
-    m = trial.suggest_int("m", 12, 36)      # 常见范围 12-32，略微扩大
-    efc = trial.suggest_int("efc", 150, 512) # 常见范围 200-500，略微扩大
-    efs = trial.suggest_int("efs", 32, 512)  # 搜索速度 vs 召回率的核心旋钮
-
-    # 2. 运行测试
-    print(f"\nTrial {trial.number}: Testing m={m}, efc={efc}, efs={efs}")
-    recall, time_ms = run_test(FIXED_K, m, efc, efs) 
-    
-    # 3. 记录额外信息
-    trial.set_user_attr("avg_recall", recall)
-    trial.set_user_attr("avg_time_ms", time_ms)
-    
-    # 4. 计算奖励分数 (目标：最大化)
-    
-    # --- 惩罚项 (召回率未达标) ---
-    if recall < MIN_RECALL:
-        delta = MIN_RECALL - recall
-        
-        # 奖励公式: -巨大惩罚 - 召回差距惩罚 + (时间效益奖励)
-        # 目的：在召回未达标的方案中，优先测试速度快的（即时间效益高）。
-        time_bonus = SUCCESS_FACTOR / time_ms 
-        reward = -LARGE_PENALTY - (delta * RECALL_SCALE_NEG) + time_bonus
-        
-        print(f"  Score: Failed constraint ({delta*100:.2f}% gap). Penalty={reward:.{PRECISION_DIGITS}f}")
-        return reward
-    
-    # --- 达标时的奖励 (正奖励) ---
-    
-    # 核心奖励：时间反比 (主导因素)
-    time_component = SUCCESS_FACTOR / time_ms
-    
-    # 次要奖励：溢出召回率 (避免召回率刚刚好，鼓励略高)
-    recall_surplus = recall - MIN_RECALL
-    recall_component = RECALL_BONUS_SCALE * recall_surplus
-    
-    # 最终奖励 = 时间效益 + 溢出召回率奖励
-    reward = time_component + recall_component
-    
-    print(f"  Score: Constraint met. Maximize Reward={reward:.{PRECISION_DIGITS}f}")
-    return reward
-
-if __name__ == "__main__":
-    
-    load_cache_data()
-
-    print("="*50)
-    print(f"Starting Optuna optimization for '{BIN_PATH}'...")
-    print(f"Target Recall (K={FIXED_K}): >= {MIN_RECALL*100:.2f}%")
-    print(f"Optimization Goal: MAXIMIZE Reward (Maximize 1/Time)")
-    print(f"CSV log will be written to: {RESULT_CSV}")
-    print("="*50)
-
-    study = optuna.create_study(
-        direction="maximize", 
-        study_name="hnsw_param_tuning",
-        # 针对重复参数使用缓存的结果，防止 Optuna 重复建议相同的参数组合
-        sampler=optuna.samplers.TPESampler(seed=42) 
+    avg_res = (
+        round(total_rec/NUM_RUNS, 6), 
+        round(total_time/NUM_RUNS, 6), 
+        round(total_build/NUM_RUNS, 6)
     )
     
-    # 预先加入一个常见的默认配置进行测试
-    initial_key = (35, 395, 35, FIXED_K)
-    if initial_key not in CACHE:
-        print(f"\nEnqueuing initial trial: m=35, efc=395, efs=35")
-        study.enqueue_trial({"m": 35, "efc": 395, "efs": 35})
-    
-    try:
-        study.optimize(
-            objective, 
-            n_trials=N_TRIALS,
-            callbacks=[csv_logger],
-            gc_after_trial=True # 每次试验后进行垃圾回收，防止长时间运行内存泄漏
-        )
-    except Exception as e:
-        print(f"\nOptimization interrupted: {e}")
+    print(f"   [Exec] m={m} efc={efc} efs={efs} | Rec={avg_res[0]} Time={avg_res[1]}ms")
+    CACHE[key] = avg_res
+    return avg_res
 
-    print("\n" + "="*50)
-    print("=== Search Finished ===")
+def objective(trial: optuna.trial.Trial) -> float:
+    m = trial.suggest_int("m", M_RANGE[0], M_RANGE[1])
+    efc = trial.suggest_int("efc", EFC_RANGE[0], EFC_RANGE[1])
+    efs = trial.suggest_int("efs", EFS_RANGE[0], EFS_RANGE[1])
+
+    recall, time_ms, build_ms = run_test(m, efc, efs)
     
-    best_trial = study.best_trial
+    trial.set_user_attr("avg_recall", recall)
+    trial.set_user_attr("avg_time_ms", time_ms)
+    trial.set_user_attr("build_time_ms", build_ms)
+
+    # 策略：如果 Recall 不达标，根据差距给予巨大惩罚
+    if recall < MIN_RECALL:
+        gap = MIN_RECALL - recall
+        return -LARGE_PENALTY * (1.0 + gap * 10.0)
     
-    # 确保 best_trial 满足最小召回率
-    if best_trial.user_attrs.get('avg_recall', 0.0) < MIN_RECALL:
-        print("\n⚠️ 警告: 最佳试验未达到最小召回率约束。")
-        print("请检查数据、增加 EFC/EFS 的范围或增加 N_TRIALS。")
+    # 策略：如果 Recall 达标，目标是最小化时间
+    return (SUCCESS_FACTOR / time_ms) + (recall - MIN_RECALL) * RECALL_BONUS_SCALE
+
+def inject_exploration_trials(study: optuna.Study):
+    """【核心机制】强制注入探索性试验，防止死循环在局部最优"""
+    # 1. 随机跳跃
+    study.enqueue_trial({
+        "m": random.randint(*M_RANGE),
+        "efc": random.randint(*EFC_RANGE),
+        "efs": random.randint(*EFS_RANGE)
+    })
+
+    # 2. 偶尔注入高性能参数 (High Params)
+    if random.random() < 0.3: 
+        study.enqueue_trial({
+            "m": random.randint(32, M_RANGE[1]),      
+            "efc": random.randint(500, EFC_RANGE[1]), 
+            "efs": random.randint(800, EFS_RANGE[1])  
+        })
+
+if __name__ == "__main__":
+    load_cache_data()
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    print("="*60)
+    print(f"🚀 Adaptive HNSW Optimization (Infinite Loop Mode)")
+    print(f"🎯 Target Recall: >= {MIN_RECALL}")
+    print(f"🔎 Search Space: M={M_RANGE}, EFC={EFC_RANGE}, EFS={EFS_RANGE}")
+    print("="*60)
+
+    sampler = optuna.samplers.TPESampler(
+        multivariate=True, 
+        n_startup_trials=20,  
+        warn_independent_sampling=False
+    )
     
-    print("\nBest Configuration Found:")
-    print(f"  m: {best_trial.params['m']}")
-    print(f"  efc: {best_trial.params['efc']}")
-    print(f"  efs: {best_trial.params['efs']}")
-    print(f"  K: {FIXED_K}")
-    print("\nMetrics:")
-    print(f"  * Best Reward Score: {best_trial.value:.{PRECISION_DIGITS}f}")
-    print(f"  * Corresponding Recall: {best_trial.user_attrs['avg_recall']:.4f}")
-    print(f"  * Corresponding Time: {best_trial.user_attrs['avg_time_ms']:.{PRECISION_DIGITS}f} ms")
+    study = optuna.create_study(
+        direction="maximize",
+        study_name="hnsw_adaptive_v2",
+        sampler=sampler,
+        load_if_exists=True 
+    )
+
+    # 初始基准点
+    if (32, 512, 500) not in CACHE:
+        study.enqueue_trial({"m": 32, "efc": 512, "efs": 500})
+
+    batch_count = 0
+
+    try:
+        while True:
+            batch_count += 1
+            print(f"\n\n🔄 Starting Batch #{batch_count} (Size: {BATCH_SIZE})...")
+            
+            # 运行一个小批次
+            study.optimize(objective, n_trials=BATCH_SIZE, callbacks=[csv_logger])
+            
+            best_trial = study.best_trial
+            best_recall = best_trial.user_attrs.get('avg_recall', 0)
+            
+            print("-" * 40)
+            print(f"📊 Batch #{batch_count} Finished.")
+            
+            if best_recall >= MIN_RECALL:
+                print(f"✅ Current Best (Feasible): Recall={best_recall:.4f}")
+            else:
+                print(f"❌ Current Best (Infeasible): Recall={best_recall:.4f}")
+                # 找不到就加重药量，注入最大参数试探
+                study.enqueue_trial({
+                    "m": M_RANGE[1], "efc": EFC_RANGE[1], "efs": EFS_RANGE[1]
+                })
+
+            # 强制扰动，防止收敛停止
+            print(">>> 🎲 Injecting exploration trials...")
+            inject_exploration_trials(study)
+            
+            print(f"💾 Data saved to {RESULT_CSV}")
+            time.sleep(1) 
+
+    except KeyboardInterrupt:
+        print("\n\n🛑 Optimization stopped by user.")
     
-    print(f"\nDetailed log saved to {RESULT_CSV}")
-    print("="*50)
+    print("="*60)
+    qualified = [t for t in study.trials if t.user_attrs.get('avg_recall', 0) >= MIN_RECALL]
+    
+    if qualified:
+        best = max(qualified, key=lambda t: t.value)
+        print("🏆 Final Optimal Configuration:")
+        print(f"   Recall: {best.user_attrs['avg_recall']:.4f}")
+        print(f"   Time:   {best.user_attrs['avg_time_ms']:.4f} ms")
+        print(f"   Params: {best.params}")
+    else:
+        print("⚠️ No configuration met the strict recall requirement.")

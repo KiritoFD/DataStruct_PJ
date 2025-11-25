@@ -1,0 +1,44 @@
+timestamp_start: 2025-11-25T03:48:09.694783
+timestamp_end: 2025-11-25T03:51:45.123667
+duration_s: 215.428884
+cmd: ./hn --k 10 --m 26 --efc 206 --efs 107
+returncode: 0
+
+=== STDOUT ===
+[cache] loaded base vectors from data_o/sift/base.txt.bin
+Building index...
+[Timing] Parallel Build: 194862 ms for 1000000 points.
+Index built in 181 seconds
+Loading queries and ground truth...
+Loaded 1000 ground truth entries
+Running queries...
+Processed 50 queries
+Processed 100 queries
+Processed 150 queries
+Processed 200 queries
+Processed 250 queries
+Processed 300 queries
+Processed 350 queries
+Processed 400 queries
+Processed 450 queries
+Processed 500 queries
+Processed 550 queries
+Processed 600 queries
+Processed 650 queries
+Processed 700 queries
+Processed 750 queries
+Processed 800 queries
+Processed 850 queries
+Processed 900 queries
+Processed 950 queries
+Processed 1000 queries
+=== Results ===
+Total queries: 1000
+Average recall@10: 0.9922
+Average query time: 1.06 ms
+Average distance calcs per query: 2642.7
+Last query distance calcs: 3244
+Index build time: 181 seconds
+
+=== STDERR ===
+<empty stderr>

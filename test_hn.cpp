@@ -3,13 +3,21 @@
 #include <fstream>
 #include <iomanip>
 #include <chrono>
+#include <unordered_map>
 #include <unordered_set>
-#include <algorithm>
-#include <sstream>
-#include <cctype>
 #include <vector>
+#include <sstream>
 #include <utility>
 #include <sys/stat.h>
+
+/// 新增：声明 MySolution.cpp 中导出的 C 接口函数（用于距离计数统计）
+extern "C" {
+    void reset_dist_counters();
+    uint64_t get_total_queries();
+    double get_avg_dists_per_query();
+    uint64_t get_last_query_dists();
+    double get_last_build_time_ms();
+}
 
 const std::string dataset = "sift";
 
@@ -118,7 +126,6 @@ struct SimpleJSON {
     }
 };
 
-// 从文件加载查询向量 —— 改为由 load_base_flat 内联返回，删去独立函数
 // 计算召回率
 float compute_recall(const std::vector<std::pair<int, float>>& result, 
                      const std::vector<std::pair<int, float>>& ground_truth,
@@ -175,236 +182,80 @@ static std::vector<float> load_base_flat(const std::string& base_file, int& out_
     return base_flat;
 }
 
-// 新增：二进制缓存加速
-static bool file_exists(const std::string& fname) {
-    struct stat st;
-    return stat(fname.c_str(), &st) == 0;
-}
+int main() {
+	const std::string base_file = "data_o/" + dataset + "/base.txt";
+	const std::string gt_file = "data_o/" + dataset + "/test.json";
+	const int K = 10;
 
-static bool save_base_bin(const std::string& bin_file, int d, const std::vector<float>& base_flat, const std::vector<std::pair<int, std::vector<float>>>& queries) {
-    std::ofstream ofs(bin_file, std::ios::binary);
-    if (!ofs) return false;
-    int n = (int)base_flat.size() / d;
-    ofs.write((char*)&d, sizeof(int));
-    ofs.write((char*)&n, sizeof(int));
-    ofs.write((char*)base_flat.data(), sizeof(float) * base_flat.size());
-    int nq = (int)queries.size();
-    ofs.write((char*)&nq, sizeof(int));
-    for (const auto& q : queries) {
-        int idx = q.first;
-        ofs.write((char*)&idx, sizeof(int));
-        int qdim = (int)q.second.size();
-        ofs.write((char*)&qdim, sizeof(int));
-        for (float v : q.second) {
-            float fv = (float)v;
-            ofs.write((char*)&fv, sizeof(float));
-        }
-    }
-    return true;
-}
+	int d = 0;
+	std::vector<std::pair<int, std::vector<float>>> queries;
+	auto base_flat = load_base_flat(base_file, d, &queries);
+	if (d <= 0 || base_flat.empty() || queries.empty()) {
+		std::cerr << "Empty base or invalid dimension." << std::endl;
+		return 1;
+	}
 
-static bool load_base_bin(const std::string& bin_file, int& out_d, std::vector<float>& base_flat, std::vector<std::pair<int, std::vector<float>>>& queries) {
-    std::ifstream ifs(bin_file, std::ios::binary);
-    if (!ifs) return false;
-    int d = 0, n = 0;
-    ifs.read((char*)&d, sizeof(int));
-    ifs.read((char*)&n, sizeof(int));
-    if (d <= 0 || n <= 0) return false;
-    base_flat.resize(n * d);
-    ifs.read((char*)base_flat.data(), sizeof(float) * n * d);
-    int nq = 0;
-    ifs.read((char*)&nq, sizeof(int));
-    queries.clear();
-    for (int i = 0; i < nq; ++i) {
-        int idx = 0, qdim = 0;
-        ifs.read((char*)&idx, sizeof(int));
-        ifs.read((char*)&qdim, sizeof(int));
-        std::vector<float> qv(qdim);
-        for (int j = 0; j < qdim; ++j) {
-            float fv;
-            ifs.read((char*)&fv, sizeof(float));
-            qv[j] = fv;
-        }
-        queries.emplace_back(idx, std::move(qv));
-    }
-    out_d = d;
-    return true;
-}
+	auto ground_truth = SimpleJSON::parse_gt(gt_file);
+	if (ground_truth.empty()) {
+		std::cerr << "Failed to load ground truth." << std::endl;
+		return 1;
+	}
 
-static std::vector<float> load_base_flat_cached(const std::string& base_file, int& out_d,
-                                         std::vector<std::pair<int, std::vector<float>>>* out_queries = nullptr) {
-    std::string bin_file = base_file + ".bin";
-    std::vector<float> base_flat;
-    std::vector<std::pair<int, std::vector<float>>> queries;
-    if (file_exists(bin_file)) {
-        if (load_base_bin(bin_file, out_d, base_flat, queries)) {
-            if (out_queries) *out_queries = queries;
-             std::cout << "[cache] loaded base vectors from " << bin_file << std::endl;
-            return base_flat;
-        }
-    }
-    base_flat = load_base_flat(base_file, out_d, &queries);
-    if (out_d > 0 && !base_flat.empty() && !queries.empty()) {
-        save_base_bin(bin_file, out_d, base_flat, queries);
-         std::cout << "[cache] saved base vectors to " << bin_file << std::endl;
-    }
-    if (out_queries) *out_queries = queries;
-    return base_flat;
-}
+	std::cout << "Building index..." << std::endl;
+	Solution sol;
+	sol.build(d, base_flat);
+	std::cout << "Index built." << std::endl;
 
-// 在文件顶部加入 hnsw 参数设置声明
-extern "C" void set_hnsw_params(int M, int max_layer, int ef_construction, int ef_search, int build_threads);
-extern "C" void set_hnsw_debug(int dbg);
-extern "C" {
-    uint64_t get_total_queries();
-    double get_avg_dists_per_query();
-    uint64_t get_last_query_dists();
-    void reset_dist_counters();
-}
+	// 在开始查询前重置计数器（确保统计仅包含当前 run）
+	reset_dist_counters();
 
-// Simple argument parser
-struct Args {
-    int num_centroids = 0;
-    int kmean_iter = 0;
-    int nprob = 0;
-    // HNSW runtime parameters (<=0 means "not set")
-    int m = -1;
-    int max_layer = -1;
-    int efc = -1;
-    int efs = -1;
-    int threads = -1;
-    int debug = -1;
-};
+	float total_recall = 0.0f;
+	int query_count = 0;
+	auto search_start = std::chrono::steady_clock::now();
+	int res_arr[10];
 
-Args parse_args(int argc, char* argv[]) {
-    Args args;
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-         if (arg == "--m" && i + 1 < argc) {            // HNSW M
-            args.m = std::stoi(argv[++i]);
-        } else if (arg == "--max_layer" && i + 1 < argc) {    // HNSW max layer
-            args.max_layer = std::stoi(argv[++i]);
-        } else if (arg == "--efc" && i + 1 < argc) {          // ef_construction
-            args.efc = std::stoi(argv[++i]);
-        } else if (arg == "--efs" && i + 1 < argc) {          // ef_search
-            args.efs = std::stoi(argv[++i]);
-        } else if (arg == "--threads" && i + 1 < argc) {      // build threads
-            args.threads = std::stoi(argv[++i]);
-        } else if (arg == "--debug" && i + 1 < argc) {
-            args.debug = std::stoi(argv[++i]);
-        }
-    }
-    return args;
-}
+	for (const auto& [qid, vec] : queries) {
+		auto it = ground_truth.find(qid);
+		if (it == ground_truth.end()) continue;
 
-// 替换 main：使用 Solution 接口进行构建与查询
-int main(int argc, char* argv[]) {
-    Args args = parse_args(argc, argv);
+		sol.search(vec, res_arr);
 
-    // 配置参数
-    
-    const std::string base_file = std::string("data_o/") + dataset + "/base.txt";
-    const std::string gt_file = std::string("data_o/") + dataset + "/test.json";
-    const int K = 10;  // top-k
+		std::vector<std::pair<int, float>> result;
+		for (int i = 0; i < K; ++i) {
+			if (res_arr[i] >= 0) result.emplace_back(res_arr[i], 0.0f);
+		}
 
-    // 解析底库并构建一维向量
-    int d = 0;
-    std::vector<std::pair<int, std::vector<float>>> queries;
-    auto base_flat = load_base_flat_cached(base_file, d, &queries);
-    if (d <= 0 || base_flat.empty() || queries.empty()) {
-        std::cerr << "Empty base or invalid dimension." << std::endl;
-        return 1;
-    }
+		total_recall += compute_recall(result, it->second, K);
+		++query_count;
 
-    // 初始化并构建索引（使用题目接口 Solution）
-    Solution* sol_ptr = nullptr;
-    if (args.num_centroids > 0 || args.kmean_iter > 0 || args.nprob > 0) {
-        // 若任一参数被指定，则全部传入（未指定的用.h默认值）
-        int nc = args.num_centroids > 0 ? args.num_centroids : 4497;
-        int ki = args.kmean_iter > 0 ? args.kmean_iter : 4;
-        int np = args.nprob > 0 ? args.nprob : 977;
-        sol_ptr = new Solution(nc, ki, np);
-    } else {
-        // 全部用.h默认值
-        sol_ptr = new Solution();
-    }
-    Solution& sol = *sol_ptr;
+		if (query_count % 50 == 0) {
+			std::cout << "Processed " << query_count << " queries\r" << std::flush;
+		}
+	}
 
-    // 在构建之前把 HNSW 超参数传给库（只传入用户设置的项）
-    set_hnsw_params(args.m, args.max_layer, args.efc, args.efs, args.threads);
-    if (args.debug >= 0) set_hnsw_debug(args.debug);
+	auto search_end = std::chrono::steady_clock::now();
+	auto search_ms = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
 
-    auto build_start = std::chrono::steady_clock::now();
-      std::cout << "Building index..." << std::endl;
-    sol.build(d, base_flat);
-    auto build_end = std::chrono::steady_clock::now();
-    auto build_time = std::chrono::duration_cast<std::chrono::seconds>(build_end - build_start).count();
-      std::cout << "Index built in " << build_time << " seconds" << std::endl;
+	std::cout << "\n=== Results ===" << std::endl;
+	std::cout << "Total queries: " << query_count << std::endl;
+	if (query_count > 0) {
+		std::cout << "Average recall@" << K << ": " << std::fixed << std::setprecision(4)
+				  << (total_recall / query_count) << std::endl;
+		std::cout << "Average query time: " << std::fixed << std::setprecision(2)
+				  << (search_ms / static_cast<float>(query_count)) << " ms" << std::endl;
+	}
 
-    // 加载查询和ground truth（复用原有函数）
-       std::cout << "Loading queries and ground truth..." << std::endl;
-    auto ground_truth = SimpleJSON::parse_gt(gt_file);
-       std::cout << "Loaded " << ground_truth.size() << " ground truth entries" << std::endl;
+	// 新增：打印距离运算统计（来自 MySolution.cpp 的全局计数）
+	uint64_t total_queries_reported = get_total_queries();
+	double avg_dists = get_avg_dists_per_query();
+	uint64_t last_query_dists = get_last_query_dists();
+	double last_build_ms = get_last_build_time_ms();
 
-    // 执行查询并评估
-       std::cout << "Running queries..." << std::endl;
-    float total_recall = 0.0;
-    int query_count = 0;
-    auto search_start = std::chrono::steady_clock::now();
+	std::cout << "\n=== Distance Statistics ===" << std::endl;
+	std::cout << "Total queries reported by index: " << total_queries_reported << std::endl;
+	std::cout << "Average distance ops per query: " << std::fixed << std::setprecision(2) << avg_dists << std::endl;
+	std::cout << "Last query distance ops: " << last_query_dists << std::endl;
+	std::cout << "Last build time (ms): " << std::fixed << std::setprecision(2) << last_build_ms << " ms" << std::endl;
 
-    // 直接使用上面获得的 queries，移除重复文件读取
-    for (const auto& gt_pair : ground_truth) {
-        int query_idx = gt_pair.first;
-        auto it = std::find_if(queries.begin(), queries.end(),
-            [query_idx](const auto& q) { return q.first == query_idx; });
-
-        if (it != queries.end() && !it->second.empty()) {
-            // 转换为 float 并调用 Solution::search
-            std::vector<float> qf;
-            qf.reserve(it->second.size());
-            for (float v : it->second) qf.push_back(static_cast<float>(v));
-            int res_arr[10];
-            sol.search(qf, res_arr);
-
-            // 将返回的 id 转为 result 格式（distance 不影响 recall）
-            std::vector<std::pair<int, float>> result;
-            for (int i = 0; i < K && i < 10; ++i) {
-                if (res_arr[i] >= 0) result.emplace_back(res_arr[i], 0.0);
-            }
-
-            // 计算召回率
-            float recall = compute_recall(result, gt_pair.second, K);
-            total_recall += recall;
-            ++query_count;
-
-            // 打印进度
-            if ( query_count % 50 == 0) {
-                 std::cout << "Processed " << query_count << " queries\r" << std::flush;
-            }
-        }
-    }
-
-    auto search_end = std::chrono::steady_clock::now();
-    auto search_time = std::chrono::duration_cast<std::chrono::milliseconds>(search_end - search_start).count();
-
-    // 打印结果
-      {
-         std::cout << "\n=== Results ===" << std::endl;
-         std::cout << "Total queries: " << query_count << std::endl;
-        if (query_count > 0) {
-             std::cout << "Average recall@" << K << ": " << std::fixed << std::setprecision(4)
-                      << (total_recall / query_count) << std::endl;
-             std::cout << "Average query time: " << std::fixed << std::setprecision(2)
-                      << (search_time / (float)query_count) << " ms" << std::endl;
-            // 新增：平均每次查询距离计算次数统计（从 hnsw 获取）
-            double avg_dists = get_avg_dists_per_query();
-            uint64_t last_dists = get_last_query_dists();
-            std::cout << "Average distance calcs per query: " << std::fixed << std::setprecision(1) << avg_dists << std::endl;
-            std::cout << "Last query distance calcs: " << last_dists << std::endl;
-        }
-         std::cout << "Index build time: " << build_time << " seconds" << std::endl;
-    }
-
-    delete sol_ptr;
-    return 0;
+	return 0;
 }

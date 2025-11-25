@@ -1,0 +1,2 @@
+timestamp,trial_id,m,efc,efs,K,avg_recall,avg_time_ms,build_time_ms,reward_score,status
+2025-11-25T13:14:36.773148,0,32,512,500,10,0.6749,0.3898,458969.0,-4100999999.999999,COMPLETE

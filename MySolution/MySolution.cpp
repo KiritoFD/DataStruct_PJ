@@ -1,4 +1,4 @@
-// hnsw_solution_parallel_final.cpp
+#include "MySolution.h"
 #include <vector>
 #include <queue>
 #include <cmath>
@@ -22,7 +22,15 @@ static std::atomic<uint64_t> g_dist_count{0};
 static std::atomic<uint64_t> g_total_dist_count{0};
 static std::atomic<uint64_t> g_total_query_count{0};
 static std::atomic<uint64_t> g_last_query_dist{0};
-static std::atomic<bool>   g_count_dist_enabled{true};
+// 默认关闭计数，仅在搜索时显式开启
+static std::atomic<bool>   g_count_dist_enabled{false};
+
+// 新增：线程本地累积，减少原子争用，并保证最后强制 flush
+static thread_local uint64_t tl_dist_counter = 0;
+static const uint64_t DIST_FLUSH_THRESHOLD = 1024ULL;
+
+// 新增：记录最近一次 build 耗时（毫秒）
+static std::atomic<double> g_last_build_ms{0.0};
 
 // ---------------------------------------------------------
 // 全局线程池 (保持不变)
@@ -93,7 +101,7 @@ static ThreadPool* getThreadPool() {
 // ---------------------------------------------------------
 // 参数设置
 // ---------------------------------------------------------
-static bool DEBUG_TIMING = false; // 默认关闭调试输出，运行时可通过接口打开
+static bool DEBUG_TIMING = true; // 默认关闭调试输出，运行时可通过接口打开
 
 // ---------------------------------------------------------
 // SIMD 距离计算
@@ -101,8 +109,14 @@ static bool DEBUG_TIMING = false; // 默认关闭调试输出，运行时可通�
 #if defined(__AVX2__)
 #include <immintrin.h>
 static inline float l2sq_dense(const float* a, const float* b, int dim) {
-    // 统计（仅在搜索阶段开启时累加）
-    if (g_count_dist_enabled.load(std::memory_order_relaxed)) g_dist_count.fetch_add(1, std::memory_order_relaxed);
+    // 采用线程本地统计并批量刷新到全局计数，减少原子操作并避免丢计数
+    if (g_count_dist_enabled.load(std::memory_order_relaxed)) {
+        ++tl_dist_counter;
+        if (tl_dist_counter >= DIST_FLUSH_THRESHOLD) {
+            g_dist_count.fetch_add(tl_dist_counter, std::memory_order_relaxed);
+            tl_dist_counter = 0;
+        }
+    }
 
     int i = 0;
     __m256 sumv = _mm256_setzero_ps();
@@ -124,7 +138,13 @@ static inline float l2sq_dense(const float* a, const float* b, int dim) {
 }
 #else
 static inline float l2sq_dense(const float* a, const float* b, int dim) {
-    if (g_count_dist_enabled.load(std::memory_order_relaxed)) g_dist_count.fetch_add(1, std::memory_order_relaxed);
+    if (g_count_dist_enabled.load(std::memory_order_relaxed)) {
+        ++tl_dist_counter;
+        if (tl_dist_counter >= DIST_FLUSH_THRESHOLD) {
+            g_dist_count.fetch_add(tl_dist_counter, std::memory_order_relaxed);
+            tl_dist_counter = 0;
+        }
+    }
 
     float s = 0.0f;
     const float* end = a + dim;
@@ -476,6 +496,11 @@ public:
             double total_ms = std::chrono::duration<double, std::milli>(build_end - build_start).count();
             std::cout << "[Timing] Parallel Build: " << total_ms << " ms for " << n << " points." << std::endl;
         }
+        // 记录最近一次 build 耗时（ms）
+        {
+            double total_ms = std::chrono::duration<double, std::milli>(build_end - build_start).count();
+            g_last_build_ms.store(total_ms, std::memory_order_relaxed);
+        }
     }
 
     std::vector<std::pair<int,float>> search(const std::vector<float>& query, int k) {
@@ -485,14 +510,22 @@ public:
 
         // 原有搜索逻辑
         int ep = hnsw->enter_point;
-        if (ep < 0 || ep >= hnsw->size()) return {}; // 防御性检查
+        if (ep < 0 || ep >= hnsw->size()) {
+            // 在返回之前关闭并 flush 本地计数（防止泄漏）
+            if (tl_dist_counter) {
+                g_dist_count.fetch_add(tl_dist_counter, std::memory_order_relaxed);
+                tl_dist_counter = 0;
+            }
+            g_count_dist_enabled.store(false, std::memory_order_release);
+            return {}; // 防御性检查
+        }
 
-         int max_l = (int)hnsw->nodes[ep]->links.size() - 1;
-         int curr = ep;
-         
-         // 【搜索阶段】：UseLock = false (极速模式)
-         for(int l = max_l; l > 0; l--) curr = hnsw->greedySearch<false>(curr, query.data(), l);
-         
+        int max_l = (int)hnsw->nodes[ep]->links.size() - 1;
+        int curr = ep;
+
+        // 【搜索阶段】：UseLock = false (极速模式)
+        for(int l = max_l; l > 0; l--) curr = hnsw->greedySearch<false>(curr, query.data(), l);
+        
         auto top = hnsw->searchLayer<false>(query.data(), curr, 0, g_HNSW_EF_SEARCH.load());
         
         std::vector<std::pair<int,float>> out;
@@ -503,8 +536,13 @@ public:
             out.push_back({point_ids[p.second], p.first});
         }
 
-        // 关闭计数并记录
+        // 关闭计数并强制 flush 线程本地计数，然后记录
+        if (tl_dist_counter) {
+            g_dist_count.fetch_add(tl_dist_counter, std::memory_order_relaxed);
+            tl_dist_counter = 0;
+        }
         g_count_dist_enabled.store(false, std::memory_order_release);
+
         uint64_t last = g_dist_count.load(std::memory_order_relaxed);
         g_last_query_dist.store(last, std::memory_order_relaxed);
         g_total_dist_count.fetch_add(last, std::memory_order_relaxed);
@@ -537,27 +575,21 @@ std::vector<std::pair<int,float>> search_hnsw(const std::vector<float>& query, i
     return g_impl->search(query, k);
 }
 
-class Solution {
-    int k;
-public:
-    Solution(int d, int n, int kk); // 改为声明，类外定义以生成链接符号
-    void build(int d, const std::vector<float>& base);
-    void search(const std::vector<float>& query, int* result);
-};
+// Implementations for Solution declared in MySolution.h
+Solution::Solution() : k_(10) {}
 
 void Solution::build(int d, const std::vector<float>& base) {
     build_hnsw(d, base);
 }
 
 void Solution::search(const std::vector<float>& query, int* result) {
-    auto res = search_hnsw(query, k);
-    for (size_t i = 0; i < res.size(); ++i) {
+    // 保证返回数组长度为 k_ (10)，未填满项用 -1 填充
+    std::fill(result, result + k_, -1);
+    auto res = search_hnsw(query, k_);
+    for (size_t i = 0; i < res.size() && i < static_cast<size_t>(k_); ++i) {
         result[i] = res[i].first;
     }
 }
-
-// 在文件末尾添加类外构造函数定义（生成外部符号）
-Solution::Solution(int d, int n, int kk) : k(kk) {}
 
 // ---------------------------------------------------------
 // 设置参数接口
@@ -600,4 +632,7 @@ void reset_dist_counters() {
     g_total_query_count.store(0, std::memory_order_relaxed);
     g_last_query_dist.store(0, std::memory_order_relaxed);
 }
+// 新增：获取最近一次 build 耗时（ms）
+double get_last_build_time_ms() { return g_last_build_ms.load(std::memory_order_relaxed); }
+
 } // extern "C"
