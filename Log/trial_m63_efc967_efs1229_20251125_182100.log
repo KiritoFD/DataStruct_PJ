@@ -1,0 +1,15 @@
+   [START] m=63, efc=967, efs=1229
+   [LOG] Log/trial_m63_efc967_efs1229_20251125_182100.log
+   [RUN 1/1] Executing: ./hng --m 63 --efc 967 --efs 1229
+
+============================================================
+Trial: m=63, efc=967, efs=1229, Run 1/1
+Timestamp: 2025-11-25T18:21:00.884179
+Command: ./hng --m 63 --efc 967 --efs 1229
+============================================================
+
+[OUT] Config: base=data_o/glove/base.txt, query=data_o/glove/query.txt, truth=data_o/glove/truth.txt, K=10
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] 向量维度 d=100, 底库向量数=1183514, 查询数=10000

@@ -1,0 +1,24 @@
+   [START] m=51, efc=980, efs=370
+   [LOG] Log/trial_m51_efc980_efs370_20251125_180409.log
+   [RUN 1/1] Executing: ./hng --m 51 --efc 980 --efs 370
+
+============================================================
+Trial: m=51, efc=980, efs=370, Run 1/1
+Timestamp: 2025-11-25T18:04:09.475440
+Command: ./hng --m 51 --efc 980 --efs 370
+============================================================
+
+[OUT] Config: base=data_o/glove/base.txt, query=data_o/glove/query.txt, truth=data_o/glove/truth.txt, K=10
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] 向量维度 d=100, 底库向量数=1183514, 查询数=10000
+[OUT] [Timing] Parallel Build: 981316 ms for 1183514 points.
+[OUT] Index built. build_time(local)=921754.55 ms, build_time(internal)=981316.05 ms
+[OUT] queries=10000, avg recall@10=0.9523, avg_query_time=2.2759 ms, total_time=22759.0900 ms
+[OUT] Distance stats: total_queries = 10000, avg_dists_per_query = 14798.44, last_query_dists = 11721
+
+Return Code: 0
+   [PARSED] Build=981316.00ms, Query=2.2759ms, Recall=0.9523
+   [RESULT] m=51 efc=980  efs=370  | Rec=0.9523 Time=2.2759ms Build=981316.00ms
+   [SUCCESS] Logged to Log/trial_m51_efc980_efs370_20251125_180409.log

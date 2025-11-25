@@ -8,6 +8,8 @@
 #include <unordered_set>
 #include <iomanip>
 #include <cstdint>
+#include <ctime>
+#include <sys/stat.h>
 
 // 导出函数声明
 extern "C" {
@@ -219,15 +221,17 @@ static std::vector<std::vector<int>> load_truth(const std::string &path) {
     return gt;
 }
 
-static float recall_at_k(const std::vector<int> &res, const std::vector<int> &gt, int k) {
-	if (gt.empty()) return 0.0f;
-	std::unordered_set<int> s;
-	for (int i = 0; i < (int)gt.size() && i < k; ++i) s.insert(gt[i]);
-	int hit = 0;
-	for (int i = 0; i < k; ++i) {
-		if (res[i] >= 0 && s.find(res[i]) != s.end()) ++hit;
-	}
-	return float(hit) / float(k);
+static float recall_at_k(const int* res, const std::vector<int> &gt, int k) {
+    if (gt.empty()) return 0.0f;
+    // 使用位图加速小规模集合查找
+    std::unordered_set<int> s;
+    s.reserve(k);
+    for (int i = 0; i < (int)gt.size() && i < k; ++i) s.insert(gt[i]);
+    int hit = 0;
+    for (int i = 0; i < k; ++i) {
+        if (res[i] >= 0 && s.count(res[i])) ++hit;
+    }
+    return float(hit) / float(k);
 }
 
 // 简易命令行解析（与 test_hn.cpp 对齐）
@@ -254,6 +258,60 @@ static CmdOptsG parse_args_g(int argc, char** argv) {
     return o;
 }
 
+// 新增：日志输出辅助类
+class Logger {
+private:
+    std::ofstream log_file;
+    std::string log_path;
+
+public:
+    Logger(const std::string& log_dir) {
+        // 创建日志目录
+        mkdir(log_dir.c_str(), 0755);
+        
+        // 生成带时间戳的日志文件名
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()) % 1000;
+        
+        std::stringstream ss;
+        ss << log_dir << "/run_"
+           << std::put_time(std::localtime(&time_t), "%Y%m%d_%H%M%S")
+           << "_" << std::setfill('0') << std::setw(3) << ms.count()
+           << ".log";
+        log_path = ss.str();
+        
+        log_file.open(log_path, std::ios::app);
+    }
+
+    ~Logger() {
+        if (log_file.is_open()) log_file.close();
+    }
+
+    void write(const std::string& msg) {
+        if (log_file.is_open()) {
+            log_file << msg;
+            log_file.flush();
+        }
+        std::cout << msg;
+    }
+
+    void writeline(const std::string& msg) {
+        write(msg + "\n");
+    }
+
+    template<typename T>
+    Logger& operator<<(const T& val) {
+        std::stringstream ss;
+        ss << val;
+        write(ss.str());
+        return *this;
+    }
+
+    const std::string& get_path() const { return log_path; }
+};
+
 int main(int argc, char** argv) {
     auto opts = parse_args_g(argc, argv);
     const std::string base_file_default = "data_o/glove/base.txt";
@@ -264,74 +322,171 @@ int main(int argc, char** argv) {
     const std::string truth_file = opts.truth_file.empty() ? truth_file_default : opts.truth_file;
     const int K = (opts.K > 0) ? opts.K : 10;
 
+    // 创建日志记录器
+    Logger logger("Log");
+    
+    // 记录启动时间和配置
+    {
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        logger.writeline(std::string("========== HNSW Search Test ==========\n"));
+        logger.writeline(std::string("Timestamp: ") + std::ctime(&time_t));
+    }
+
+    logger.writeline("Command line arguments:");
+    for (int i = 0; i < argc; ++i) {
+        logger.writeline(std::string("  argv[") + std::to_string(i) + "]: " + argv[i]);
+    }
+
+    logger.writeline("\nConfiguration:");
+    logger.writeline(std::string("  Base file: ") + base_file);
+    logger.writeline(std::string("  Query file: ") + query_file);
+    logger.writeline(std::string("  Truth file: ") + truth_file);
+    logger.writeline(std::string("  K: ") + std::to_string(K));
+    logger.writeline(std::string("  M: ") + std::to_string(opts.M));
+    logger.writeline(std::string("  Max layer: ") + std::to_string(opts.max_layer));
+    logger.writeline(std::string("  EFC: ") + std::to_string(opts.efc));
+    logger.writeline(std::string("  EFS: ") + std::to_string(opts.efs));
+    logger.writeline(std::string("  Threads: ") + std::to_string(opts.threads));
+    logger.writeline(std::string("  Debug: ") + std::to_string(opts.debug));
+    logger.writeline("");
+
     if (opts.M>0 || opts.max_layer>0 || opts.efc>0 || opts.efs>0 || opts.threads>0) {
         set_hnsw_params(opts.M, opts.max_layer, opts.efc, opts.efs, opts.threads);
+        logger.writeline("HNSW parameters set.\n");
     }
     if (opts.debug >= 0) set_hnsw_debug(opts.debug);
-    std::cout << "Config: base=" << base_file << ", query=" << query_file << ", truth=" << truth_file << ", K=" << K << std::endl;
 
-	int d = 0;
-	auto base_flat = load_base_flat(base_file, d);
- 	if (d <= 0 || base_flat.empty()) {
- 		std::cerr << "加载 base 失败或维度无效: " << base_file << std::endl;
- 		return 1;
- 	}
- 
-	auto queries = load_queries(query_file, d);
- 	if (queries.empty()) {
- 		std::cerr << "加载 query 失败或没有合法查询: " << query_file << std::endl;
- 		return 1;
- 	}
- 
-	auto truths = load_truth(truth_file);
- 	if (truths.empty()) {
- 		std::cerr << "加载 truth 失败或为空: " << truth_file << std::endl;
- 		// 仍可继续但召回为 0
- 	}
- 
- 	std::cout << "向量维度 d=" << d << ", 底库向量数=" << (base_flat.size() / d)
- 			  << ", 查询数=" << queries.size() << std::endl;
- 
- 	// 构建索引
- 	Solution sol;
-     auto build_t0 = std::chrono::steady_clock::now();
- 	sol.build(d, base_flat);
-     auto build_t1 = std::chrono::steady_clock::now();
-     double build_ms_local = std::chrono::duration<double, std::milli>(build_t1 - build_t0).count();
-     double build_ms_internal = get_last_build_time_ms();
-     std::cout << "Index built. build_time(local)=" << std::fixed << std::setprecision(2) << build_ms_local
-               << " ms, build_time(internal)=" << std::fixed << std::setprecision(2) << build_ms_internal << " ms" << std::endl;
+    // 加载数据
+    logger.writeline("Loading base vectors...");
+    int d = 0;
+    auto load_base_t0 = std::chrono::steady_clock::now();
+    auto base_flat = load_base_flat(base_file, d);
+    auto load_base_t1 = std::chrono::steady_clock::now();
+    double load_base_ms = std::chrono::duration<double, std::milli>(load_base_t1 - load_base_t0).count();
+
+    if (d <= 0 || base_flat.empty()) {
+        logger.writeline("ERROR: Failed to load base or invalid dimension.\n");
+        return 1;
+    }
+    logger.writeline(std::string("✓ Base loaded in ") + std::to_string(load_base_ms) + " ms\n");
+
+    logger.writeline("Loading query vectors...");
+    auto load_query_t0 = std::chrono::steady_clock::now();
+    auto queries = load_queries(query_file, d);
+    auto load_query_t1 = std::chrono::steady_clock::now();
+    double load_query_ms = std::chrono::duration<double, std::milli>(load_query_t1 - load_query_t0).count();
+
+    if (queries.empty()) {
+        logger.writeline("ERROR: Failed to load queries.\n");
+        return 1;
+    }
+    logger.writeline(std::string("✓ Queries loaded in ") + std::to_string(load_query_ms) + " ms\n");
+
+    logger.writeline("Loading ground truth...");
+    auto load_truth_t0 = std::chrono::steady_clock::now();
+    auto truths = load_truth(truth_file);
+    auto load_truth_t1 = std::chrono::steady_clock::now();
+    double load_truth_ms = std::chrono::duration<double, std::milli>(load_truth_t1 - load_truth_t0).count();
+
+    if (truths.empty()) {
+        logger.writeline("WARNING: Failed to load ground truth (recall will be 0).\n");
+    } else {
+        logger.writeline(std::string("✓ Truth loaded in ") + std::to_string(load_truth_ms) + " ms\n");
+    }
+
+    logger.writeline(std::string("Data Summary:\n  Dimension d=") + std::to_string(d) 
+                     + ", Base vectors=" + std::to_string(base_flat.size() / d)
+                     + ", Queries=" + std::to_string(queries.size()) + "\n\n");
+
+    // 构建索引
+    logger.writeline("Building HNSW index...");
+    Solution sol;
+    auto build_t0 = std::chrono::steady_clock::now();
+    sol.build(d, base_flat);
+    auto build_t1 = std::chrono::steady_clock::now();
+    double build_ms_local = std::chrono::duration<double, std::milli>(build_t1 - build_t0).count();
+    double build_ms_internal = get_last_build_time_ms();
     
-	// 查询并统计
-	long long total_ms = 0;
-	double total_recall = 0.0;
-	int cnt = 0;
-	int res[10];
-	auto t0 = std::chrono::steady_clock::now();
-	for (size_t qi = 0; qi < queries.size(); ++qi) {
-		const auto &q = queries[qi];
-		// 调用接口
-		auto qt0 = std::chrono::steady_clock::now();
-		sol.search(q, res);
-		auto qt1 = std::chrono::steady_clock::now();
-		total_ms += std::chrono::duration_cast<std::chrono::microseconds>(qt1 - qt0).count();
-		std::vector<int> out(res, res + K);
-		const std::vector<int> &gt = (qi < truths.size() ? truths[qi] : std::vector<int>{});
-		total_recall += recall_at_k(out, gt, K);
-		++cnt;
-	}
-	auto t1 = std::chrono::steady_clock::now();
-	double avg_recall = cnt ? (total_recall / cnt) : 0.0;
-	double avg_query_ms = cnt ? (total_ms / 1000.0 / cnt) : 0.0;
-	double total_time_ms = std::chrono::duration<double,std::milli>(t1 - t0).count();
+    logger.writeline(std::string("✓ Index built.\n  build_time(local)=") + std::to_string(build_ms_local)
+                     + " ms\n  build_time(internal)=" + std::to_string(build_ms_internal) + " ms\n\n");
 
-	std::cout << std::fixed << std::setprecision(4);
-	std::cout << "queries=" << cnt << ", avg recall@" << K << "=" << avg_recall
-			  << ", avg_query_time=" << avg_query_ms << " ms"
-			  << ", total_time=" << total_time_ms << " ms" << std::endl;
-    // 打印距离统计
-    std::cout << "Distance stats: total_queries = " << get_total_queries()
-              << ", avg_dists_per_query = " << std::fixed << std::setprecision(2) << get_avg_dists_per_query()
-              << ", last_query_dists = " << get_last_query_dists() << std::endl;
- 	return 0;
- }
+    // 重置距离计数器
+    reset_dist_counters();
+
+    // 执行查询
+    logger.writeline("Executing queries...\n");
+    const size_t nq = queries.size();
+    double total_recall = 0.0;
+    uint64_t start_dist_count = get_total_queries();  // 记录起始查询计数
+    int res[10];
+    
+    auto t0 = std::chrono::steady_clock::now();
+    
+    for (size_t qi = 0; qi < nq; ++qi) {
+        sol.search(queries[qi], res);
+        const std::vector<int> &gt = (qi < truths.size() ? truths[qi] : std::vector<int>{});
+        total_recall += recall_at_k(res, gt, K);
+        
+        // 每 1000 次查询输出一次进度
+        if ((qi + 1) % 1000 == 0) {
+            logger.writeline(std::string("  Processed ") + std::to_string(qi + 1) + " queries\n");
+        }
+    }
+    
+    auto t1 = std::chrono::steady_clock::now();
+    
+    double total_time_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+    double avg_recall = nq ? (total_recall / nq) : 0.0;
+    double avg_query_ms = nq ? (total_time_ms / nq) : 0.0;
+
+    logger.writeline("\n========== RESULTS ==========\n");
+    logger.writeline(std::string("Total queries: ") + std::to_string(nq) + "\n");
+    
+    // 修复：使用 stringstream 格式化浮点数
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(6) 
+           << "Average recall@" << K << ": " << avg_recall << "\n";
+        logger.writeline(ss.str());
+    }
+    
+    logger.writeline(std::string("Average query time: ") + std::to_string(avg_query_ms) + " ms\n");
+    logger.writeline(std::string("Total query time: ") + std::to_string(total_time_ms) + " ms\n");
+
+    // 打印距离统计（优化版：更详细）
+    uint64_t total_queries_reported = get_total_queries();
+    double avg_dists = get_avg_dists_per_query();
+    uint64_t last_query_dists = get_last_query_dists();
+    
+    logger.writeline("\n========== DISTANCE STATISTICS ==========\n");
+    logger.writeline(std::string("Total queries reported by index: ") + std::to_string(total_queries_reported) + "\n");
+    logger.writeline(std::string("Total distance computations: ") + std::to_string((uint64_t)(avg_dists * total_queries_reported)) + "\n");
+    logger.writeline(std::string("Average distance ops per query: ") + std::to_string(avg_dists) + "\n");
+    logger.writeline(std::string("Last query distance ops: ") + std::to_string(last_query_dists) + "\n");
+
+    // 性能摘要
+    logger.writeline("\n========== PERFORMANCE SUMMARY ==========\n");
+    logger.writeline(std::string("Data loading time: ") + std::to_string(load_base_ms + load_query_ms + load_truth_ms) + " ms\n");
+    logger.writeline(std::string("Index build time: ") + std::to_string(build_ms_internal) + " ms\n");
+    logger.writeline(std::string("Query execution time: ") + std::to_string(total_time_ms) + " ms\n");
+    double total_elapsed = load_base_ms + load_query_ms + load_truth_ms + build_ms_local + total_time_ms;
+    logger.writeline(std::string("Total elapsed time: ") + std::to_string(total_elapsed) + " ms\n");
+    
+    // 新增：距离计算效率指标
+    logger.writeline("\n========== EFFICIENCY METRICS ==========\n");
+    if (nq > 0 && total_time_ms > 0) {
+        double queries_per_sec = (nq * 1000.0) / total_time_ms;
+        logger.writeline(std::string("Queries per second: ") + std::to_string(queries_per_sec) + "\n");
+        
+        if (avg_dists > 0) {
+            double dist_ops_per_second = (avg_dists * nq * 1000.0) / total_time_ms;
+            logger.writeline(std::string("Distance ops per second: ") + std::to_string(dist_ops_per_second) + "\n");
+        }
+    }
+
+    logger.writeline("\n========== END OF LOG ==========\n");
+    logger.writeline(std::string("Log saved to: ") + logger.get_path() + "\n");
+
+    return 0;
+}

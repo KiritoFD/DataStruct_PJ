@@ -1,0 +1,3 @@
+   [START] m=63, efc=969, efs=940
+   [LOG] Log/trial_m63_efc969_efs940_20251125_175625.log
+   [RUN 1/1] Executing: ./hng --m 63 --efc 969 --efs 940
