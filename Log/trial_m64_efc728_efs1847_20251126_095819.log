@@ -1,0 +1,141 @@
+   [START] m=64, efc=728, efs=1847
+   [LOG] Log/trial_m64_efc728_efs1847_20251126_095819.log
+   [RUN 1/1] Executing: ./hng --m 64 --efc 728 --efs 1847
+
+============================================================
+Trial: m=64, efc=728, efs=1847, Run 1/1
+Timestamp: 2025-11-26T09:58:19.262561
+Command: ./hng --m 64 --efc 728 --efs 1847
+============================================================
+
+[OUT] ========== HNSW Search Test ==========
+[OUT] 
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[OUT] Timestamp: Wed Nov 26 09:58:19 2025
+[OUT] 
+[OUT] Command line arguments:
+[OUT]   argv[0]: ./hng
+[OUT]   argv[1]: --m
+[OUT]   argv[2]: 64
+[OUT]   argv[3]: --efc
+[OUT]   argv[4]: 728
+[OUT]   argv[5]: --efs
+[OUT]   argv[6]: 1847
+[OUT] 
+[OUT] Configuration:
+[OUT]   Base file: data_o/glove/base.txt
+[OUT]   Query file: data_o/glove/query.txt
+[OUT]   Truth file: data_o/glove/truth.txt
+[OUT]   K: 10
+[OUT]   M: 64
+[OUT]   Max layer: -1
+[OUT]   EFC: 728
+[OUT]   EFS: 1847
+[OUT]   Threads: -1
+[OUT]   Debug: -1
+[OUT] 
+[OUT] HNSW parameters set.
+[OUT] 
+[OUT] Loading base vectors...
+[OUT] ✓ Base loaded in 4163.509052 ms
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[OUT] 
+[OUT] Loading query vectors...
+[OUT] ✓ Queries loaded in 95.702071 ms
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] 
+[OUT] Loading ground truth...
+[OUT] ✓ Truth loaded in 89.576719 ms
+[OUT] 
+[OUT] Data Summary:
+[OUT]   Dimension d=100, Base vectors=1183514, Queries=10000
+[OUT] 
+[OUT] 
+[OUT] Building HNSW index...
+[OUT] [Progress] 119001/1183514 (10.1%) Time: 15526.54 ms
+[OUT] [Progress] 238001/1183514 (20.1%) Time: 64543.60 ms
+[OUT] [Progress] 357001/1183514 (30.2%) Time: 134580.37 ms
+[OUT] [Progress] 476001/1183514 (40.2%) Time: 217614.73 ms
+[OUT] [Progress] 595001/1183514 (50.3%) Time: 314675.32 ms
+[OUT] [Progress] 714001/1183514 (60.3%) Time: 409729.87 ms
+[OUT] [Progress] 833001/1183514 (70.4%) Time: 512778.89 ms
+[OUT] [Progress] 952001/1183514 (80.4%) Time: 617332.90 ms
+[OUT] [Progress] 1072001/1183514 (90.6%) Time: 727388.94 ms
+[OUT] [Timing] Parallel Build: 810934.36 ms for 1183514 points.
+[OUT] ✓ Index built.
+[OUT]   build_time(local)=812936.484208 ms
+[OUT]   build_time(internal)=810934.356393 ms
+[OUT] 
+[OUT] 
+[OUT] Executing queries...
+[OUT] 
+[OUT]   Processed 1000 queries
+[OUT] 
+[OUT]   Processed 2000 queries
+[OUT] 
+[OUT]   Processed 3000 queries
+[OUT] 
+[OUT]   Processed 4000 queries
+[OUT] 
+[OUT]   Processed 5000 queries
+[OUT] 
+[OUT]   Processed 6000 queries
+[OUT] 
+[OUT]   Processed 7000 queries
+[OUT] 
+[OUT]   Processed 8000 queries
+[OUT] 
+[OUT]   Processed 9000 queries
+[OUT] 
+[OUT]   Processed 10000 queries
+[OUT] 
+[OUT] 
+[OUT] ========== RESULTS ==========
+[OUT] 
+[OUT] Total queries: 10000
+[OUT] 
+[OUT] Average recall@10: 0.998870
+[OUT] 
+[OUT] Average query time: 10.405504 ms
+[OUT] 
+[OUT] Total query time: 104055.038010 ms
+[OUT] 
+[OUT] 
+[OUT] ========== DISTANCE STATISTICS ==========
+[OUT] 
+[OUT] Total queries reported by index: 10000
+[OUT] 
+[OUT] Total distance computations: 748057097
+[OUT] 
+[OUT] Average distance ops per query: 74805.709700
+[OUT] 
+[OUT] Last query distance ops: 50624
+[OUT] 
+[OUT] 
+[OUT] ========== PERFORMANCE SUMMARY ==========
+[OUT] 
+[OUT] Data loading time: 4348.787842 ms
+[OUT] 
+[OUT] Index build time: 810934.356393 ms
+[OUT] 
+[OUT] Query execution time: 104055.038010 ms
+[OUT] 
+[OUT] Total elapsed time: 921340.310060 ms
+[OUT] 
+[OUT] 
+[OUT] ========== EFFICIENCY METRICS ==========
+[OUT] 
+[OUT] Queries per second: 96.102987
+[OUT] 
+[OUT] Distance ops per second: 7189052.171872
+[OUT] 
+[OUT] 
+[OUT] ========== END OF LOG ==========
+[OUT] 
+[OUT] Log saved to: Log/run_20251126_095819_280.log
+[OUT] 
+
+Return Code: 0
+   [PARSED] Build=810934.36ms, Query=10.4055ms, Recall=0.9989
+   [RESULT] m=64 efc=728  efs=1847 | Rec=0.9989 Time=10.4055ms Build=810934.36ms
+   [SUCCESS] Logged to Log/trial_m64_efc728_efs1847_20251126_095819.log

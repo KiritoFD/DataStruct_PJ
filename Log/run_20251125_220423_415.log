@@ -1,38 +1,38 @@
 ========== HNSW Search Test ==========
 
-Timestamp: Tue Nov 25 21:16:07 2025
+Timestamp: Tue Nov 25 22:04:23 2025
 
 Command line arguments:
   argv[0]: ./hng
   argv[1]: --m
-  argv[2]: 62
+  argv[2]: 56
   argv[3]: --efc
-  argv[4]: 474
+  argv[4]: 964
   argv[5]: --efs
-  argv[6]: 268
+  argv[6]: 1532
 
 Configuration:
   Base file: data_o/glove/base.txt
   Query file: data_o/glove/query.txt
   Truth file: data_o/glove/truth.txt
   K: 10
-  M: 62
+  M: 56
   Max layer: -1
-  EFC: 474
-  EFS: 268
+  EFC: 964
+  EFS: 1532
   Threads: -1
   Debug: -1
 
 HNSW parameters set.
 
 Loading base vectors...
-✓ Base loaded in 3454.001215 ms
+✓ Base loaded in 3184.547578 ms
 
 Loading query vectors...
-✓ Queries loaded in 83.357635 ms
+✓ Queries loaded in 72.231580 ms
 
 Loading ground truth...
-✓ Truth loaded in 78.013533 ms
+✓ Truth loaded in 63.783711 ms
 
 Data Summary:
   Dimension d=100, Base vectors=1183514, Queries=10000
@@ -40,8 +40,8 @@ Data Summary:
 
 Building HNSW index...
 ✓ Index built.
-  build_time(local)=444779.271577 ms
-  build_time(internal)=484451.999163 ms
+  build_time(local)=1122662.403466 ms
+  build_time(internal)=1214363.100070 ms
 
 
 Executing queries...
@@ -71,43 +71,43 @@ Executing queries...
 
 Total queries: 10000
 
-Average recall@10: 0.959920
+Average recall@10: 0.998790
 
-Average query time: 1.162868 ms
+Average query time: 7.893025 ms
 
-Total query time: 11628.676610 ms
+Total query time: 78930.252663 ms
 
 
 ========== DISTANCE STATISTICS ==========
 
 Total queries reported by index: 10000
 
-Total distance computations: 119647134
+Total distance computations: 680426595
 
-Average distance ops per query: 11964.713400
+Average distance ops per query: 68042.659500
 
-Last query distance ops: 10113
+Last query distance ops: 48084
 
 
 ========== PERFORMANCE SUMMARY ==========
 
-Data loading time: 3615.372383 ms
+Data loading time: 3320.562869 ms
 
-Index build time: 484451.999163 ms
+Index build time: 1214363.100070 ms
 
-Query execution time: 11628.676610 ms
+Query execution time: 78930.252663 ms
 
-Total elapsed time: 460023.320570 ms
+Total elapsed time: 1204913.218998 ms
 
 
 ========== EFFICIENCY METRICS ==========
 
-Queries per second: 859.943082
+Queries per second: 126.694134
 
-Distance ops per second: 10288972.512754
+Distance ops per second: 8620605.813909
 
 
 ========== END OF LOG ==========
 
-Log saved to: Log/run_20251125_211607_024.log
+Log saved to: Log/run_20251125_220423_415.log
 

@@ -1,0 +1,56 @@
+   [START] m=44, efc=618, efs=644
+   [LOG] Log/trial_m44_efc618_efs644_20251126_144521.log
+   [RUN 1/1] Executing: ./hng --m 44 --efc 618 --efs 644
+
+============================================================
+Trial: m=44, efc=618, efs=644, Run 1/1
+Timestamp: 2025-11-26T14:45:21.731379
+Command: ./hng --m 44 --efc 618 --efs 644
+============================================================
+
+[OUT] ========== HNSW Search Test ==========
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[OUT] 
+[OUT] Timestamp: Wed Nov 26 14:45:21 2025
+[OUT] 
+[OUT] Command line arguments:
+[OUT]   argv[0]: ./hng
+[OUT]   argv[1]: --m
+[OUT]   argv[2]: 44
+[OUT]   argv[3]: --efc
+[OUT]   argv[4]: 618
+[OUT]   argv[5]: --efs
+[OUT]   argv[6]: 644
+[OUT] 
+[OUT] Configuration:
+[OUT]   Base file: data_o/glove/base.txt
+[OUT]   Query file: data_o/glove/query.txt
+[OUT]   Truth file: data_o/glove/truth.txt
+[OUT]   K: 10
+[OUT]   M: 44
+[OUT]   Max layer: -1
+[OUT]   EFC: 618
+[OUT]   EFS: 644
+[OUT]   Threads: -1
+[OUT]   Debug: -1
+[OUT] 
+[OUT] HNSW parameters set.
+[OUT] 
+[OUT] Loading base vectors...
+[OUT] ✓ Base loaded in 2026.471922 ms
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[OUT] 
+[OUT] Loading query vectors...
+[OUT] ✓ Queries loaded in 76.520391 ms
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] 
+[OUT] Loading ground truth...
+[OUT] ✓ Truth loaded in 71.006849 ms
+[OUT] 
+[OUT] Data Summary:
+[OUT]   Dimension d=100, Base vectors=1183514, Queries=10000
+[OUT] 
+[OUT] 
+[OUT] Building HNSW index...
+[OUT] [Progress] 121001/1183514 (10.2%) Time: 14017.47 ms
+[OUT] [Progress] 240001/1183514 (20.3%) Time: 54868.50 ms
