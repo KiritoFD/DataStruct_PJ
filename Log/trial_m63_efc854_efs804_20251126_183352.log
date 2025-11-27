@@ -1,0 +1,131 @@
+   [START] m=63, efc=854, efs=804
+   [LOG] Log/trial_m63_efc854_efs804_20251126_183352.log
+   [RUN 1/1] Executing: ./hng --m 63 --efc 854 --efs 804
+
+============================================================
+Trial: m=63, efc=854, efs=804, Run 1/1
+Timestamp: 2025-11-26T18:33:52.454757
+Command: ./hng --m 63 --efc 854 --efs 804
+============================================================
+
+[OUT] ========== HNSW Search Test ==========
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[OUT] 
+[OUT] Timestamp: Wed Nov 26 18:33:52 2025
+[OUT] 
+[OUT] Command line arguments:
+[OUT]   argv[0]: ./hng
+[OUT]   argv[1]: --m
+[OUT]   argv[2]: 63
+[OUT]   argv[3]: --efc
+[OUT]   argv[4]: 854
+[OUT]   argv[5]: --efs
+[OUT]   argv[6]: 804
+[OUT] 
+[OUT] Configuration:
+[OUT]   Base file: data_o/glove/base.txt
+[OUT]   Query file: data_o/glove/query.txt
+[OUT]   Truth file: data_o/glove/truth.txt
+[OUT]   K: 10
+[OUT]   M: 63
+[OUT]   Max layer: -1
+[OUT]   EFC: 854
+[OUT]   EFS: 804
+[OUT]   Threads: -1
+[OUT]   Debug: -1
+[OUT] 
+[OUT] HNSW parameters set.
+[OUT] 
+[OUT] Loading base vectors...
+[OUT] ✓ Base loaded in 2024.537952 ms
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[OUT] 
+[OUT] Loading query vectors...
+[OUT] ✓ Queries loaded in 63.627054 ms
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] 
+[OUT] Loading ground truth...
+[OUT] ✓ Truth loaded in 64.650305 ms
+[OUT] 
+[OUT] Data Summary:
+[OUT]   Dimension d=100, Base vectors=1183514, Queries=10000
+[OUT] 
+[OUT] 
+[OUT] Building HNSW index...
+[OUT] ✓ Index built.
+[OUT]   build_time(local)=1445291.143845 ms
+[OUT]   build_time(internal)=1398677.211904 ms
+[OUT] 
+[OUT] 
+[OUT] Executing queries...
+[OUT] 
+[OUT]   Processed 1000 queries
+[OUT] 
+[OUT]   Processed 2000 queries
+[OUT] 
+[OUT]   Processed 3000 queries
+[OUT] 
+[OUT]   Processed 4000 queries
+[OUT] 
+[OUT]   Processed 5000 queries
+[OUT] 
+[OUT]   Processed 6000 queries
+[OUT] 
+[OUT]   Processed 7000 queries
+[OUT] 
+[OUT]   Processed 8000 queries
+[OUT] 
+[OUT]   Processed 9000 queries
+[OUT] 
+[OUT]   Processed 10000 queries
+[OUT] 
+[OUT] 
+[OUT] ========== RESULTS ==========
+[OUT] 
+[OUT] Total queries: 10000
+[OUT] 
+[OUT] Average recall@10: 0.995010
+[OUT] 
+[OUT] Average query time: 3.908183 ms
+[OUT] 
+[OUT] Total query time: 39081.826874 ms
+[OUT] 
+[OUT] 
+[OUT] ========== DISTANCE STATISTICS ==========
+[OUT] 
+[OUT] Total queries reported by index: 10000
+[OUT] 
+[OUT] Total distance computations: 385355624
+[OUT] 
+[OUT] Average distance ops per query: 38535.562400
+[OUT] 
+[OUT] Last query distance ops: 28107
+[OUT] 
+[OUT] 
+[OUT] ========== PERFORMANCE SUMMARY ==========
+[OUT] 
+[OUT] Data loading time: 2152.815311 ms
+[OUT] 
+[OUT] Index build time: 1398677.211904 ms
+[OUT] 
+[OUT] Query execution time: 39081.826874 ms
+[OUT] 
+[OUT] Total elapsed time: 1486525.786030 ms
+[OUT] 
+[OUT] 
+[OUT] ========== EFFICIENCY METRICS ==========
+[OUT] 
+[OUT] Queries per second: 255.873402
+[OUT] 
+[OUT] Distance ops per second: 9860225.450627
+[OUT] 
+[OUT] 
+[OUT] ========== END OF LOG ==========
+[OUT] 
+[OUT] Log saved to: Log/run_20251126_183352_458.log
+[OUT] 
+
+Return Code: 0
+   [PARSED] Build=1398677.21ms, Query=3.9082ms, Recall=0.9950
+   [RESULT] m=63 efc=854  efs=804  | Rec=0.9950 Time=3.9082ms Build=1398677.21ms
+   [SUCCESS] Logged to Log/trial_m63_efc854_efs804_20251126_183352.log

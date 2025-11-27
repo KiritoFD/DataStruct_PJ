@@ -1,8 +1,6 @@
 #include "MySolution.h"
-#include <vector>
 #include <queue>
 #include <cmath>
-#include <limits>
 #include <random>
 #include <algorithm>
 #include <cstring>
@@ -10,21 +8,69 @@
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
-#include <atomic>
 #include <condition_variable>
 #include <functional>
-#include <future>
-#include <xmmintrin.h>
-#include <cstdint>
 #include <iomanip>
 #include <chrono>
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
 
+// ---------------------------------------------------------
 // 距离统计相关全局变量
+// ---------------------------------------------------------
 static std::atomic<uint64_t> g_total_dist_count{0};
 static std::atomic<uint64_t> g_total_query_count{0};
 static std::atomic<uint64_t> g_last_query_dist{0};
 static thread_local uint64_t tl_dist_counter = 0;
 static std::atomic<double> g_last_build_ms{0.0};
+
+// ---------------------------------------------------------
+// SIMD 距离计算 (带计数)
+// ---------------------------------------------------------
+#if defined(__AVX512F__)
+static inline float l2sq_counted(const float* __restrict a, const float* __restrict b, int dim) {
+    ++tl_dist_counter;
+    int i = 0;
+    __m512 sumv = _mm512_setzero_ps();
+    for (; i <= dim - 16; i += 16) {
+        __m512 va = _mm512_loadu_ps(a + i);
+        __m512 vb = _mm512_loadu_ps(b + i);
+        __m512 d = _mm512_sub_ps(va, vb);
+        sumv = _mm512_fmadd_ps(d, d, sumv);
+    }
+    float s = _mm512_reduce_add_ps(sumv);
+    for (; i < dim; ++i) { float t = a[i] - b[i]; s += t * t; }
+    return s;
+}
+#elif defined(__AVX2__)
+static inline float l2sq_counted(const float* __restrict a, const float* __restrict b, int dim) {
+    ++tl_dist_counter;
+    int i = 0;
+    __m256 sumv = _mm256_setzero_ps();
+    for (; i <= dim - 8; i += 8) {
+        __m256 va = _mm256_loadu_ps(a + i);
+        __m256 vb = _mm256_loadu_ps(b + i);
+        __m256 d = _mm256_sub_ps(va, vb);
+        sumv = _mm256_fmadd_ps(d, d, sumv);
+    }
+    __m128 lo = _mm256_castps256_ps128(sumv);
+    __m128 hi = _mm256_extractf128_ps(sumv, 1);
+    __m128 sum128 = _mm_add_ps(lo, hi);
+    sum128 = _mm_hadd_ps(sum128, sum128);
+    sum128 = _mm_hadd_ps(sum128, sum128);
+    float s = _mm_cvtss_f32(sum128);
+    for (; i < dim; ++i) { float t = a[i] - b[i]; s += t * t; }
+    return s;
+}
+#else
+static inline float l2sq_counted(const float* __restrict a, const float* __restrict b, int dim) {
+    ++tl_dist_counter;
+    float s = 0.0f;
+    for (int i = 0; i < dim; ++i) { float t = a[i] - b[i]; s += t * t; }
+    return s;
+}
+#endif
 
 // ---------------------------------------------------------
 // 全局线程池
@@ -65,10 +111,10 @@ private:
     bool stop;
 };
 
-static std::atomic<int> g_HNSW_M{32};
-static std::atomic<int> g_HNSW_MAX_LAYER{16};
-static std::atomic<int> g_HNSW_EF_CONSTRUCTION{400};
-static std::atomic<int> g_HNSW_EF_SEARCH{80};
+static std::atomic<int> g_HNSW_M{HNSW_DEFAULT_M};
+static std::atomic<int> g_HNSW_MAX_LAYER{HNSW_DEFAULT_MAX_LAYER};
+static std::atomic<int> g_HNSW_EF_CONSTRUCTION{HNSW_DEFAULT_EF_CONSTRUCTION};
+static std::atomic<int> g_HNSW_EF_SEARCH{HNSW_DEFAULT_EF_SEARCH};
 
 static std::atomic<int> HNSW_BUILD_THREADS = [](){
     unsigned t = std::thread::hardware_concurrency();
@@ -87,82 +133,184 @@ static ThreadPool* getThreadPool() {
 static bool DEBUG_TIMING = true;
 
 // ---------------------------------------------------------
-// SIMD 距离计算（扁平化数据版本）
+// 扁平化 HNSW 索引 (Read-Only Optimized)
 // ---------------------------------------------------------
-#if defined(__AVX512F__)
-#include <immintrin.h>
-static inline float l2sq_flat(const float* __restrict a, const float* __restrict b, int dim) {
-    ++tl_dist_counter;
-    int i = 0;
-    __m512 sumv = _mm512_setzero_ps();
-    for (; i <= dim - 16; i += 16) {
-        __m512 va = _mm512_loadu_ps(a + i);
-        __m512 vb = _mm512_loadu_ps(b + i);
-        __m512 d = _mm512_sub_ps(va, vb);
-        sumv = _mm512_fmadd_ps(d, d, sumv);
-    }
-    float s = _mm512_reduce_add_ps(sumv);
-    for (; i < dim; ++i) { float t = a[i] - b[i]; s += t * t; }
-    return s;
-}
-#elif defined(__AVX2__)
-#include <immintrin.h>
-static inline float l2sq_flat(const float* __restrict a, const float* __restrict b, int dim) {
-    ++tl_dist_counter;
-    int i = 0;
-    __m256 sumv = _mm256_setzero_ps();
-    for (; i <= dim - 8; i += 8) {
-        __m256 va = _mm256_loadu_ps(a + i);
-        __m256 vb = _mm256_loadu_ps(b + i);
-        __m256 d = _mm256_sub_ps(va, vb);
-        sumv = _mm256_fmadd_ps(d, d, sumv);
-    }
-    __m128 lo = _mm256_castps256_ps128(sumv);
-    __m128 hi = _mm256_extractf128_ps(sumv, 1);
-    __m128 sum128 = _mm_add_ps(lo, hi);
-    sum128 = _mm_hadd_ps(sum128, sum128);
-    sum128 = _mm_hadd_ps(sum128, sum128);
-    float s = _mm_cvtss_f32(sum128);
-    for (; i < dim; ++i) { float t = a[i] - b[i]; s += t * t; }
-    return s;
-}
-#else
-static inline float l2sq_flat(const float* __restrict a, const float* __restrict b, int dim) {
-    ++tl_dist_counter;
-    float s = 0.0f;
-    for (int i = 0; i < dim; ++i) { float t = a[i] - b[i]; s += t * t; }
-    return s;
-}
-#endif
-
-// ---------------------------------------------------------
-// Visited List (位图优化)
-// ---------------------------------------------------------
-class VisitedList {
+class FlatHNSW {
 public:
-    std::vector<unsigned short> visited_tags;
-    unsigned short curr_tag;
-    int capacity;
+    int dim;
+    int max_m;       // 第0层的最大连接数 (通常是 2*M)
+    int max_m_upper; // 上层的最大连接数 (M)
+    int enter_point;
+    int num_nodes;
+    int max_level;   // 入口点的最大层级
+    
+    // 数据存储
+    std::vector<float> data; 
+    
+    // 图存储 - 彻底移除 vector<vector>
+    // graph_l0: 存储第0层的所有连接
+    // 内存布局: [Count, nb1, nb2, ..., Padding] * N
+    std::vector<int> graph_l0; 
+    
+    // 上层图结构 (扁平化存储)
+    std::vector<int> node_levels;        // 每个节点的层级
+    std::vector<int> upper_link_offsets; // 每个节点上层链接在storage中的偏移 (N * max_layer)
+    std::vector<int> upper_link_storage; // 存储格式: [count, nb1, nb2, ...]
 
-    VisitedList() : curr_tag(0), capacity(0) {}
+    FlatHNSW(int d) : dim(d), enter_point(-1), num_nodes(0), max_level(0), max_m(0), max_m_upper(0) {}
 
-    inline void init(int size) {
-        if (size > capacity) {
-            visited_tags.resize(size, 0);
-            capacity = size;
-            curr_tag = 0;
+    inline int size() const { return num_nodes; }
+
+    // 获取第0层邻居的指针 (极速路径)
+    inline const int* get_l0_links(int id, int& count) const {
+        const int* base = graph_l0.data() + (size_t)id * (max_m + 1);
+        count = *base;
+        return base + 1;
+    }
+    
+    // 获取上层邻居
+    inline const int* get_upper_links(int id, int level, int& count) const {
+        if (level <= 0 || level > node_levels[id]) {
+            count = 0;
+            return nullptr;
         }
+        int offset = upper_link_offsets[(size_t)id * max_level + level];
+        if (offset < 0) {
+            count = 0;
+            return nullptr;
+        }
+        const int* base = upper_link_storage.data() + offset;
+        count = *base;
+        return base + 1;
+    }
+    
+    inline const float* get_vec(int id) const {
+        return data.data() + (size_t)id * dim;
     }
 
-    inline void advance() {
-        if (++curr_tag == 0) {
-            std::memset(visited_tags.data(), 0, capacity * sizeof(unsigned short));
-            curr_tag = 1;
-        }
+    inline float dist(int id, const float* q) const {
+        return l2sq_counted(get_vec(id), q, dim);
     }
+    
+    inline float distNodes(int id_a, int id_b) const {
+        return l2sq_counted(get_vec(id_a), get_vec(id_b), dim);
+    }
+    
+    // 上层贪婪搜索 (无锁)
+    int greedySearchUpper(int ep, const float* q, int level) const {
+        if (ep < 0 || ep >= num_nodes) return -1;
+        
+        float curd = dist(ep, q);
+        bool changed = true;
+        
+        while (changed) {
+            changed = false;
+            int count;
+            const int* links = get_upper_links(ep, level, count);
+            
+            if (count > 0) {
+                PREFETCH_L1(get_vec(links[0]));
+            }
+            
+            int best_nb = -1;
+            float best_d = curd;
+            
+            for (int i = 0; i < count; ++i) {
+                int nb = links[i];
+                if (i + 1 < count) {
+                    PREFETCH_L1(get_vec(links[i+1]));
+                }
+                float nd = dist(nb, q);
+                if (nd < best_d) {
+                    best_d = nd;
+                    best_nb = nb;
+                }
+            }
+            
+            if (best_nb >= 0) {
+                curd = best_d;
+                ep = best_nb;
+                changed = true;
+            }
+        }
+        return ep;
+    }
+    
+    // 极速 Level 0 搜索 (无锁)
+    std::vector<std::pair<float, int>> searchL0(const float* q, int ep, int ef) const {
+        if (ep < 0 || ep >= num_nodes) return {};
+        
+        using Pair = std::pair<float, int>;
+        
+        static thread_local std::vector<Pair> candidates;
+        static thread_local std::vector<Pair> results;
+        static thread_local VisitedList visited;
+        
+        candidates.clear();
+        results.clear();
+        candidates.reserve(ef * 2);
+        results.reserve(ef + 1);
+        
+        visited.init(num_nodes);
+        visited.advance();
 
-    inline bool isVisited(int id) const { return visited_tags[id] == curr_tag; }
-    inline void mark(int id) { visited_tags[id] = curr_tag; }
+        auto min_heap_cmp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
+
+        float d0 = dist(ep, q);
+        visited.mark(ep);
+        
+        candidates.push_back({d0, ep});
+        std::push_heap(candidates.begin(), candidates.end(), min_heap_cmp);
+        results.push_back({d0, ep});
+
+        float farthest_dist = d0;
+
+        while (!candidates.empty()) {
+            std::pop_heap(candidates.begin(), candidates.end(), min_heap_cmp);
+            Pair curr = candidates.back();
+            candidates.pop_back();
+
+            if ((int)results.size() >= ef && curr.first > farthest_dist) {
+                break;
+            }
+
+            int count;
+            const int* links = get_l0_links(curr.second, count);
+            
+            if (count > 0) {
+                PREFETCH_L1(get_vec(links[0]));
+            }
+
+            for (int i = 0; i < count; ++i) {
+                int nb = links[i];
+                
+                if (i + 1 < count) {
+                    PREFETCH_L1(get_vec(links[i+1]));
+                }
+
+                if (visited.isVisited(nb)) continue;
+                visited.mark(nb);
+
+                float d = dist(nb, q);
+
+                if ((int)results.size() < ef || d < farthest_dist) {
+                    auto it = std::upper_bound(results.begin(), results.end(), Pair{d, nb},
+                        [](const Pair& a, const Pair& b) { return a.first < b.first; });
+                    results.insert(it, {d, nb});
+                    
+                    if ((int)results.size() > ef) {
+                        results.pop_back();
+                    }
+                    farthest_dist = results.back().first;
+
+                    candidates.push_back({d, nb});
+                    std::push_heap(candidates.begin(), candidates.end(), min_heap_cmp);
+                }
+            }
+        }
+        
+        return results;
+    }
 };
 
 // ---------------------------------------------------------
@@ -215,12 +363,12 @@ public:
 
     // 计算 query 到节点 id 的距离
     inline float dist(int id, const float* q) const {
-        return l2sq_flat(getVec(id), q, dim);
+        return l2sq_counted(getVec(id), q, dim);
     }
     
     // 计算两个节点之间的距离
     inline float distNodes(int id_a, int id_b) const {
-        return l2sq_flat(getVec(id_a), getVec(id_b), dim);
+        return l2sq_counted(getVec(id_a), getVec(id_b), dim);
     }
 
     // -------------------------------------------------------
@@ -530,14 +678,88 @@ public:
 };
 
 // ---------------------------------------------------------
+// 转换函数：将动态图转换为静态扁平化图
+// ---------------------------------------------------------
+static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
+    FlatHNSW* flat = new FlatHNSW(src->dim);
+    flat->data = std::move(src->data_flat);  // 移动数据避免拷贝
+    flat->enter_point = src->enter_point;
+    
+    int N = src->size();
+    int M = src->M;
+    flat->max_m = M * 2;
+    flat->max_m_upper = M;
+    flat->num_nodes = N;
+
+    // 计算入口点的最大层级
+    if (src->enter_point >= 0 && src->enter_point < N) {
+        flat->max_level = (int)src->nodes[src->enter_point]->links.size() - 1;
+    } else {
+        flat->max_level = 0;
+    }
+
+    // 1. 扁平化 Level 0 (最热路径)
+    // 内存布局: [Count, nb1, nb2, ..., Padding] * N
+    flat->graph_l0.resize((size_t)N * (flat->max_m + 1), 0);
+    
+    for (int i = 0; i < N; ++i) {
+        auto& links = src->nodes[i]->links[0];
+        int cnt = (int)links.size();
+        size_t offset = (size_t)i * (flat->max_m + 1);
+        
+        flat->graph_l0[offset] = cnt;
+        for (int j = 0; j < cnt; ++j) {
+            flat->graph_l0[offset + 1 + j] = links[j];
+        }
+    }
+
+    // 2. 扁平化 Upper Layers
+    flat->node_levels.resize(N);
+    flat->upper_link_offsets.resize((size_t)N * (flat->max_level + 1), -1);
+    flat->upper_link_storage.reserve(N * M);  // 预估大小
+
+    for (int i = 0; i < N; ++i) {
+        int level = (int)src->nodes[i]->links.size() - 1;
+        flat->node_levels[i] = level;
+        
+        for (int l = 1; l <= level; ++l) {
+            auto& links = src->nodes[i]->links[l];
+            int cnt = (int)links.size();
+            
+            // 记录偏移
+            int start_idx = (int)flat->upper_link_storage.size();
+            flat->upper_link_offsets[(size_t)i * (flat->max_level + 1) + l] = start_idx;
+            
+            // 存储数据: [count, nb1, nb2, ...]
+            flat->upper_link_storage.push_back(cnt);
+            for (int nb : links) {
+                flat->upper_link_storage.push_back(nb);
+            }
+        }
+    }
+
+    if (DEBUG_TIMING) {
+        std::cout << "[FlatHNSW] Converted " << N << " nodes, L0 size: " 
+                  << flat->graph_l0.size() * sizeof(int) / 1024 << " KB, "
+                  << "Upper size: " << flat->upper_link_storage.size() * sizeof(int) / 1024 << " KB" << std::endl;
+    }
+    
+    return flat;
+}
+
+// ---------------------------------------------------------
 // 并行包装类
 // ---------------------------------------------------------
 class HnswSolutionParallel {
 public:
     SimpleHNSW* hnsw = nullptr;
+    FlatHNSW* flat_index = nullptr;  // 扁平化只读索引
     std::vector<int> point_ids;
 
-    ~HnswSolutionParallel() { delete hnsw; }
+    ~HnswSolutionParallel() { 
+        delete hnsw; 
+        delete flat_index;
+    }
 
     void build_from_memory(int d, const float* data, int n) {
         delete hnsw;
@@ -611,22 +833,44 @@ public:
             std::cout.flush();
         }
         g_last_build_ms.store(total_ms, std::memory_order_relaxed);
+
+        // 转换为扁平化只读索引
+        auto convert_start = std::chrono::high_resolution_clock::now();
+        flat_index = convert_to_flat(hnsw);
+        auto convert_end = std::chrono::high_resolution_clock::now();
+        double convert_ms = std::chrono::duration<double, std::milli>(convert_end - convert_start).count();
+        
+        if (DEBUG_TIMING) {
+            std::cout << "[Timing] Flat Conversion: " << std::fixed << std::setprecision(2) 
+                      << convert_ms << " ms" << std::endl;
+            std::cout.flush();
+        }
+
+        // 释放动态图以节省内存
+        delete hnsw;
+        hnsw = nullptr;
     }
 
     std::vector<std::pair<int, float>> search(const std::vector<float>& query, int k) {
         tl_dist_counter = 0;
 
-        int ep = hnsw->enter_point;
-        if (ep < 0 || ep >= hnsw->size()) return {};
+        if (!flat_index || flat_index->enter_point < 0) return {};
 
-        int max_l = (int)hnsw->nodes[ep]->links.size() - 1;
+        int ep = flat_index->enter_point;
+        int max_l = flat_index->node_levels[ep];
         int curr = ep;
 
-        for (int l = max_l; l > 0; l--) {
-            curr = hnsw->greedySearch<false>(curr, query.data(), l);
+        // 优化：限制上层搜索的起始层级
+        // 对于高质量图，从较低层级开始可以减少不必要的跳跃
+        int start_l = std::min(max_l, 4);  // 最多从第4层开始
+        
+        // 上层贪婪搜索
+        for (int l = start_l; l > 0; l--) {
+            curr = flat_index->greedySearchUpper(curr, query.data(), l);
         }
         
-        auto top = hnsw->searchLayer<false>(query.data(), curr, 0, g_HNSW_EF_SEARCH.load());
+        // Level 0 极速搜索
+        auto top = flat_index->searchL0(query.data(), curr, g_HNSW_EF_SEARCH.load());
         
         std::vector<std::pair<int, float>> out;
         int cnt = std::min(k, (int)top.size());
@@ -718,5 +962,76 @@ void reset_dist_counters() {
     g_last_query_dist.store(0, std::memory_order_relaxed);
 }
 double get_last_build_time_ms() { return g_last_build_ms.load(std::memory_order_relaxed); }
+
+// 图质量统计函数
+int get_graph_max_level() {
+    if (!g_impl || !g_impl->flat_index) return 0;
+    return g_impl->flat_index->max_level;
+}
+
+int get_graph_num_nodes() {
+    if (!g_impl || !g_impl->flat_index) return 0;
+    return g_impl->flat_index->num_nodes;
+}
+
+double get_graph_avg_degree_l0() {
+    if (!g_impl || !g_impl->flat_index) return 0.0;
+    auto* idx = g_impl->flat_index;
+    if (idx->num_nodes == 0) return 0.0;
+    
+    uint64_t total_degree = 0;
+    for (int i = 0; i < idx->num_nodes; ++i) {
+        int count;
+        idx->get_l0_links(i, count);
+        total_degree += count;
+    }
+    return double(total_degree) / double(idx->num_nodes);
+}
+
+int get_graph_actual_max_layer() {
+    if (!g_impl || !g_impl->flat_index) return 0;
+    auto* idx = g_impl->flat_index;
+    int max_lv = 0;
+    for (int i = 0; i < idx->num_nodes; ++i) {
+        if (idx->node_levels[i] > max_lv) {
+            max_lv = idx->node_levels[i];
+        }
+    }
+    return max_lv;
+}
+
+// 获取各层级节点数量分布 (返回层级 l 的节点数)
+int get_graph_nodes_at_level(int level) {
+    if (!g_impl || !g_impl->flat_index) return 0;
+    auto* idx = g_impl->flat_index;
+    int count = 0;
+    for (int i = 0; i < idx->num_nodes; ++i) {
+        if (idx->node_levels[i] >= level) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+// 获取上层平均度数
+double get_graph_avg_degree_upper() {
+    if (!g_impl || !g_impl->flat_index) return 0.0;
+    auto* idx = g_impl->flat_index;
+    if (idx->num_nodes == 0 || idx->max_level == 0) return 0.0;
+    
+    uint64_t total_degree = 0;
+    int total_upper_nodes = 0;
+    
+    for (int i = 0; i < idx->num_nodes; ++i) {
+        for (int l = 1; l <= idx->node_levels[i]; ++l) {
+            int count;
+            idx->get_upper_links(i, l, count);
+            total_degree += count;
+            ++total_upper_nodes;
+        }
+    }
+    
+    return total_upper_nodes > 0 ? double(total_degree) / double(total_upper_nodes) : 0.0;
+}
 
 } // extern "C"

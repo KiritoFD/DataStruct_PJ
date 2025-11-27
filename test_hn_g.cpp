@@ -20,6 +20,14 @@ extern "C" {
     void reset_dist_counters();
     void set_hnsw_params(int M, int max_layer, int ef_construction, int ef_search, int build_threads);
     void set_hnsw_debug(int dbg);
+    
+    // 图质量统计
+    int get_graph_max_level();
+    int get_graph_num_nodes();
+    double get_graph_avg_degree_l0();
+    int get_graph_actual_max_layer();
+    int get_graph_nodes_at_level(int level);
+    double get_graph_avg_degree_upper();
 }
 
 // 新增：尝试从二进制缓存加载 base；格式：magic(8) + uint32_t d + uint64_t n_vec + floats...
@@ -409,7 +417,33 @@ int main(int argc, char** argv) {
     double build_ms_internal = get_last_build_time_ms();
     
     logger.writeline(std::string("✓ Index built.\n  build_time(local)=") + std::to_string(build_ms_local)
-                     + " ms\n  build_time(internal)=" + std::to_string(build_ms_internal) + " ms\n\n");
+                     + " ms\n  build_time(internal)=" + std::to_string(build_ms_internal) + " ms\n");
+    
+    // 输出图质量统计
+    logger.writeline("\n========== GRAPH QUALITY ==========\n");
+    int num_nodes = get_graph_num_nodes();
+    int max_level = get_graph_max_level();
+    int actual_max_layer = get_graph_actual_max_layer();
+    double avg_degree_l0 = get_graph_avg_degree_l0();
+    double avg_degree_upper = get_graph_avg_degree_upper();
+    
+    logger.writeline(std::string("  num_nodes: ") + std::to_string(num_nodes) + "\n");
+    logger.writeline(std::string("  max_level (entry point): ") + std::to_string(max_level) + "\n");
+    logger.writeline(std::string("  actual_max_layer: ") + std::to_string(actual_max_layer) + "\n");
+    logger.writeline(std::string("  avg_degree_l0: ") + std::to_string(avg_degree_l0) + "\n");
+    logger.writeline(std::string("  avg_degree_upper: ") + std::to_string(avg_degree_upper) + "\n");
+    
+    // 输出层级分布
+    logger.writeline("\n  Layer Distribution:\n");
+    for (int l = 0; l <= actual_max_layer && l <= 10; ++l) {
+        int nodes_at_l = get_graph_nodes_at_level(l);
+        double pct = num_nodes > 0 ? 100.0 * nodes_at_l / num_nodes : 0.0;
+        std::stringstream ss;
+        ss << "    L" << l << ": " << nodes_at_l << " nodes (" 
+           << std::fixed << std::setprecision(2) << pct << "%)\n";
+        logger.writeline(ss.str());
+    }
+    logger.writeline("\n");
 
     // 重置距离计数器
     reset_dist_counters();
