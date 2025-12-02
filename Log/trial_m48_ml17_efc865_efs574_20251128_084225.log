@@ -1,0 +1,64 @@
+   [START] m=48, ml=17, efc=865, efs=574
+   [LOG] Log/trial_m48_ml17_efc865_efs574_20251128_084225.log
+   [RUN 1/1] Executing: ./hng --m 48 --max_layer 17 --efc 865 --efs 574
+
+============================================================
+Trial: m=48, ml=17, efc=865, efs=574, Run 1/1
+Timestamp: 2025-11-28T08:42:25.812522
+Command: ./hng --m 48 --max_layer 17 --efc 865 --efs 574
+============================================================
+
+[OUT] ========== HNSW Search Test ==========
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[OUT] 
+[OUT] Timestamp: Fri Nov 28 08:42:25 2025
+[OUT] 
+[OUT] Command line arguments:
+[OUT]   argv[0]: ./hng
+[OUT]   argv[1]: --m
+[OUT]   argv[2]: 48
+[OUT]   argv[3]: --max_layer
+[OUT]   argv[4]: 17
+[OUT]   argv[5]: --efc
+[OUT]   argv[6]: 865
+[OUT]   argv[7]: --efs
+[OUT]   argv[8]: 574
+[OUT] 
+[OUT] Configuration:
+[OUT]   Base file: data_o/glove/base.txt
+[OUT]   Query file: data_o/glove/query.txt
+[OUT]   Truth file: data_o/glove/truth.txt
+[OUT]   K: 10
+[OUT]   M: 48
+[OUT]   Max layer: 17
+[OUT]   EFC: 865
+[OUT]   EFS: 574
+[OUT]   Threads: -1
+[OUT]   Debug: -1
+[OUT] 
+[OUT] HNSW parameters set.
+[OUT] 
+[OUT] Loading base vectors...
+[OUT] ✓ Base loaded in 2250.403725 ms
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[OUT] 
+[OUT] Loading query vectors...
+[OUT] ✓ Queries loaded in 75.956997 ms
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] 
+[OUT] Loading ground truth...
+[OUT] ✓ Truth loaded in 73.134331 ms
+[OUT] 
+[OUT] Data Summary:
+[OUT]   Dimension d=100, Base vectors=1183514, Queries=10000
+[OUT] 
+[OUT] 
+[OUT] Building HNSW index...
+[OUT] [Progress] 119001/1183514 (10.1%) Time: 26107.52 ms
+[OUT] [Progress] 238001/1183514 (20.1%) Time: 124352.57 ms
+[OUT] [Progress] 357001/1183514 (30.2%) Time: 262694.19 ms
+[OUT] [Progress] 477001/1183514 (40.3%) Time: 406649.26 ms
+[OUT] [Progress] 596001/1183514 (50.4%) Time: 567650.47 ms
+[OUT] [Progress] 715001/1183514 (60.4%) Time: 729570.44 ms
+[OUT] [Progress] 834001/1183514 (70.5%) Time: 906537.94 ms
+[OUT] [Progress] 953001/1183514 (80.5%) Time: 1085571.90 ms

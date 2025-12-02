@@ -1,0 +1,142 @@
+========== HNSW Search Test ==========
+
+Timestamp: Tue Dec  2 07:18:48 2025
+
+Command line arguments:
+  argv[0]: ./hng
+  argv[1]: --m
+  argv[2]: 17
+  argv[3]: --max_layer
+  argv[4]: 20
+  argv[5]: --efc
+  argv[6]: 674
+  argv[7]: --efs
+  argv[8]: 1388
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 17
+  Max layer: 20
+  EFC: 674
+  EFS: 1388
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Loading base vectors...
+✓ Base loaded in 4144.260188 ms
+
+Loading query vectors...
+✓ Queries loaded in 88.477123 ms
+
+Loading ground truth...
+✓ Truth loaded in 87.683500 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=428244.751728 ms
+  build_time(internal)=453810.768324 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 5
+
+  actual_max_layer: 5
+
+  avg_degree_l0: 30.990969
+
+  avg_degree_upper: 0.165062
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 69379 nodes (5.86%)
+
+    L2: 4093 nodes (0.35%)
+
+    L3: 244 nodes (0.02%)
+
+    L4: 13 nodes (0.00%)
+
+    L5: 1 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.980000
+
+Average query time: 2.199817 ms
+
+Total query time: 21998.165324 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 0
+
+Average distance ops per query: 0.000000
+
+Last query distance ops: 0
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 4320.420811 ms
+
+Index build time: 453810.768324 ms
+
+Query execution time: 21998.165324 ms
+
+Total elapsed time: 454563.337863 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 454.583364
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251202_071848_402.log
+

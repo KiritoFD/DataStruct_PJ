@@ -1,0 +1,128 @@
+========== HNSW Search Test ==========
+
+Timestamp: Tue Dec  2 00:23:11 2025
+
+Command line arguments:
+  argv[0]: ./hng
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: -1
+  Max layer: -1
+  EFC: -1
+  EFS: -1
+  Threads: -1
+  Debug: -1
+
+Loading base vectors...
+✓ Base loaded in 2019.983081 ms
+
+Loading query vectors...
+✓ Queries loaded in 67.784335 ms
+
+Loading ground truth...
+✓ Truth loaded in 63.523793 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=631091.749987 ms
+  build_time(internal)=663143.803778 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 49.065099
+
+  avg_degree_upper: 0.212990
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 29497 nodes (2.49%)
+
+    L2: 742 nodes (0.06%)
+
+    L3: 16 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.977580
+
+Average query time: 1.295748 ms
+
+Total query time: 12957.479438 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 0
+
+Average distance ops per query: 0.000000
+
+Last query distance ops: 0
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2151.291209 ms
+
+Index build time: 663143.803778 ms
+
+Query execution time: 12957.479438 ms
+
+Total elapsed time: 646200.520634 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 771.755035
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251202_002311_831.log
+

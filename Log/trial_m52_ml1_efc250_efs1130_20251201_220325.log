@@ -1,0 +1,46 @@
+   [START] m=52, ml=1, efc=250, efs=1130
+   [CMD] ./hng --m 52 --max_layer 1 --efc 250 --efs 1130
+
+============================================================
+Run 1/1 - 2025-12-01T22:03:25.961120
+============================================================
+
+[OUT] ========== HNSW Search Test ==========
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[OUT] 
+[OUT] Timestamp: Mon Dec  1 22:03:25 2025
+[OUT] 
+[OUT] Command line arguments:
+[OUT]   argv[0]: ./hng
+[OUT]   argv[1]: --m
+[OUT]   argv[2]: 52
+[OUT]   argv[3]: --max_layer
+[OUT]   argv[4]: 1
+[OUT]   argv[5]: --efc
+[OUT]   argv[6]: 250
+[OUT]   argv[7]: --efs
+[OUT]   argv[8]: 1130
+[OUT] 
+[OUT] Configuration:
+[OUT]   Base file: data_o/glove/base.txt
+[OUT]   Query file: data_o/glove/query.txt
+[OUT]   Truth file: data_o/glove/truth.txt
+[OUT]   K: 10
+[OUT]   M: 52
+[OUT]   Max layer: 1
+[OUT]   EFC: 250
+[OUT]   EFS: 1130
+[OUT]   Threads: -1
+[OUT]   Debug: -1
+[OUT] 
+[OUT] HNSW parameters set.
+[OUT] 
+[OUT] Loading base vectors...
+[OUT] ✓ Base loaded in 2251.233360 ms
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[OUT] 
+[OUT] Loading query vectors...
+[OUT] ✓ Queries loaded in 72.775247 ms
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] 
+[OUT] Loading ground truth...

@@ -26,11 +26,18 @@ static thread_local uint64_t tl_dist_counter = 0;
 static std::atomic<double> g_last_build_ms{0.0};
 
 // ---------------------------------------------------------
-// SIMD 距离计算 (带计数)
+// SIMD 距离计算 (带/不带计数)
 // ---------------------------------------------------------
+// 通过宏 ENABLE_DIST_COUNTING 控制是否统计距离计算次数以避免 TLS 开销（默认关闭）
+#ifndef ENABLE_DIST_COUNTING
+#define ENABLE_DIST_COUNTING 0
+#endif
+
 #if defined(__AVX512F__)
 static inline float l2sq_counted(const float* __restrict a, const float* __restrict b, int dim) {
+#if ENABLE_DIST_COUNTING
     ++tl_dist_counter;
+#endif
     int i = 0;
     __m512 sumv = _mm512_setzero_ps();
     for (; i <= dim - 16; i += 16) {
@@ -45,7 +52,9 @@ static inline float l2sq_counted(const float* __restrict a, const float* __restr
 }
 #elif defined(__AVX2__)
 static inline float l2sq_counted(const float* __restrict a, const float* __restrict b, int dim) {
+#if ENABLE_DIST_COUNTING
     ++tl_dist_counter;
+#endif
     int i = 0;
     __m256 sumv = _mm256_setzero_ps();
     for (; i <= dim - 8; i += 8) {
@@ -65,7 +74,9 @@ static inline float l2sq_counted(const float* __restrict a, const float* __restr
 }
 #else
 static inline float l2sq_counted(const float* __restrict a, const float* __restrict b, int dim) {
+#if ENABLE_DIST_COUNTING
     ++tl_dist_counter;
+#endif
     float s = 0.0f;
     for (int i = 0; i < dim; ++i) { float t = a[i] - b[i]; s += t * t; }
     return s;
@@ -111,7 +122,7 @@ private:
     bool stop;
 };
 
-static std::atomic<int> g_HNSW_M{HNSW_DEFAULT_M};
+static std::atomic<int> g_HNSW_M{HNSW_DEFAULT_M};                    // 改为使用头文件常量
 static std::atomic<int> g_HNSW_MAX_LAYER{HNSW_DEFAULT_MAX_LAYER};
 static std::atomic<int> g_HNSW_EF_CONSTRUCTION{HNSW_DEFAULT_EF_CONSTRUCTION};
 static std::atomic<int> g_HNSW_EF_SEARCH{HNSW_DEFAULT_EF_SEARCH};
@@ -236,80 +247,126 @@ public:
         return ep;
     }
     
-    // 极速 Level 0 搜索 (无锁)
+    // -------------------------------------------------------------
+    // 极速 Level 0 搜索 (针对大 ef_search 优化)
+    // 使用 Max-Heap 维护结果集，避免线性插入开销
+    // -------------------------------------------------------------
     std::vector<std::pair<float, int>> searchL0(const float* q, int ep, int ef) const {
         if (ep < 0 || ep >= num_nodes) return {};
         
         using Pair = std::pair<float, int>;
         
-        static thread_local std::vector<Pair> candidates;
-        static thread_local std::vector<Pair> results;
-        static thread_local VisitedList visited;
+        // 1. 线程局部缓存 (避免反复分配内存)
+        static thread_local std::vector<Pair> candidates;     // Min-Heap (待探索任务队列)
+        static thread_local std::vector<Pair> top_results;    // Max-Heap (当前找到的最优结果集)
+        static thread_local TagVisitedList visited;
+        static thread_local std::vector<int> process_queue;   // 待计算距离的候选点队列
         
-        candidates.clear();
-        results.clear();
-        candidates.reserve(ef * 2);
-        results.reserve(ef + 1);
+        candidates.clear(); 
+        top_results.clear();
+        process_queue.clear();
         
+        // 预分配内存，防止动态扩容
+        candidates.reserve(ef * 3);
+        top_results.reserve(ef + 1);
+        process_queue.reserve(max_m + 16);
+
+        // 初始化 Visited
         visited.init(num_nodes);
         visited.advance();
+        
+        // 获取原始指针避免边界检查开销
+        const uint16_t* visited_ptr = visited.data();
+        uint16_t cur_tag = visited.currentTag();
 
-        auto min_heap_cmp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
-
+        // 2. 初始化入口点
         float d0 = dist(ep, q);
         visited.mark(ep);
         
-        candidates.push_back({d0, ep});
-        std::push_heap(candidates.begin(), candidates.end(), min_heap_cmp);
-        results.push_back({d0, ep});
+        candidates.push_back({d0, ep});     // Min-Heap
+        top_results.push_back({d0, ep});    // Max-Heap
 
-        float farthest_dist = d0;
+        // lower_bound 是当前结果集中"最差"(最远)的距离
+        float lower_bound = d0;
+
+        // 比较器定义
+        auto min_comp = [](const Pair& a, const Pair& b) { return a.first > b.first; }; // 小顶堆
+        auto max_comp = [](const Pair& a, const Pair& b) { return a.first < b.first; }; // 大顶堆
 
         while (!candidates.empty()) {
-            std::pop_heap(candidates.begin(), candidates.end(), min_heap_cmp);
+            // 2.1 取出当前最近的候选点
+            std::pop_heap(candidates.begin(), candidates.end(), min_comp);
             Pair curr = candidates.back();
             candidates.pop_back();
 
-            if ((int)results.size() >= ef && curr.first > farthest_dist) {
+            // 2.2 剪枝条件 (Strict Pruning)
+            if (curr.first > lower_bound && (int)top_results.size() >= ef) {
                 break;
             }
 
+            // 2.3 获取邻居
             int count;
             const int* links = get_l0_links(curr.second, count);
-            
-            if (count > 0) {
-                PREFETCH_L1(get_vec(links[0]));
-            }
 
+            // 2.4 Stage 1: 快速过滤 (Filter) 
+            // 紧凑循环，只做位运算/比较，无浮点计算
+            process_queue.clear();
             for (int i = 0; i < count; ++i) {
                 int nb = links[i];
-                
-                if (i + 1 < count) {
-                    PREFETCH_L1(get_vec(links[i+1]));
+                if (visited_ptr[nb] != cur_tag) {
+                    visited.mark(nb);
+                    process_queue.push_back(nb);
+                }
+            }
+
+            int q_size = (int)process_queue.size();
+            if (q_size == 0) continue;
+
+            // 2.5 Stage 2: 预取与计算 (Prefetch & Compute)
+            const int* p_queue = process_queue.data();
+
+            // >>> 预取流水线启动 <<<
+            // 提前预取前 2 个点的向量数据
+            constexpr int pf_lookahead = 2; 
+            for (int i = 0; i < q_size && i < pf_lookahead; ++i) {
+                PREFETCH_L1(get_vec(p_queue[i]));
+            }
+
+            for (int i = 0; i < q_size; ++i) {
+                // 流水线预取：在计算 i 的同时，预取 i + lookahead
+                if (i + pf_lookahead < q_size) {
+                    PREFETCH_L1(get_vec(p_queue[i + pf_lookahead]));
                 }
 
-                if (visited.isVisited(nb)) continue;
-                visited.mark(nb);
-
+                int nb = p_queue[i];
                 float d = dist(nb, q);
 
-                if ((int)results.size() < ef || d < farthest_dist) {
-                    auto it = std::upper_bound(results.begin(), results.end(), Pair{d, nb},
-                        [](const Pair& a, const Pair& b) { return a.first < b.first; });
-                    results.insert(it, {d, nb});
-                    
-                    if ((int)results.size() > ef) {
-                        results.pop_back();
-                    }
-                    farthest_dist = results.back().first;
+                // 2.6 结果集维护 (Heap Operations)
+                if ((int)top_results.size() < ef || d < lower_bound) {
+                    // 加入 Max-Heap
+                    top_results.push_back({d, nb});
+                    std::push_heap(top_results.begin(), top_results.end(), max_comp);
 
+                    // 如果超限，弹出最远的
+                    if ((int)top_results.size() > ef) {
+                        std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                        top_results.pop_back();
+                    }
+                    
+                    // 更新门槛值 (Max-Heap 的堆顶是最远的)
+                    lower_bound = top_results.front().first;
+
+                    // 加入 Min-Heap 继续探索
                     candidates.push_back({d, nb});
-                    std::push_heap(candidates.begin(), candidates.end(), min_heap_cmp);
+                    std::push_heap(candidates.begin(), candidates.end(), min_comp);
                 }
             }
         }
+
+        // 3. 最终排序 - sort_heap 将堆转为升序数组
+        std::sort_heap(top_results.begin(), top_results.end(), max_comp);
         
-        return results;
+        return top_results;
     }
 };
 

@@ -1,0 +1,43 @@
+========== HNSW Search Test ==========
+
+Timestamp: Sat Nov 29 00:31:25 2025
+
+Command line arguments:
+  argv[0]: ./hng
+  argv[1]: --m
+  argv[2]: 39
+  argv[3]: --max_layer
+  argv[4]: 15
+  argv[5]: --efc
+  argv[6]: 856
+  argv[7]: --efs
+  argv[8]: 521
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 39
+  Max layer: 15
+  EFC: 856
+  EFS: 521
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Loading base vectors...
+✓ Base loaded in 3247.382443 ms
+
+Loading query vectors...
+✓ Queries loaded in 70.141958 ms
+
+Loading ground truth...
+✓ Truth loaded in 87.765537 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...

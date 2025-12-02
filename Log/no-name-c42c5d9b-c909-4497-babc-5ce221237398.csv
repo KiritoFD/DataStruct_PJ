@@ -1,0 +1,2 @@
+timestamp,trial_id,m,max_layer,efc,efs,avg_recall,avg_time_ms,build_time_ms,reward_score
+2025-11-28T15:51:03.320068,0,48,4,600,300,0.9734,1.566525,857473.786859,-65.99999999999939

@@ -1,0 +1,130 @@
+========== HNSW Search Test ==========
+
+Timestamp: Fri Nov 28 10:16:10 2025
+
+Command line arguments:
+  argv[0]: ./hng
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: -1
+  Max layer: -1
+  EFC: -1
+  EFS: -1
+  Threads: -1
+  Debug: -1
+
+Loading base vectors...
+✓ Base loaded in 2339.137204 ms
+
+Loading query vectors...
+✓ Queries loaded in 72.556485 ms
+
+Loading ground truth...
+✓ Truth loaded in 73.717721 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=1355179.387180 ms
+  build_time(internal)=1228872.432966 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 59.878622
+
+  avg_degree_upper: 0.213912
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 28909 nodes (2.44%)
+
+    L2: 721 nodes (0.06%)
+
+    L3: 13 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.981960
+
+Average query time: 2.068678 ms
+
+Total query time: 20686.783620 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 202596496
+
+Average distance ops per query: 20259.649600
+
+Last query distance ops: 17528
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2485.411410 ms
+
+Index build time: 1228872.432966 ms
+
+Query execution time: 20686.783620 ms
+
+Total elapsed time: 1378351.582210 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 483.400425
+
+Distance ops per second: 9793523.233072
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251128_101610_672.log
+

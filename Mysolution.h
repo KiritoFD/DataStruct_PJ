@@ -10,10 +10,10 @@
 // ---------------------------------------------------------
 // HNSW 默认参数常量 (单一定义)
 // ---------------------------------------------------------
-constexpr int HNSW_DEFAULT_M = 41;
-constexpr int HNSW_DEFAULT_MAX_LAYER = 16;
-constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 967;
-constexpr int HNSW_DEFAULT_EF_SEARCH = 433;
+constexpr int HNSW_DEFAULT_M = 40;
+constexpr int HNSW_DEFAULT_MAX_LAYER = 17;
+constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 648;
+constexpr int HNSW_DEFAULT_EF_SEARCH = 457;
 
 // ---------------------------------------------------------
 // 预取宏定义
@@ -22,7 +22,7 @@ constexpr int HNSW_DEFAULT_EF_SEARCH = 433;
 #define PREFETCH_L2(ptr) _mm_prefetch((const char*)(ptr), _MM_HINT_T1)
 
 // ---------------------------------------------------------
-// VisitedList (位图优化)
+// VisitedList (兼容旧接口)
 // ---------------------------------------------------------
 class VisitedList {
 public:
@@ -49,6 +49,46 @@ public:
 
     inline bool isVisited(int id) const { return visited_tags[id] == curr_tag; }
     inline void mark(int id) { visited_tags[id] = curr_tag; }
+    
+    // 暴露 data() 用于预取
+    inline const unsigned short* data() const { return visited_tags.data(); }
+    inline unsigned short currentTag() const { return curr_tag; }
+};
+
+// ---------------------------------------------------------
+// TagVisitedList (高性能版本，用于 FlatHNSW 搜索)
+// 优点：
+// 1. 避免每次搜索 memset 清零 (O(N) -> O(1))
+// 2. 暴露 .data() 指针用于 SIMD 预取
+// 3. 使用 uint16_t 节省带宽
+// ---------------------------------------------------------
+class TagVisitedList {
+public:
+    std::vector<uint16_t> tags;
+    uint16_t current_tag;
+    int capacity;
+
+    TagVisitedList() : current_tag(0), capacity(0) {}
+
+    inline void init(int n) {
+        if (n > capacity) {
+            tags.resize(n, 0);
+            capacity = n;
+            current_tag = 0;
+        }
+    }
+
+    inline void advance() {
+        if (++current_tag == 0) {
+            std::fill(tags.begin(), tags.end(), (uint16_t)0);
+            current_tag = 1;
+        }
+    }
+
+    inline bool isVisited(int id) const { return tags[id] == current_tag; }
+    inline void mark(int id) { tags[id] = current_tag; }
+    inline const uint16_t* data() const { return tags.data(); }
+    inline uint16_t currentTag() const { return current_tag; }
 };
 
 // ---------------------------------------------------------

@@ -16,9 +16,6 @@ PENALTY_BASE = 500.0
 
 FIELDNAMES = ['timestamp','trial_id','m','max_layer','efc','efs','K','avg_recall','avg_time_ms','build_time_ms','reward_score','status']
 
-# Script-level options
-WRITE_ONLY_COMPLETE = False  # If True, rebuild will write only rows with status 'COMPLETE'
-
 def parse_log_file(path):
     try:
         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -101,7 +98,6 @@ def rebuild_csv_from_logs():
 
     files = [os.path.join(LOG_DIR, f) for f in os.listdir(LOG_DIR) if f.endswith('.log')]
     files.sort()
-    print(f"Found {len(files)} log files in {LOG_DIR}")
     parsed_entries = []
     for p in files:
         parsed = parse_log_file(p)
@@ -109,10 +105,6 @@ def rebuild_csv_from_logs():
             continue
         parsed['source'] = os.path.basename(p)
         parsed_entries.append(parsed)
-
-    total_parsed = len(parsed_entries)
-    complete_parsed = sum(1 for e in parsed_entries if e.get('status') == 'COMPLETE')
-    print(f"Parsed {total_parsed} log entries, {complete_parsed} complete entries.")
 
     if not parsed_entries:
         print('No log entries parsed.')
@@ -128,6 +120,7 @@ def rebuild_csv_from_logs():
     best_map = {}
     for e in parsed_entries:
         key = (to_int_safe(e.get('m')), to_int_safe(e.get('max_layer')), to_int_safe(e.get('efc')), to_int_safe(e.get('efs')))
+        # If any part of key is None, treat entry as unique (use orig timestamp+source to keep)
         if any(k is None for k in key):
             uniq = ("_BAD_", e.get('source'), e.get('timestamp'))
             best_map[uniq] = e
@@ -138,6 +131,7 @@ def rebuild_csv_from_logs():
             best_map[key] = e
             continue
 
+        # Prefer COMPLETE > PARSE_ERROR
         def status_rank(rec):
             return 1 if rec.get('status') == 'COMPLETE' else 0
 
@@ -147,6 +141,7 @@ def rebuild_csv_from_logs():
         if status_rank(e) < status_rank(existing):
             continue
 
+        # Same status: prefer higher reward
         try:
             nr = float(e.get('reward_score') or -1e18)
         except Exception:
@@ -159,6 +154,7 @@ def rebuild_csv_from_logs():
             best_map[key] = e
             continue
 
+        # If reward equal, prefer later timestamp
         try:
             new_ts = datetime.fromisoformat(e.get('timestamp'))
         except Exception:
@@ -170,6 +166,7 @@ def rebuild_csv_from_logs():
         if new_ts > exist_ts:
             best_map[key] = e
             continue
+        # else keep existing
 
     # Build list and sort by timestamp
     rows = list(best_map.values())
@@ -181,22 +178,14 @@ def rebuild_csv_from_logs():
             return datetime.min
 
     rows.sort(key=parse_ts)
-    deduped_count = len(rows)
 
-    # Optionally filter only COMPLETE rows
-    if WRITE_ONLY_COMPLETE:
-        rows = [r for r in rows if r.get('status') == 'COMPLETE']
-
-    written_count = len(rows)
-
-    print(f"After dedup: {deduped_count} unique combos, writing {written_count} rows (WRITE_ONLY_COMPLETE={WRITE_ONLY_COMPLETE}).")
-
-    # Backup existing CSV and write
+    # Backup existing CSV
     if os.path.exists(OUT_CSV):
         bak = OUT_CSV + BACKUP_SUFFIX
         print(f'Backing up {OUT_CSV} -> {bak}')
         shutil.copy2(OUT_CSV, bak)
 
+    # Write new CSV with sequential trial_id and exact column order expected by load_cache_data
     with open(OUT_CSV, 'w', newline='', encoding='utf-8') as wf:
         writer = csv.writer(wf)
         writer.writerow(FIELDNAMES)
@@ -214,7 +203,7 @@ def rebuild_csv_from_logs():
             status = e.get('status', '')
             writer.writerow([ts, i, m, max_layer, efc, efs, K, avg_recall, avg_time_ms, build_time_ms, reward, status])
 
-    print(f'Wrote {written_count} rows to {OUT_CSV} (total logs parsed: {total_parsed}, complete parsed: {complete_parsed}').format())
+    print(f'Wrote {len(rows)} deduplicated rows to {OUT_CSV}')
 
 def recalc_csv_scores(in_csv, out_csv, min_recall, success_base, recall_bonus, penalty_base, backup=True, dedupe=False):
     if not os.path.exists(in_csv):
@@ -331,60 +320,6 @@ def recalc_csv_scores(in_csv, out_csv, min_recall, success_base, recall_bonus, p
 
     print(f'Updated reward scores for {len(rows)} entries in {out_csv}')
 
-def compare_logs_csv(in_csv=OUT_CSV):
-    # Parse logs
-    files = [os.path.join(LOG_DIR, f) for f in os.listdir(LOG_DIR) if f.endswith('.log')]
-    logs = []
-    for p in files:
-        parsed = parse_log_file(p)
-        if parsed and parsed.get('m') not in ('', None):
-            logs.append(parsed)
-
-    def key_of_entry(e):
-        try:
-            return (int(e.get('m')), int(e.get('max_layer')), int(e.get('efc')), int(e.get('efs')))
-        except Exception:
-            return (e.get('m'), e.get('max_layer'), e.get('efc'), e.get('efs'))
-
-    log_keys = set(key_of_entry(e) for e in logs if e is not None)
-
-    # Parse csv
-    csv_keys = set()
-    csv_rows = []
-    if os.path.exists(in_csv):
-        with open(in_csv, 'r', newline='', encoding='utf-8') as rf:
-            reader = csv.DictReader(rf)
-            for row in reader:
-                try:
-                    k = (int(str(row.get('m'))), int(str(row.get('max_layer'))), int(str(row.get('efc'))), int(str(row.get('efs'))))
-                except Exception:
-                    k = (row.get('m'), row.get('max_layer'), row.get('efc'), row.get('efs'))
-                csv_keys.add(k)
-                csv_rows.append(row)
-
-    overlap = log_keys.intersection(csv_keys)
-    logs_only = log_keys - csv_keys
-    csv_only = csv_keys - log_keys
-
-    print("Compare Logs vs CSV")
-    print("=====================")
-    print(f"Log files parsed: {len(files)}, valid entries: {len(logs)}")
-    print(f"Unique combos in logs: {len(log_keys)}")
-    print(f"Unique combos in CSV: {len(csv_keys)}")
-    print(f"Overlap: {len(overlap)}")
-    print(f"Only in logs: {len(logs_only)}")
-    print(f"Only in CSV: {len(csv_only)}")
-
-    # optional: print a few examples
-    if len(logs_only) > 0:
-        print('\nExample combos in logs but not in CSV:')
-        for i, k in enumerate(list(logs_only)[:10]):
-            print('  ', k)
-    if len(csv_only) > 0:
-        print('\nExample combos in CSV but not in logs:')
-        for i, k in enumerate(list(csv_only)[:10]):
-            print('  ', k)
-
 # Script mode configuration (edit here)
 MODE = 'rebuild'  # 'rebuild' or 'recalc'
 INFILE = OUT_CSV
@@ -397,9 +332,5 @@ if __name__ == '__main__':
         if DEDUPE:
             # rebuild already performs deduplication
             pass
-    elif MODE == 'recalc':
-        recalc_csv_scores(INFILE, OUTFILE, MIN_RECALL, SUCCESS_BASE, RECALL_BONUS, PENALTY_BASE, dedupe=DEDUPE)
-    elif MODE == 'compare':
-        compare_logs_csv(INFILE)
     else:
-        print(f"Unknown MODE: {MODE}")
+        recalc_csv_scores(INFILE, OUTFILE, MIN_RECALL, SUCCESS_BASE, RECALL_BONUS, PENALTY_BASE)
