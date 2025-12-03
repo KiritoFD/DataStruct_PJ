@@ -1,0 +1,169 @@
+========== HNSW Search Test ==========
+
+Timestamp: Wed Dec  3 14:43:05 2025
+
+Command line arguments:
+  argv[0]: ./hng
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+  argv[7]: --k
+  argv[8]: 10
+  argv[9]: --m
+  argv[10]: 34
+  argv[11]: --max_layer
+  argv[12]: 15
+  argv[13]: --efc
+  argv[14]: 434
+  argv[15]: --efs
+  argv[16]: 1196
+  argv[17]: --threads
+  argv[18]: 32
+  argv[19]: --ablate_csr
+  argv[20]: 0
+  argv[21]: --ablate_prefetch
+  argv[22]: 1
+  argv[23]: --ablate_simd
+  argv[24]: 0
+  argv[25]: --ablate_pruning
+  argv[26]: 0
+  argv[27]: --ablate_heap
+  argv[28]: 0
+  argv[29]: --ablate_flat_index
+  argv[30]: 0
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 34
+  Max layer: 15
+  EFC: 434
+  EFS: 1196
+  Threads: 32
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=1, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+Loaded base from binary cache: data_o/glove/base.txt.bin
+✓ Base loaded in 3710.763909 ms
+
+Loading query vectors...
+Loaded queries from binary cache: data_o/glove/query.txt.bin
+✓ Queries loaded in 78.944385 ms
+
+Loading ground truth...
+Loaded truth from binary cache: data_o/glove/truth.txt.bin
+✓ Truth loaded in 77.103564 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=3615.877295 ms
+  build_time(internal)=3610.144894 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 4
+
+  actual_max_layer: 4
+
+  avg_degree_l0: 44.502177
+
+  avg_degree_upper: 0.183692
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 34948 nodes (2.95%)
+
+    L2: 1056 nodes (0.09%)
+
+    L3: 37 nodes (0.00%)
+
+    L4: 3 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.993330
+
+Average query time: 3.956990 ms
+
+Total query time: 39569.904636 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 375489783
+
+Average distance ops per query: 37548.978300
+
+Last query distance ops: 29277
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 3866.811858 ms
+
+Index build time: 3610.144894 ms
+
+Query execution time: 39569.904636 ms
+
+Total elapsed time: 47052.593789 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 252.717314
+
+Distance ops per second: 9489276.925332
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251203_144305_399.log
+

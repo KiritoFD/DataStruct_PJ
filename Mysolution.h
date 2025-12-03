@@ -1,121 +1,83 @@
-#ifndef MYSOLUTION_H
-#define MYSOLUTION_H
-
+#pragma once
 #include <vector>
 #include <cstdint>
 #include <cstring>
-#include <atomic>
-#include <xmmintrin.h>
 
-// ---------------------------------------------------------
-// HNSW 默认参数常量 (单一定义)
-// ---------------------------------------------------------
-constexpr int HNSW_DEFAULT_M = 40;
-constexpr int HNSW_DEFAULT_MAX_LAYER = 17;
-constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 648;
-constexpr int HNSW_DEFAULT_EF_SEARCH = 457;
+// 默认参数常量
+constexpr int HNSW_DEFAULT_M = 51;
+constexpr int HNSW_DEFAULT_MAX_LAYER = 7;
+constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 603;
+constexpr int HNSW_DEFAULT_EF_SEARCH = 432;
 
-// ---------------------------------------------------------
-// 预取宏定义
-// ---------------------------------------------------------
-#define PREFETCH_L1(ptr) _mm_prefetch((const char*)(ptr), _MM_HINT_T0)
-#define PREFETCH_L2(ptr) _mm_prefetch((const char*)(ptr), _MM_HINT_T1)
 
-// ---------------------------------------------------------
-// VisitedList (兼容旧接口)
-// ---------------------------------------------------------
+// 使用宏守卫避免与 visited_list.h 重复定义
+#ifndef VISITED_LIST_DEFINED
+#define VISITED_LIST_DEFINED
+
 class VisitedList {
 public:
-    std::vector<unsigned short> visited_tags;
-    unsigned short curr_tag;
-    int capacity;
+    std::vector<uint8_t> arr;
+    uint8_t cur_tag = 1;
+    int cap = 0;
 
-    VisitedList() : curr_tag(0), capacity(0) {}
-
-    inline void init(int size) {
-        if (size > capacity) {
-            visited_tags.resize(size, 0);
-            capacity = size;
-            curr_tag = 0;
-        }
+    void init(int n) {
+        if (n > cap) { arr.assign(n, 0); cap = n; cur_tag = 1; }
     }
-
-    inline void advance() {
-        if (++curr_tag == 0) {
-            std::memset(visited_tags.data(), 0, capacity * sizeof(unsigned short));
-            curr_tag = 1;
-        }
+    void advance() {
+        if (++cur_tag == 0) { std::memset(arr.data(), 0, cap); cur_tag = 1; }
     }
-
-    inline bool isVisited(int id) const { return visited_tags[id] == curr_tag; }
-    inline void mark(int id) { visited_tags[id] = curr_tag; }
-    
-    // 暴露 data() 用于预取
-    inline const unsigned short* data() const { return visited_tags.data(); }
-    inline unsigned short currentTag() const { return curr_tag; }
+    bool isVisited(int id) const { return arr[id] == cur_tag; }
+    void mark(int id) { arr[id] = cur_tag; }
 };
 
-// ---------------------------------------------------------
-// TagVisitedList (高性能版本，用于 FlatHNSW 搜索)
-// 优点：
-// 1. 避免每次搜索 memset 清零 (O(N) -> O(1))
-// 2. 暴露 .data() 指针用于 SIMD 预取
-// 3. 使用 uint16_t 节省带宽
-// ---------------------------------------------------------
 class TagVisitedList {
 public:
-    std::vector<uint16_t> tags;
-    uint16_t current_tag;
-    int capacity;
+    std::vector<uint16_t> arr;
+    uint16_t cur_tag = 1;
+    int cap = 0;
 
-    TagVisitedList() : current_tag(0), capacity(0) {}
-
-    inline void init(int n) {
-        if (n > capacity) {
-            tags.resize(n, 0);
-            capacity = n;
-            current_tag = 0;
-        }
+    void init(int n) {
+        if (n > cap) { arr.assign(n, 0); cap = n; cur_tag = 1; }
     }
-
-    inline void advance() {
-        if (++current_tag == 0) {
-            std::fill(tags.begin(), tags.end(), (uint16_t)0);
-            current_tag = 1;
-        }
+    void advance() {
+        if (++cur_tag == 0) { std::memset(arr.data(), 0, cap * sizeof(uint16_t)); cur_tag = 1; }
     }
-
-    inline bool isVisited(int id) const { return tags[id] == current_tag; }
-    inline void mark(int id) { tags[id] = current_tag; }
-    inline const uint16_t* data() const { return tags.data(); }
-    inline uint16_t currentTag() const { return current_tag; }
+    bool isVisited(int id) const { return arr[id] == cur_tag; }
+    void mark(int id) { arr[id] = cur_tag; }
+    const uint16_t* data() const { return arr.data(); }
+    uint16_t currentTag() const { return cur_tag; }
 };
 
-// ---------------------------------------------------------
-// 对外接口类
-// ---------------------------------------------------------
+#endif // VISITED_LIST_DEFINED
+
 class Solution {
 public:
     Solution();
     void build(int d, const std::vector<float>& base);
-    void search(const std::vector<float>& query, int* res);
+    void search(const std::vector<float>& query, int* result);
+    void setK(int k) { k_ = k; }
 private:
-    int k_ = 10;
+    int k_;
 };
 
-// ---------------------------------------------------------
-// C 接口 (参数设置、统计、图质量)
-// ---------------------------------------------------------
+void build_hnsw(int d, const std::vector<float>& base);
+std::vector<std::pair<int, float>> search_hnsw(const std::vector<float>& query, int k);
+
 extern "C" {
     void set_hnsw_params(int M, int max_layer, int ef_construction, int ef_search, int build_threads);
     void set_hnsw_debug(int dbg);
+    void set_ablation_flags(int csr, int prefetch, int simd, int pruning, int heap);
+    void get_ablation_flags(int* csr, int* prefetch, int* simd, int* pruning, int* heap);
+    void set_ablate_csr(int on);
+    void set_ablate_prefetch(int on);
+    void set_ablate_simd(int on);
+    void set_ablate_pruning(int on);
+    void set_ablate_heap(int on);
     uint64_t get_total_queries();
     double get_avg_dists_per_query();
     uint64_t get_last_query_dists();
     void reset_dist_counters();
     double get_last_build_time_ms();
-
-    // 图质量统计
     int get_graph_max_level();
     int get_graph_num_nodes();
     double get_graph_avg_degree_l0();
@@ -123,5 +85,3 @@ extern "C" {
     int get_graph_nodes_at_level(int level);
     double get_graph_avg_degree_upper();
 }
-
-#endif // MYSOLUTION_H

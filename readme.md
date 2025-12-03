@@ -1,5 +1,17 @@
 # 实验报告（结构化说明）
 
+
+static std::atomic`<int>` g_HNSW_M{41};
+
+static std::atomic`<int>` g_HNSW_MAX_LAYER{4};
+
+static std::atomic`<int>` g_HNSW_EF_CONSTRUCTION{967};
+
+static std::atomic `<int>` g_HNSW_EF_SEARCH{433};
+
+
+![1764589390747](image/readme/1764589390747.png)
+
 ![1764043839829](image/readme/1764043839829.png)
 
 ![1764037971356](image/readme/1764037971356.png)

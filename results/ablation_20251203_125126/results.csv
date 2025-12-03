@@ -1,0 +1,2 @@
+variant,csr,prefetch,simd,pruning,heap,flat_index,build_time_internal_ms,build_time_local_ms,queries_per_sec,avg_recall,avg_query_time_ms,avg_dists,last_query_dists,total_query_time_ms,log_file,run_index
+baseline,0,0,0,0,0,0,3599.908882,3604.807135, 736.735226, 0.980050, 1.357340, 0.000000, 0, 13573.397395,results/ablation_20251203_125126/baseline/run_20251203_125132_218.log,1

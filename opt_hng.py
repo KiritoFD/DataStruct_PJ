@@ -8,45 +8,47 @@ import random
 import time
 import threading
 import shutil
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, List
 from datetime import datetime
+import sys
 
 # ==================== 配置区 ====================
 BIN_PATH = "./hng"
-MIN_RECALL = 0.9801          # 约束条件下界
+MIN_RECALL = 0.99          # 约束条件下界
+TARGET_RECALL = 0.99         # EFS 二分搜索目标召回率
 FIXED_K = 10
 BATCH_SIZE = 20
 NUM_RUNS = 1
 
-# --- 初始点 ---
-INITIAL_M = 40
-INITIAL_MAX_LAYER = 17
-INITIAL_EFC = 648
-INITIAL_EFS = 457
+# --- 初始点 (只有前三个参数) ---
+INITIAL_M = 51
+INITIAL_MAX_LAYER = 7
+INITIAL_EFC = 603
 
 # --- 参数搜索范围 ---
 M_RANGE = (16, 64)
-MAX_LAYER_RANGE = (1, 20)
+MAX_LAYER_RANGE = (0, 20)
 EFC_RANGE = (80, 1000)
-EFS_RANGE = (80, 2000)
+EFS_RANGE = (80, 2000)  # EFS 二分搜索范围
 
 LOG_DIR = "Log"
 RESULT_CSV = "optuna_hng.csv"
 
 # --- 差异化惩罚常量 ---
-# 根据 Recall 偏离程度进行不同强度的惩罚
-PENALTY_TIER_1 = 100000.0    # 极度不合格 (Recall <= 0.97)
-PENALTY_TIER_2 = 50000.0     # 严重不合格 (0.97 < Recall <= 0.975)
-PENALTY_TIER_3 = 10000.0     # 中等不合格 (0.975 < Recall <= 0.9801)
+PENALTY_TIER_1 = 100000.0
+PENALTY_TIER_2 = 50000.0
+PENALTY_TIER_3 = 10000.0
 
 # --- 全局缓存 ---
+# 完整缓存: (m, ml, efc, efs) -> (recall, time_ms, build_ms)
 CACHE: Dict[Tuple[int, int, int, int], Tuple[float, float, float]] = {}
+# 图参数缓存: (m, ml, efc) -> (best_efs, recall, time_ms) - 存储二分搜索结果
+GRAPH_CACHE: Dict[Tuple[int, int, int], Tuple[int, float, float]] = {}
 
 def backup_csv():
-    """备份当前 CSV，命名为 原名字+时间戳.bak"""
+    """备份当前 CSV"""
     if not os.path.exists(RESULT_CSV):
         return
-    
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_name = f"{RESULT_CSV.rsplit('.', 1)[0]}_{ts}.bak"
     try:
@@ -55,71 +57,9 @@ def backup_csv():
     except Exception as e:
         print(f"Warning: failed to backup CSV: {e}")
 
-def recalculate_scores_from_csv():
-    """
-    从 CSV 重新加载所有数据，按当前奖惩规则重新计算 score
-    """
-    if not os.path.exists(RESULT_CSV):
-        print("No CSV file to recalculate.")
-        return
-    
-    print("🔄 Recalculating scores from CSV...")
-    
-    # 读取原 CSV
-    rows = []
-    try:
-        with open(RESULT_CSV, 'r', newline='', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            rows = list(reader)
-    except Exception as e:
-        print(f"Error reading CSV: {e}")
-        return
-    
-    if not rows:
-        print("CSV is empty.")
-        return
-    
-    # 重新计算 score
-    recalc_count = 0
-    for row in rows:
-        try:
-            recall = float(row.get('avg_recall', 0))
-            time_ms = float(row.get('avg_time_ms', 99999))
-            
-            # 使用当前惩罚规则
-            if recall > MIN_RECALL:
-                score = time_ms  # 可行解：最小化时间
-            else:
-                # 差异化惩罚
-                gap = MIN_RECALL - recall
-                if gap >= 0.0099:  # Recall <= 0.97
-                    score = PENALTY_TIER_1 * (1.0 + gap * 100.0)
-                elif gap >= 0.0049:  # 0.97 < Recall <= 0.975
-                    score = PENALTY_TIER_2 * (1.0 + gap * 100.0)
-                else:  # 0.975 < Recall <= 0.9801
-                    score = PENALTY_TIER_3 * (1.0 + gap * 100.0)
-            
-            row['reward_score'] = f"{score:.2f}"
-            recalc_count += 1
-        except Exception as e:
-            print(f"Error recalculating row: {e}")
-            continue
-    
-    # 写回 CSV（覆盖原文件）
-    try:
-        fieldnames = ['timestamp', 'study_name', 'trial_id', 'm', 'max_layer', 'efc', 'efs', 'K',
-                      'avg_recall', 'avg_time_ms', 'build_time_ms', 'reward_score', 'status']
-        with open(RESULT_CSV, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
-            writer.writeheader()
-            writer.writerows(rows)
-        print(f"✅ Recalculated {recalc_count} rows in CSV")
-    except Exception as e:
-        print(f"Error writing CSV: {e}")
-
 def load_cache_data():
     """从 CSV 加载历史数据"""
-    global CACHE
+    global CACHE, GRAPH_CACHE
     if not os.path.exists(RESULT_CSV):
         return {}
     
@@ -146,8 +86,8 @@ def load_cache_data():
                         trial_id = int(row.get('trial_id', -1)) if row.get('trial_id') else -1
                         if trial_id >= 0:
                             trial_records[trial_id] = {
-                                'params': {'m': m, 'max_layer': ml, 'efc': efc, 'efs': efs},
-                                'user_attrs': {'avg_recall': rec, 'avg_time_ms': time_ms, 'build_time_ms': build_ms},
+                                'params': {'m': m, 'max_layer': ml, 'efc': efc},
+                                'user_attrs': {'avg_recall': rec, 'avg_time_ms': time_ms, 'build_time_ms': build_ms, 'opt_efs': efs},
                                 'state': optuna.trial.TrialState.COMPLETE
                             }
                 except:
@@ -155,16 +95,194 @@ def load_cache_data():
     except Exception as e:
         print(f"Cache load warning: {e}")
     
-    print(f"Loaded {len(CACHE)} unique cached results, {len(trial_records)} trial records.")
+    # 构建 GRAPH_CACHE: 对每个 (m, ml, efc) 找到满足 TARGET_RECALL 的最小 efs
+    for (m, ml, efc, efs), (rec, time_ms, build_ms) in CACHE.items():
+        if rec >= TARGET_RECALL:
+            key = (m, ml, efc)
+            if key not in GRAPH_CACHE or efs < GRAPH_CACHE[key][0]:
+                GRAPH_CACHE[key] = (efs, rec, time_ms)
+    
+    print(f"Loaded {len(CACHE)} cached results, {len(GRAPH_CACHE)} graph configs, {len(trial_records)} trials.")
     return trial_records
 
+def run_test(m: int, max_layer: int, efc: int, efs: int, silent: bool = False) -> Tuple[float, float, float]:
+    """运行测试"""
+    key = (m, max_layer, efc, efs)
+    if key in CACHE:
+        if not silent:
+            print(f"   [CACHE HIT] m={m}, ml={max_layer}, efc={efc}, efs={efs}")
+        return CACHE[key]
+
+    os.makedirs(LOG_DIR, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    trial_logfile = os.path.join(LOG_DIR, f"trial_m{m}_ml{max_layer}_efc{efc}_efs{efs}_{ts}.log")
+    
+    try:
+        lf = open(trial_logfile, 'w', encoding='utf-8', buffering=1)
+    except IOError as e:
+        print(f"   [ERROR] Cannot create log file: {e}")
+        return 0.0, 99999.0, 99999.0
+    
+    def log_write(msg: str):
+        if not silent:
+            print(msg, end='', flush=True)
+        lf.write(msg)
+        lf.flush()
+    
+    cmd = [BIN_PATH, "--m", str(m), "--max_layer", str(max_layer), "--efc", str(efc), "--efs", str(efs)]
+    log_write(f"   [START] m={m}, ml={max_layer}, efc={efc}, efs={efs}\n")
+    
+    total_rec, total_time, total_build = 0.0, 0.0, 0.0
+    
+    for run_num in range(NUM_RUNS):
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+            stdout_lines, stderr_lines = [], []
+            
+            def read_stream(stream, lines_list, prefix):
+                try:
+                    for line in iter(stream.readline, ''):
+                        if line:
+                            log_write(f"{prefix}{line}")
+                            lines_list.append(line)
+                except: pass
+            
+            stdout_thread = threading.Thread(target=read_stream, args=(proc.stdout, stdout_lines, "[OUT] "))
+            stderr_thread = threading.Thread(target=read_stream, args=(proc.stderr, stderr_lines, "[ERR] "))
+            stdout_thread.daemon = stderr_thread.daemon = True
+            stdout_thread.start()
+            stderr_thread.start()
+            
+            start_wait = time.time()
+            while proc.poll() is None:
+                if time.time() - start_wait > 2000:
+                    log_write(f"\n   [TIMEOUT]\n")
+                    proc.kill()
+                    lf.close()
+                    return 0.0, 99999.0, 99999.0
+                time.sleep(0.1)
+            
+            stdout_thread.join(timeout=5)
+            stderr_thread.join(timeout=5)
+            
+            if proc.returncode != 0:
+                lf.close()
+                return 0.0, 99999.0, 99999.0
+            
+            txt = ''.join(stdout_lines)
+            r_m = re.search(r"Average\s+recall@\d+[:\s]+([0-9]+(?:[.,][0-9]+)?)", txt, re.I)
+            t_m = re.search(r"Average\s+query\s+time[:\s]+([0-9]+(?:[.,][0-9]+)?)\s*ms", txt, re.I)
+            b_m = re.search(r"Index\s+build\s+time[:\s]+([0-9]+(?:[.,][0-9]+)?)\s*ms", txt, re.I)
+
+            if b_m and t_m and r_m:
+                total_build += float(b_m.group(1).replace(',', '.'))
+                total_time += float(t_m.group(1).replace(',', '.'))
+                total_rec += float(r_m.group(1).replace(',', '.'))
+            else:
+                lf.close()
+                return 0.0, 99999.0, 99999.0 
+        except Exception as e:
+            lf.close()
+            return 0.0, 99999.0, 99999.0 
+
+    avg_res = (round(total_rec/NUM_RUNS, 6), round(total_time/NUM_RUNS, 6), round(total_build/NUM_RUNS, 6))
+    log_write(f"   [RESULT] Rec={avg_res[0]:.4f} Time={avg_res[1]:.4f}ms\n")
+    lf.close()
+    
+    CACHE[key] = avg_res
+    return avg_res
+
+def save_result_to_csv(m: int, ml: int, efc: int, efs: int, recall: float, time_ms: float, build_ms: float, study_name: str = 'efs_search'):
+    """保存单条结果到 CSV"""
+    if recall > MIN_RECALL:
+        score = time_ms
+    else:
+        gap = MIN_RECALL - recall
+        if gap >= 0.0099:
+            score = PENALTY_TIER_1 * (1.0 + gap * 100.0)
+        elif gap >= 0.0049:
+            score = PENALTY_TIER_2 * (1.0 + gap * 100.0)
+        else:
+            score = PENALTY_TIER_3 * (1.0 + gap * 100.0)
+    
+    data = {
+        'timestamp': datetime.now().isoformat(),
+        'study_name': study_name,
+        'trial_id': -1,
+        'm': m, 'max_layer': ml, 'efc': efc, 'efs': efs,
+        'K': FIXED_K,
+        'avg_recall': recall, 'avg_time_ms': time_ms, 'build_time_ms': build_ms,
+        'reward_score': score, 'status': 'COMPLETE',
+    }
+    
+    fieldnames = ['timestamp', 'study_name', 'trial_id', 'm', 'max_layer', 'efc', 'efs', 'K',
+                  'avg_recall', 'avg_time_ms', 'build_time_ms', 'reward_score', 'status']
+    
+    try:
+        file_exists = os.path.exists(RESULT_CSV)
+        with open(RESULT_CSV, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(data)
+    except IOError as e:
+        print(f"Error writing to CSV: {e}")
+
+def binary_search_optimal_efs(m: int, max_layer: int, efc: int, target_recall: float = TARGET_RECALL) -> Tuple[int, float, float]:
+    """
+    二分搜索找到刚好满足 target_recall 的最小 EFS
+    返回: (optimal_efs, recall, time_ms)
+    """
+    graph_key = (m, max_layer, efc)
+    
+    # 检查图缓存
+    if graph_key in GRAPH_CACHE:
+        cached_efs, cached_recall, cached_time = GRAPH_CACHE[graph_key]
+        print(f"   [GRAPH CACHE] M={m}, ML={max_layer}, EFC={efc} -> EFS={cached_efs}, Rec={cached_recall:.4f}")
+        return cached_efs, cached_recall, cached_time
+    
+    print(f"   🔍 Binary search EFS for M={m}, ML={max_layer}, EFC={efc}, target={target_recall}")
+    
+    lo, hi = EFS_RANGE[0], EFS_RANGE[1]
+    best_efs, best_recall, best_time = hi, 0.0, 99999.0
+    
+    # 先测试最大 EFS，确认图能达到目标召回率
+    recall, time_ms, build_ms = run_test(m, max_layer, efc, hi, silent=True)
+    save_result_to_csv(m, max_layer, efc, hi, recall, time_ms, build_ms)
+    
+    if recall < target_recall:
+        print(f"   ❌ Max EFS={hi} only gets Recall={recall:.4f}, graph cannot meet target")
+        return hi, recall, time_ms
+    
+    best_efs, best_recall, best_time = hi, recall, time_ms
+    
+    # 二分搜索
+    while lo < hi:
+        mid = (lo + hi) // 2
+        
+        recall, time_ms, build_ms = run_test(m, max_layer, efc, mid, silent=True)
+        save_result_to_csv(m, max_layer, efc, mid, recall, time_ms, build_ms)
+        
+        print(f"      EFS={mid} -> Recall={recall:.4f}, Time={time_ms:.4f}ms")
+        
+        if recall >= target_recall:
+            best_efs, best_recall, best_time = mid, recall, time_ms
+            hi = mid
+        else:
+            lo = mid + 1
+    
+    # 更新图缓存
+    GRAPH_CACHE[graph_key] = (best_efs, best_recall, best_time)
+    
+    print(f"   ✅ Optimal: EFS={best_efs} -> Recall={best_recall:.4f}, Time={best_time:.4f}ms")
+    return best_efs, best_recall, best_time
+
 def restore_trials_to_study(study: optuna.Study, trial_records: Dict):
-    """从历史记录恢复 trials 到 study"""
+    """从历史记录恢复 trials 到 study (只恢复前三个参数)"""
     if not trial_records:
         return
 
     print(f"Restoring {len(trial_records)} trials from history...")
-
     trials_to_add = []
     now = datetime.now()
 
@@ -174,7 +292,6 @@ def restore_trials_to_study(study: optuna.Study, trial_records: Dict):
             params = record.get('params') or {}
             user_attrs = record.get('user_attrs') or {}
             
-            # 根据当前奖惩规则重新计算 value
             recall = user_attrs.get('avg_recall', 0)
             time_ms = user_attrs.get('avg_time_ms', 99999)
             
@@ -200,7 +317,6 @@ def restore_trials_to_study(study: optuna.Study, trial_records: Dict):
                     'm': optuna.distributions.IntDistribution(*M_RANGE),
                     'max_layer': optuna.distributions.IntDistribution(*MAX_LAYER_RANGE),
                     'efc': optuna.distributions.IntDistribution(*EFC_RANGE),
-                    'efs': optuna.distributions.IntDistribution(*EFS_RANGE),
                 },
                 user_attrs=user_attrs,
                 system_attrs={},
@@ -209,21 +325,15 @@ def restore_trials_to_study(study: optuna.Study, trial_records: Dict):
             )
             trials_to_add.append(frozen_trial)
         except Exception as e:
-            print(f"Warning: skipping trial {trial_id}: {e}")
             continue
 
-    if not trials_to_add:
-        return
-
-    try:
-        study.add_trials(trials_to_add)
-    except Exception as e:
-        print(f"Warning: batch add_trials failed: {e}")
-        for tr in trials_to_add:
-            try:
-                study.add_trial(tr)
-            except:
-                pass
+    if trials_to_add:
+        try:
+            study.add_trials(trials_to_add)
+        except:
+            for tr in trials_to_add:
+                try: study.add_trial(tr)
+                except: pass
 
 def csv_logger(study: optuna.Study, trial: optuna.trial.Trial):
     """写入 CSV 日志"""
@@ -232,12 +342,12 @@ def csv_logger(study: optuna.Study, trial: optuna.trial.Trial):
 
     data = {
         'timestamp': datetime.now().isoformat(),
-        'study_name': getattr(study, "study_name", None) or getattr(study, "name", ""),
+        'study_name': getattr(study, "study_name", "") or getattr(study, "name", ""),
         'trial_id': trial.number,
         'm': trial.params.get('m'),
         'max_layer': trial.params.get('max_layer'),
         'efc': trial.params.get('efc'),
-        'efs': trial.params.get('efs'),
+        'efs': trial.user_attrs.get('opt_efs', -1),
         'K': FIXED_K,
         'avg_recall': trial.user_attrs.get('avg_recall'),
         'avg_time_ms': trial.user_attrs.get('avg_time_ms'),
@@ -259,229 +369,131 @@ def csv_logger(study: optuna.Study, trial: optuna.trial.Trial):
     except IOError as e:
         print(f"Error writing to CSV: {e}")
 
-def run_test(m: int, max_layer: int, efc: int, efs: int) -> Tuple[float, float, float]:
-    """运行测试"""
-    key = (m, max_layer, efc, efs)
-    if key in CACHE:
-        print(f"   [CACHE HIT] m={m}, ml={max_layer}, efc={efc}, efs={efs}")
-        return CACHE[key]
-
-    os.makedirs(LOG_DIR, exist_ok=True)
-    
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    trial_logfile = os.path.join(LOG_DIR, f"trial_m{m}_ml{max_layer}_efc{efc}_efs{efs}_{ts}.log")
-    
-    try:
-        lf = open(trial_logfile, 'w', encoding='utf-8', buffering=1)
-    except IOError as e:
-        print(f"   [ERROR] Cannot create log file: {e}")
-        return 0.0, 99999.0, 99999.0
-    
-    def log_write(msg: str):
-        print(msg, end='', flush=True)
-        lf.write(msg)
-        lf.flush()
-    
-    cmd = [BIN_PATH, "--m", str(m), "--max_layer", str(max_layer), "--efc", str(efc), "--efs", str(efs)]
-    
-    log_write(f"   [START] m={m}, ml={max_layer}, efc={efc}, efs={efs}\n")
-    
-    total_rec, total_time, total_build = 0.0, 0.0, 0.0
-    
-    for run_num in range(NUM_RUNS):
-        try:
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
-            
-            stdout_lines = []
-            stderr_lines = []
-            
-            def read_stream(stream, lines_list, prefix):
-                try:
-                    for line in iter(stream.readline, ''):
-                        if line:
-                            log_write(f"{prefix}{line}")
-                            lines_list.append(line)
-                except:
-                    pass
-            
-            stdout_thread = threading.Thread(target=read_stream, args=(proc.stdout, stdout_lines, "[OUT] "))
-            stderr_thread = threading.Thread(target=read_stream, args=(proc.stderr, stderr_lines, "[ERR] "))
-            stdout_thread.daemon = True
-            stderr_thread.daemon = True
-            stdout_thread.start()
-            stderr_thread.start()
-            
-            start_wait = time.time()
-            timeout = 2000
-            while proc.poll() is None:
-                if time.time() - start_wait > timeout:
-                    log_write(f"\n   [TIMEOUT] Exceeded {timeout}s\n")
-                    proc.kill()
-                    lf.close()
-                    return 0.0, 99999.0, 99999.0
-                time.sleep(0.1)
-            
-            stdout_thread.join(timeout=5)
-            stderr_thread.join(timeout=5)
-            
-            if proc.returncode != 0:
-                log_write(f"   [ERROR] Process returned {proc.returncode}\n")
-                lf.close()
-                return 0.0, 99999.0, 99999.0
-            
-            txt = ''.join(stdout_lines)
-            
-            r_m = re.search(r"Average\s+recall@\d+[:\s]+([0-9]+(?:[.,][0-9]+)?)", txt, re.I)
-            t_m = re.search(r"Average\s+query\s+time[:\s]+([0-9]+(?:[.,][0-9]+)?)\s*ms", txt, re.I)
-            b_m = re.search(r"Index\s+build\s+time[:\s]+([0-9]+(?:[.,][0-9]+)?)\s*ms", txt, re.I)
-
-            if b_m and t_m and r_m:
-                build_val = float(b_m.group(1).replace(',', '.'))
-                time_val = float(t_m.group(1).replace(',', '.'))
-                rec_val = float(r_m.group(1).replace(',', '.'))
-                
-                total_build += build_val
-                total_time += time_val
-                total_rec += rec_val
-                
-                log_write(f"   [PARSED] Rec={rec_val:.4f}, Time={time_val:.4f}ms, Build={build_val:.2f}ms\n")
-            else:
-                log_write(f"   [PARSE ERROR] Regex match failed\n")
-                lf.close()
-                return 0.0, 99999.0, 99999.0 
-        except Exception as e:
-            log_write(f"   [EXCEPTION] {type(e).__name__}: {e}\n")
-            lf.close()
-            return 0.0, 99999.0, 99999.0 
-
-    avg_res = (round(total_rec/NUM_RUNS, 6), round(total_time/NUM_RUNS, 6), round(total_build/NUM_RUNS, 6))
-    
-    log_write(f"   [RESULT] Rec={avg_res[0]:.4f} Time={avg_res[1]:.4f}ms\n")
-    lf.close()
-    
-    CACHE[key] = avg_res
-    return avg_res
-
 def objective(trial: optuna.trial.Trial) -> float:
-    """目标函数 - 差异化惩罚"""
+    """
+    目标函数 - 只优化前三个参数 (M, max_layer, efc)
+    EFS 通过二分搜索自动找到最小满足召回率的值
+    """
     m = trial.suggest_int("m", M_RANGE[0], M_RANGE[1])
     max_layer = trial.suggest_int("max_layer", MAX_LAYER_RANGE[0], MAX_LAYER_RANGE[1])
     efc = trial.suggest_int("efc", EFC_RANGE[0], EFC_RANGE[1])
-    efs = trial.suggest_int("efs", EFS_RANGE[0], EFS_RANGE[1])
 
-    recall, time_ms, build_ms = run_test(m, max_layer, efc, efs)
+    print(f"\n📊 Trial #{trial.number}: M={m}, ML={max_layer}, EFC={efc}")
+    
+    # 二分搜索找到最优 EFS
+    opt_efs, recall, time_ms = binary_search_optimal_efs(m, max_layer, efc, TARGET_RECALL)
+    
+    # 获取 build_ms (从缓存)
+    build_ms = CACHE.get((m, max_layer, efc, opt_efs), (0, 0, 99999))[2]
     
     trial.set_user_attr("avg_recall", recall)
     trial.set_user_attr("avg_time_ms", time_ms)
     trial.set_user_attr("build_time_ms", build_ms)
+    trial.set_user_attr("opt_efs", opt_efs)
 
-    # 差异化惩罚
+    # 计算分数
     if recall > MIN_RECALL:
-        score = time_ms  # 可行解
+        score = time_ms
+        print(f"   ✅ FEASIBLE: EFS={opt_efs}, Recall={recall:.4f}, Time={time_ms:.4f}ms")
     else:
         gap = MIN_RECALL - recall
-        if gap >= 0.0099:  # Recall <= 0.97
+        if gap >= 0.0099:
             score = PENALTY_TIER_1 * (1.0 + gap * 100.0)
-        elif gap >= 0.0049:  # 0.97 < Recall <= 0.975
+        elif gap >= 0.0049:
             score = PENALTY_TIER_2 * (1.0 + gap * 100.0)
-        else:  # 0.975 < Recall <= 0.9801
+        else:
             score = PENALTY_TIER_3 * (1.0 + gap * 100.0)
-    
-    print(f"   => Recall={recall:.6f}, Time={time_ms:.4f}ms, Gap={MIN_RECALL-recall:.6f}, Score={score:.2f}")
-    
-    if recall > MIN_RECALL:
-        print(f"   ✅ FEASIBLE")
-    else:
-        print(f"   ⚠️  INFEASIBLE (Heavy Penalty)")
+        print(f"   ❌ INFEASIBLE: EFS={opt_efs}, Recall={recall:.4f}, Penalty={score:.0f}")
     
     return score
+
+# ----------------- 新增：确保 stdout/stderr 行缓冲（实时写入重定向文件） -----------------
+# 1) 优先使用 Python 3.7+ 的 reconfigure 方法
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+except Exception:
+    # 2) 作为降级兼容，尝试将 stdout/stderr 置为行缓冲（仅在部分平台/版本工作）
+    try:
+        import io, os
+        fileno_out = sys.stdout.fileno()
+        fileno_err = sys.stderr.fileno()
+        sys.stdout = io.TextIOWrapper(os.fdopen(fileno_out, 'wb', 0), encoding='utf-8', line_buffering=True)
+        sys.stderr = io.TextIOWrapper(os.fdopen(fileno_err, 'wb', 0), encoding='utf-8', line_buffering=True)
+    except Exception:
+        # 无法强制行缓冲，继续运行（仍可通过 env PYTHONUNBUFFERED=1 或 -u 启动）
+        pass
+# -----------------------------------------------------------------------------------
 
 READ_FROM_CSV_ONLY = True
 
 if __name__ == "__main__":
-    # 1. 备份 CSV
     backup_csv()
     
-    # 2. 加载历史数据
-    if READ_FROM_CSV_ONLY:
-        print("Loading entries from CSV only...")
-        trial_records = load_cache_data()
-        print(f"Pre-loaded {len(CACHE)} entries from CSV.")
-    else:
-        trial_records = load_cache_data()
-
-    # 3. 重新计算所有分数
-    recalculate_scores_from_csv()
+    print("Loading entries from CSV...")
+    trial_records = load_cache_data()
+    print(f"Pre-loaded {len(CACHE)} entries, {len(GRAPH_CACHE)} graph configs.")
 
     os.makedirs(LOG_DIR, exist_ok=True)
 
-    print("="*60)
-    print(f"🚀 HNSW Optimization with CMA-ES + Tiered Penalties")
-    print(f"🎯 Constraint: Recall > {MIN_RECALL}")
-    print(f"📊 Tiered Penalties:")
-    print(f"   Tier 1 (Recall <= 0.97):      {PENALTY_TIER_1:.0f}")
-    print(f"   Tier 2 (0.97 < Recall <= 0.975): {PENALTY_TIER_2:.0f}")
-    print(f"   Tier 3 (0.975 < Recall <= {MIN_RECALL}): {PENALTY_TIER_3:.0f}")
-    print(f"🔧 Initial: M={INITIAL_M}, ML={INITIAL_MAX_LAYER}, EFC={INITIAL_EFC}, EFS={INITIAL_EFS}")
+    print("\n" + "="*60)
+    print(f"🚀 HNSW Graph Parameter Optimization")
+    print(f"🎯 Target Recall: {TARGET_RECALL} (constraint: > {MIN_RECALL})")
+    print(f"📊 Optimizing: M, max_layer, efc (EFS auto-tuned via binary search)")
+    print(f"🔧 Initial: M={INITIAL_M}, ML={INITIAL_MAX_LAYER}, EFC={INITIAL_EFC}")
     print("="*60)
 
     sampler = CmaEsSampler(seed=42)
     
     study = optuna.create_study(
         direction="minimize",
-        study_name="hnsw_cmaes_v5",
+        study_name="hnsw_graph_opt_v1",
         sampler=sampler
     )
 
-    # 恢复历史 trials
     restore_trials_to_study(study, trial_records)
 
-    # 注入初始点
     if len(study.trials) == 0:
         print("Enqueuing initial point...")
-        study.enqueue_trial({"m": INITIAL_M, "max_layer": INITIAL_MAX_LAYER, "efc": INITIAL_EFC, "efs": INITIAL_EFS})
+        study.enqueue_trial({"m": INITIAL_M, "max_layer": INITIAL_MAX_LAYER, "efc": INITIAL_EFC})
 
     batch_count = 0
 
     try:
         while True:
             batch_count += 1
-            print(f"\n🔄 Batch #{batch_count}")
-            print(f"   Trials so far: {len(study.trials)}")
+            print(f"\n🔄 Batch #{batch_count}, Trials: {len(study.trials)}")
             
             study.optimize(objective, n_trials=BATCH_SIZE, callbacks=[csv_logger])
             
-            # 分析
             completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
-            feasible = [t for t in completed if t.user_attrs.get('avg_recall', 0) > MIN_RECALL 
-                       and (t.value is not None and t.value != float('inf'))]
+            feasible = [t for t in completed if t.user_attrs.get('avg_recall', 0) > MIN_RECALL]
             
             print(f"   Completed: {len(completed)}, Feasible: {len(feasible)}")
             
             if feasible:
-                best = min(feasible, key=lambda t: t.value)
-                print(f"✅ Best: Recall={best.user_attrs['avg_recall']:.6f}, Time={best.user_attrs['avg_time_ms']:.4f}ms")
+                best = min(feasible, key=lambda t: t.value if t.value else float('inf'))
+                print(f"✅ Best: M={best.params['m']}, ML={best.params['max_layer']}, EFC={best.params['efc']}, "
+                      f"EFS={best.user_attrs.get('opt_efs')}, Recall={best.user_attrs['avg_recall']:.4f}, "
+                      f"Time={best.user_attrs['avg_time_ms']:.4f}ms")
             
             print(f"💾 Saved to {RESULT_CSV}")
             time.sleep(1)
 
     except KeyboardInterrupt:
         print("\n🛑 Stopped by user.")
-    except Exception as e:
-        print(f"\n❌ Error: {e}")
     
-    print("="*60)
+    print("\n" + "="*60)
     feasible = [t for t in study.trials 
                 if t.state == optuna.trial.TrialState.COMPLETE 
-                and t.user_attrs.get('avg_recall', 0) > MIN_RECALL
-                and (t.value is not None and t.value != float('inf'))]
+                and t.user_attrs.get('avg_recall', 0) > MIN_RECALL]
     
     if feasible:
-        best = min(feasible, key=lambda t: t.value)
+        best = min(feasible, key=lambda t: t.value if t.value else float('inf'))
         print("🏆 Final Winner:")
-        print(f"   Recall: {best.user_attrs['avg_recall']:.6f}")
-        print(f"   Time:   {best.user_attrs['avg_time_ms']:.4f} ms")
-        print(f"   Params: {best.params}")
+        print(f"   M={best.params['m']}, ML={best.params['max_layer']}, EFC={best.params['efc']}")
+        print(f"   EFS={best.user_attrs.get('opt_efs')}")
+        print(f"   Recall={best.user_attrs['avg_recall']:.4f}, Time={best.user_attrs['avg_time_ms']:.4f}ms")
     else:
         print("⚠️ No feasible solutions found.")
     

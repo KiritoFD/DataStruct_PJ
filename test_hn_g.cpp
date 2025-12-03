@@ -247,6 +247,12 @@ struct CmdOptsG {
     int M = -1, max_layer = -1, efc = -1, efs = -1, threads = -1, debug = -1;
     std::string base_file, query_file, truth_file;
     int K = -1;
+    // ablation flags
+    int ablate_csr = -1;
+    int ablate_prefetch = -1;
+    int ablate_simd = -1;
+    int ablate_pruning = -1;
+    int ablate_heap = -1;
 };
 static CmdOptsG parse_args_g(int argc, char** argv) {
     CmdOptsG o;
@@ -262,6 +268,11 @@ static CmdOptsG parse_args_g(int argc, char** argv) {
         else if (a == "--query" && i+1 < argc) o.query_file = argv[++i];
         else if (a == "--truth" && i+1 < argc) o.truth_file = argv[++i];
         else if (a == "--k" && i+1 < argc) o.K = std::stoi(argv[++i]);
+        else if (a == "--ablate_csr" && i+1 < argc) o.ablate_csr = std::stoi(argv[++i]);
+        else if (a == "--ablate_prefetch" && i+1 < argc) o.ablate_prefetch = std::stoi(argv[++i]);
+        else if (a == "--ablate_simd" && i+1 < argc) o.ablate_simd = std::stoi(argv[++i]);
+        else if (a == "--ablate_pruning" && i+1 < argc) o.ablate_pruning = std::stoi(argv[++i]);
+        else if (a == "--ablate_heap" && i+1 < argc) o.ablate_heap = std::stoi(argv[++i]);
     }
     return o;
 }
@@ -364,6 +375,19 @@ int main(int argc, char** argv) {
         logger.writeline("HNSW parameters set.\n");
     }
     if (opts.debug >= 0) set_hnsw_debug(opts.debug);
+
+    // apply ablation flags when provided; default to 0 otherwise
+    int csr = (opts.ablate_csr >= 0) ? opts.ablate_csr : 0;
+    int prefetch = (opts.ablate_prefetch >= 0) ? opts.ablate_prefetch : 0;
+    int simd = (opts.ablate_simd >= 0) ? opts.ablate_simd : 0;
+    int pruning = (opts.ablate_pruning >= 0) ? opts.ablate_pruning : 0;
+    int heap = (opts.ablate_heap >= 0) ? opts.ablate_heap : 0;
+    set_ablation_flags(csr, prefetch, simd, pruning, heap);
+    logger.writeline((std::string("Ablation flags: csr=") + std::to_string(csr)
+                      + ", prefetch=" + std::to_string(prefetch)
+                      + ", simd=" + std::to_string(simd)
+                      + ", pruning=" + std::to_string(pruning)
+                      + ", heap=" + std::to_string(heap) + "\n"));
 
     // 加载数据
     logger.writeline("Loading base vectors...");
