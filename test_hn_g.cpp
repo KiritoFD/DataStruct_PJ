@@ -476,7 +476,6 @@ int main(int argc, char** argv) {
     logger.writeline("Executing queries...\n");
     const size_t nq = queries.size();
     double total_recall = 0.0;
-    uint64_t start_dist_count = get_total_queries();  // 记录起始查询计数
     int res[10];
     
     auto t0 = std::chrono::steady_clock::now();

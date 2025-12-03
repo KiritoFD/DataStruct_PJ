@@ -61,3 +61,107 @@ Loaded queries from binary cache: data_o/glove/query.txt.bin
 
 Loading ground truth...
 Loaded truth from binary cache: data_o/glove/truth.txt.bin
+✓ Truth loaded in 73.850326 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=4212.300677 ms
+  build_time(internal)=4206.534611 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 62.953767
+
+  avg_degree_upper: 0.183773
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 23582 nodes (1.99%)
+
+    L2: 455 nodes (0.04%)
+
+    L3: 9 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.999190
+
+Average query time: 7.603306 ms
+
+Total query time: 76033.062769 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 805776906
+
+Average distance ops per query: 80577.690600
+
+Last query distance ops: 56214
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2425.834870 ms
+
+Index build time: 4206.534611 ms
+
+Query execution time: 76033.062769 ms
+
+Total elapsed time: 82671.198316 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 131.521731
+
+Distance ops per second: 10597717.317374
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251203_152432_328.log
+

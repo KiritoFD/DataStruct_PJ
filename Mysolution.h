@@ -6,7 +6,7 @@
 // 默认参数常量
 constexpr int HNSW_DEFAULT_M = 51;
 constexpr int HNSW_DEFAULT_MAX_LAYER = 7;
-constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 603;
+constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 648;
 constexpr int HNSW_DEFAULT_EF_SEARCH = 432;
 
 

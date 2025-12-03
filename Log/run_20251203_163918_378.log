@@ -1,0 +1,102 @@
+========== HNSW Search Test ==========
+
+Timestamp: Wed Dec  3 16:39:18 2025
+
+Command line arguments:
+  argv[0]: ./hng1
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: -1
+  Max layer: -1
+  EFC: -1
+  EFS: -1
+  Threads: -1
+  Debug: -1
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 2230.709104 ms
+
+Loading query vectors...
+✓ Queries loaded in 66.454669 ms
+
+Loading ground truth...
+✓ Truth loaded in 69.062492 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=2963.943277 ms
+  build_time(internal)=0.000000 ms
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.001030
+
+Average query time: 0.007380 ms
+
+Total query time: 73.798781 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total distance computations: 961442
+
+Average distance ops per query: 96.144200
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2366.226265 ms
+
+Index build time: 0.000000 ms
+
+Query execution time: 73.798781 ms
+
+Total elapsed time: 5403.968323 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 135503.593210
+
+Distance ops per second: 13027884.566278
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251203_163918_378.log
+

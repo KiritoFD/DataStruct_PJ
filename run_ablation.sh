@@ -6,8 +6,7 @@ set -euo pipefail
 # Usage: ./run_ablation.sh [--base base_file] [--query query_file] [--truth truth_file] [--k K] [--variants VARIANT1,VARIANT2,...]
 
 WORKDIR=$(pwd)
-BINARY="hng"
-COMPILE_CMD=(g++ MySolution.cpp test_hn_g.cpp -o "$BINARY" -O3 -Ofast -march=znver4 -mtune=native -ffast-math -flto -pthread -std=c++20 -Wall)
+BINARY="hng1"
 
 # Default dataset paths
 BASE_FILE=${BASE_FILE:-data_o/glove/base.txt}
@@ -16,7 +15,7 @@ TRUTH_FILE=${TRUTH_FILE:-data_o/glove/truth.txt}
 K=${K:-10}
 M=${M:-51}
 MAX_LAYER=${MAX_LAYER:-7}
-EFC=${EFC:-603}
+EFC=${EFC:-648}
 EFS=${EFS:-432}
 THREADS=${THREADS:-32}
 
@@ -25,33 +24,11 @@ REPEATS=${REPEATS:-1}
 
 # New: Accept multiple hyperparameter sets via env var HYPER_SETS or default to current values
 # Format: each line: "M,ML,EFC,EFS" (K is constant = 10)
-HYPER_SETS=${HYPER_SETS:-$'40,17,648,888
-34,15,434,1196
-50,20,927,1960
-35,6,749,1955
-61,18,165,560
-43,14,130,1355
-48,17,222,1767
-54,12,474,1883
-54,12,218,148
-62,11,982,196
-60,16,781,1143
-61,20,681,246
-60,18,851,1635
-56,10,785,1192
-31,13,859,388
-27,4,416,133
-53,20,970,1005
-42,18,946,880
-32,15,789,1471
-28,20,920,954
-18,20,894,409
-17,20,855,1534
-27,1,733,367
-51,18,968,1153
-21,20,993,1656
-23,17,809,1074
-44,15,649,115'}
+HYPER_SETS=${HYPER_SETS:-$'
+51,7,648,648
+51,7,648,660
+51,7,648,680
+'}
 
 # Results dir
 TS=$(date +%Y%m%d_%H%M%S)
@@ -60,25 +37,23 @@ mkdir -p "$OUT_DIR"
 CSV="$OUT_DIR/results.csv"
 
 # CSV header
-# Add hyperparameters and flat_index columns
-echo "variant,csr,prefetch,simd,pruning,heap,flat_index,M,ML,EFC,EFS,build_time_internal_ms,build_time_local_ms,queries_per_sec,avg_recall,avg_query_time_ms,avg_dists,last_query_dists,total_query_time_ms,log_file,run_index" > "$CSV"
+# Add hyperparameters and flat_index and reorder columns
+echo "variant,csr,prefetch,simd,pruning,heap,flat_index,reorder,M,ML,EFC,EFS,build_time_internal_ms,build_time_local_ms,queries_per_sec,avg_recall,avg_query_time_ms,avg_dists,last_query_dists,total_query_time_ms,log_file,run_index" > "$CSV"
 
-# Compile once
-echo "Compiling: ${COMPILE_CMD[*]}"
-"${COMPILE_CMD[@]}"
 
-echo "Binary compiled: $(readlink -f $BINARY)"
-
-# define variants: name,csr,prefetch,simd,pruning,heap,flat_index
+# define variants: name,csr,prefetch,simd,pruning,heap,flat_index,reorder
+# 说明：
+#   - 0 = 启用该优化 (baseline)
+#   - 1 = 禁用该优化 (ablation)
+# 注意：flat_index=1 时强制使用动态结构，此时 csr 和 reorder 不适用于查询
 variants=(
-  "baseline,0,0,0,0,0,0"
-  "no_csr,1,0,0,0,0,0"
-  "no_prefetch,0,1,0,0,0,0"
-  "no_simd,0,0,1,0,0,0"
-  "no_pruning,0,0,0,1,0,0"
-  "heap,0,0,0,0,1,0"
-  "dynamic_struct,0,0,0,0,0,1"
-  "nothing,1,1,1,1,1,0"
+  "baseline,0,0,0,0,0,0,0"
+  "no_simd,0,0,1,0,0,0,0"
+  "no_pruning,0,0,0,1,0,0,0"
+  "heap,0,0,0,0,1,0,0"
+  "dynamic_struct,0,0,0,0,0,1,0"
+  "no_reorder,0,0,0,0,0,0,1"
+  "dynamic_with_opts,0,0,0,0,0,1,0"
 )
 
 # function to parse metrics from a log file
@@ -107,8 +82,8 @@ run_variant() {
   local set_EFC="$5"
   local set_EFS="$6"
 
-  IFS=',' read -r varname csr prefetch simd pruning heap flat_index <<< "$variant_spec"
-  echo "Running variant: $varname (csr=$csr prefetch=$prefetch simd=$simd pruning=$pruning heap=$heap flat_index=$flat_index) on M=$set_M ML=$set_ML EFC=$set_EFC EFS=$set_EFS"
+  IFS=',' read -r varname csr prefetch simd pruning heap flat_index reorder <<< "$variant_spec"
+  echo "Running variant: $varname (csr=$csr prefetch=$prefetch simd=$simd pruning=$pruning heap=$heap flat_index=$flat_index reorder=$reorder) on M=$set_M ML=$set_ML EFC=$set_EFC EFS=$set_EFS"
 
   local vdir="$param_dir/$varname"
   mkdir -p "$vdir"
@@ -119,8 +94,8 @@ run_variant() {
 
   for run_index in $(seq 1 $REPEATS); do
     local log_file_stdout="$vdir/run_stdout_${run_index}.log"
-    ./hng --base "$BASE_FILE" --query "$QUERY_FILE" --truth "$TRUTH_FILE" --k "$K" --m "$set_M" --max_layer "$set_ML" --efc "$set_EFC" --efs "$set_EFS" --threads "$THREADS" \
-      --ablate_csr "$csr" --ablate_prefetch "$prefetch" --ablate_simd "$simd" --ablate_pruning "$pruning" --ablate_heap "$heap" --ablate_flat_index "$flat_index" > "$log_file_stdout" 2>&1
+    ./hng1 --base "$BASE_FILE" --query "$QUERY_FILE" --truth "$TRUTH_FILE" --k "$K" --m "$set_M" --max_layer "$set_ML" --efc "$set_EFC" --efs "$set_EFS" --threads "$THREADS" \
+      --ablate_csr "$csr" --ablate_prefetch "$prefetch" --ablate_simd "$simd" --ablate_pruning "$pruning" --ablate_heap "$heap" --ablate_flat_index "$flat_index" --ablate_reorder "$reorder" > "$log_file_stdout" 2>&1
 
     # detect post run logs
     local post_logs=""
@@ -140,9 +115,9 @@ run_variant() {
     metrics=$(parse_metrics "$harness_log")
     IFS=',' read -r build_internal_ms build_local_ms queries_per_sec avg_recall avg_query_time_ms avg_dists last_q_dists total_query_time_ms <<< "$metrics"
 
-    # CSV record includes hyperparameters and flat_index
-    printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" \
-      "$varname" "$csr" "$prefetch" "$simd" "$pruning" "$heap" "$flat_index" \
+    # CSV record includes hyperparameters and flat_index and reorder
+    printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" \
+      "$varname" "$csr" "$prefetch" "$simd" "$pruning" "$heap" "$flat_index" "$reorder" \
       "$set_M" "$set_ML" "$set_EFC" "$set_EFS" \
       "$build_internal_ms" "$build_local_ms" "$queries_per_sec" "$avg_recall" "$avg_query_time_ms" "$avg_dists" "$last_q_dists" "$total_query_time_ms" "$harness_log" "$run_index" >> "$CSV"
 

@@ -13,7 +13,7 @@ from datetime import datetime
 import sys
 
 # ==================== 配置区 ====================
-BIN_PATH = "./hng"
+BIN_PATH = "./hng1"
 MIN_RECALL = 0.99          # 约束条件下界
 TARGET_RECALL = 0.99         # EFS 二分搜索目标召回率
 FIXED_K = 10
