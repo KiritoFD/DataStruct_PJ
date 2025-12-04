@@ -77,3 +77,66 @@ Executing queries...
 
   Processed 1000 queries
 
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.998900
+
+Average query time: 7.079867 ms
+
+Total query time: 70798.666381 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 774367606
+
+Average distance ops per query: 77436.760600
+
+Last query distance ops: 52003
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2244.612637 ms
+
+Index build time: 812173.451764 ms
+
+Query execution time: 70798.666381 ms
+
+Total elapsed time: 899787.844783 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 141.245598
+
+Distance ops per second: 10937601.590301
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_090135_233.log
+

@@ -92,6 +92,7 @@ static inline void my_prefetch_l1(const void* ptr) {
 
 // ---------------------------------------------------------
 // 扁平化 HNSW 索引 (Read-Only Optimized) - CSR 格式
+// 【新增】热邻居数据内联存储
 // ---------------------------------------------------------
 class FlatHNSW {
 public:
@@ -106,15 +107,19 @@ public:
     std::vector<float> data; 
     
     // [优化] CSR 存储结构 - 消除 Padding，高度紧凑
-    // l0_offsets: 大小 N+1, l0_offsets[i] 是节点 i 的邻居在 l0_links 中的起始下标
     std::vector<uint64_t> l0_offsets;
-    // l0_links: 紧凑存储所有邻居 ID
     std::vector<int> l0_links;
     
     // 上层图结构 (扁平化存储)
-    std::vector<int> node_levels;        // 每个节点的层级
-    std::vector<int> upper_link_offsets; // 每个节点上层链接在storage中的偏移 (N * max_layer)
-    std::vector<int> upper_link_storage; // 存储格式: [count, nb1, nb2, ...]
+    std::vector<int> node_levels;
+    std::vector<int> upper_link_offsets;
+    std::vector<int> upper_link_storage;
+    
+    // [新增] 热邻居数据内联存储
+    // 每个节点存储前 HOT_NEIGHBORS_COUNT 个最近邻居的向量数据
+    static constexpr int HOT_NEIGHBORS_COUNT = 2;  // 存储最近的2个邻居
+    std::vector<float> hot_neighbor_data;  // size = N * HOT_NEIGHBORS_COUNT * dim
+    std::vector<int> hot_neighbor_ids;     // size = N * HOT_NEIGHBORS_COUNT, 存储对应的邻居ID (-1表示无效)
 
     FlatHNSW(int d) : dim(d), max_m(0), max_m_upper(0), enter_point(-1), num_nodes(0), max_level(0) {}
 
@@ -147,9 +152,23 @@ public:
     inline const float* get_vec(int id) const {
         return data.data() + (size_t)id * dim;
     }
+    
+    // [新增] 获取热邻居数据（内联存储，直接命中）
+    inline const float* get_hot_neighbor_vec(int node_id, int hot_idx) const {
+        return hot_neighbor_data.data() + ((size_t)node_id * HOT_NEIGHBORS_COUNT + hot_idx) * dim;
+    }
+    
+    inline int get_hot_neighbor_id(int node_id, int hot_idx) const {
+        return hot_neighbor_ids[(size_t)node_id * HOT_NEIGHBORS_COUNT + hot_idx];
+    }
 
     inline float dist(int id, const float* q) const {
         return l2sq_100d(get_vec(id), q);
+    }
+    
+    // [新增] 直接从热邻居缓存计算距离
+    inline float dist_hot(int node_id, int hot_idx, const float* q) const {
+        return l2sq_100d(get_hot_neighbor_vec(node_id, hot_idx), q);
     }
     
     inline float distNodes(int id_a, int id_b) const {
@@ -204,9 +223,9 @@ public:
         
         using Pair = std::pair<float, int>;
         
-        static thread_local std::vector<Pair> candidates;      // min-heap
-        static thread_local std::vector<Pair> top_results;     // max-heap
-        static thread_local std::vector<int> expand_queue;     // FIFO扩张队列
+        static thread_local std::vector<Pair> candidates;
+        static thread_local std::vector<Pair> top_results;
+        static thread_local std::vector<int> expand_queue;
         static thread_local TagVisitedList visited;
         
         candidates.clear(); 
@@ -220,7 +239,6 @@ public:
         visited.init(num_nodes);
         visited.advance();
         
-        // 修复：使用正确的类型 uint16_t
         const uint16_t* visited_ptr = visited.data();
         uint16_t cur_tag = visited.currentTag();
 
@@ -230,68 +248,113 @@ public:
         candidates.push_back({d0, ep});
         top_results.push_back({d0, ep});
 
-        float worst_dist = d0;  // top_results 中最差的距离
+        float worst_dist = d0;
 
         auto min_comp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
         auto max_comp = [](const Pair& a, const Pair& b) { return a.first < b.first; };
+        
+        // 辅助 lambda：处理单个结果并更新堆
+        auto push_candidate = [&](float d, int nb) {
+            if ((int)top_results.size() < ef) {
+                top_results.push_back({d, nb});
+                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                if ((int)top_results.size() == ef) {
+                    worst_dist = top_results.front().first;
+                }
+                candidates.push_back({d, nb});
+                std::push_heap(candidates.begin(), candidates.end(), min_comp);
+            } else if (d < worst_dist) {
+                std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                top_results.back() = {d, nb};
+                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                worst_dist = top_results.front().first;
+                
+                candidates.push_back({d, nb});
+                std::push_heap(candidates.begin(), candidates.end(), min_comp);
+            }
+        };
 
         while (!candidates.empty()) {
             std::pop_heap(candidates.begin(), candidates.end(), min_comp);
             Pair curr = candidates.back();
             candidates.pop_back();
 
-            // 【关键剪枝】候选比 worst_topk 还差，无需扩张
             if ((int)top_results.size() >= ef && curr.first > worst_dist) {
                 break;
             }
 
-            // 将当前点加入扩张队列
             expand_queue.clear();
             expand_queue.push_back(curr.second);
 
-            // 处理扩张队列
             for (size_t qi = 0; qi < expand_queue.size(); ++qi) {
                 int x = expand_queue[qi];
                 int count;
                 const int* links = get_l0_links(x, count);
 
-                // 预取
-                constexpr int pf_lookahead = 7;
-                for (int i = 0; i < count && i < pf_lookahead; ++i) {
+                // [优化] 先处理热邻居（内联数据，直接命中L1 Cache）
+                for (int hi = 0; hi < HOT_NEIGHBORS_COUNT; ++hi) {
+                    int hot_nb = get_hot_neighbor_id(x, hi);
+                    if (hot_nb < 0) continue;  // 无效
+                    if (visited_ptr[hot_nb] == cur_tag) continue;
+                    visited.mark(hot_nb);
+                    
+                    // 直接从内联数据计算距离，无需访问主 data 数组
+                    float d = dist_hot(x, hi, q);
+                    push_candidate(d, hot_nb);
+                }
+
+                // 预取非热邻居
+                constexpr int pf_lookahead = 6;
+                int start_idx = HOT_NEIGHBORS_COUNT;  // 跳过已处理的热邻居
+                for (int i = start_idx; i < count && i < start_idx + pf_lookahead; ++i) {
                     my_prefetch_l1(get_vec(links[i]));
                 }
 
-                for (int i = 0; i < count; ++i) {
-                    if (i + pf_lookahead < count) {
+                int i = start_idx;
+                // 2-way Batching 处理剩余邻居
+                for (; i <= count - 2; i += 2) {
+                    if (i + pf_lookahead < count) 
                         my_prefetch_l1(get_vec(links[i + pf_lookahead]));
-                    }
+                    if (i + pf_lookahead + 1 < count) 
+                        my_prefetch_l1(get_vec(links[i + pf_lookahead + 1]));
 
-                    int nb = links[i];
-                    if (visited_ptr[nb] == cur_tag) continue;
-                    visited.mark(nb);
+                    int nb1 = links[i];
+                    int nb2 = links[i+1];
+                    
+                    bool v1 = (visited_ptr[nb1] == cur_tag);
+                    bool v2 = (visited_ptr[nb2] == cur_tag);
+                    
+                    if (v1 && v2) continue;
 
-                    float d = dist(nb, q);
+                    if (!v1) visited.mark(nb1);
+                    if (!v2) visited.mark(nb2);
 
-                    // 只有可能进入 top-k 的点才加入候选队列
-                    if ((int)top_results.size() < ef) {
-                        top_results.push_back({d, nb});
-                        std::push_heap(top_results.begin(), top_results.end(), max_comp);
-                        if ((int)top_results.size() == ef) {
-                            worst_dist = top_results.front().first;
+                    float d1, d2;
+
+                    if (!v1 && !v2) {
+                        l2sq_100d_2x(q, get_vec(nb1), get_vec(nb2), d1, d2);
+                        push_candidate(d1, nb1);
+                        push_candidate(d2, nb2);
+                    } else {
+                        if (!v1) {
+                            d1 = dist(nb1, q);
+                            push_candidate(d1, nb1);
                         }
-                        candidates.push_back({d, nb});
-                        std::push_heap(candidates.begin(), candidates.end(), min_comp);
-                    } else if (d < worst_dist) {
-                        // 替换最差的
-                        std::pop_heap(top_results.begin(), top_results.end(), max_comp);
-                        top_results.back() = {d, nb};
-                        std::push_heap(top_results.begin(), top_results.end(), max_comp);
-                        worst_dist = top_results.front().first;
-                        
-                        candidates.push_back({d, nb});
-                        std::push_heap(candidates.begin(), candidates.end(), min_comp);
+                        if (!v2) {
+                            d2 = dist(nb2, q);
+                            push_candidate(d2, nb2);
+                        }
                     }
-                    // 否则跳过，不加入候选队列（核心优化）
+                }
+
+                // 处理剩余的最后 1 个
+                for (; i < count; ++i) {
+                    int nb = links[i];
+                    if (visited_ptr[nb] != cur_tag) {
+                        visited.mark(nb);
+                        float d = dist(nb, q);
+                        push_candidate(d, nb);
+                    }
                 }
             }
         }
@@ -700,7 +763,7 @@ public:
 
 // ---------------------------------------------------------
 // 转换函数：将动态图转换为静态扁平化图 - CSR 格式
-// 【优化1】邻居排序：按距离升序排列邻居
+// 【优化1】邻居排序 + 【新增】热邻居数据内联
 // ---------------------------------------------------------
 static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
     FlatHNSW* flat = new FlatHNSW(src->dim);
@@ -724,7 +787,6 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
     for (int i = 0; i < N; ++i) {
         const float* node_vec = flat->data.data() + (size_t)i * flat->dim;
         
-        // L0层邻居排序
         auto& l0_links = src->nodes[i]->links[0];
         std::vector<std::pair<float, int>> sorted_neighbors;
         sorted_neighbors.reserve(l0_links.size());
@@ -776,6 +838,37 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
     }
     flat->l0_offsets[N] = current_offset;
 
+    // 【新增】构建热邻居数据内联存储
+    constexpr int HOT_COUNT = FlatHNSW::HOT_NEIGHBORS_COUNT;
+    flat->hot_neighbor_data.resize((size_t)N * HOT_COUNT * flat->dim);
+    flat->hot_neighbor_ids.resize((size_t)N * HOT_COUNT, -1);
+    
+    for (int i = 0; i < N; ++i) {
+        const auto& src_links = src->nodes[i]->links[0];
+        int num_hot = std::min((int)src_links.size(), HOT_COUNT);
+        
+        for (int hi = 0; hi < HOT_COUNT; ++hi) {
+            size_t hot_data_offset = ((size_t)i * HOT_COUNT + hi) * flat->dim;
+            
+            if (hi < num_hot) {
+                int nb = src_links[hi];  // 前 HOT_COUNT 个邻居（已按距离排序，最近的在前）
+                flat->hot_neighbor_ids[(size_t)i * HOT_COUNT + hi] = nb;
+                
+                // 复制邻居向量数据到内联存储
+                const float* nb_vec = flat->data.data() + (size_t)nb * flat->dim;
+                std::memcpy(flat->hot_neighbor_data.data() + hot_data_offset,
+                           nb_vec,
+                           flat->dim * sizeof(float));
+            } else {
+                // 无效槽位，填充零
+                flat->hot_neighbor_ids[(size_t)i * HOT_COUNT + hi] = -1;
+                std::memset(flat->hot_neighbor_data.data() + hot_data_offset,
+                           0,
+                           flat->dim * sizeof(float));
+            }
+        }
+    }
+
     // 上层图结构
     flat->node_levels.resize(N);
     flat->upper_link_offsets.resize((size_t)N * (flat->max_level + 1), -1);
@@ -800,7 +893,10 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
     }
 
     if (DEBUG_TIMING) {
+        size_t hot_data_mb = ((size_t)N * HOT_COUNT * flat->dim * sizeof(float)) / 1024 / 1024;
         std::cout << "[FlatHNSW-CSR] Converted " << N << " nodes (with neighbor reordering)" << std::endl;
+        std::cout << "[FlatHNSW-CSR] Hot neighbor cache: " << HOT_COUNT << " neighbors/node, " 
+                  << hot_data_mb << " MB" << std::endl;
     }
     
     return flat;

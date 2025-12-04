@@ -72,3 +72,101 @@
 [OUT] [Timing] Flat Conversion: 9442.92 ms
 [OUT] [Cache] Saved index to: cache/hnsw_n1183514_d100_M63_L3_efc661.idx
 [OUT] [Cache] Save time: 3350.62 ms
+[OUT] ✓ Index built.
+[OUT]   build_time(local)=826744.565765 ms
+[OUT]   build_time(internal)=812173.451764 ms
+[OUT] 
+[OUT] 
+[OUT] ========== GRAPH QUALITY ==========
+[OUT] 
+[OUT]   num_nodes: 1183514
+[OUT] 
+[OUT]   max_level (entry point): 3
+[OUT] 
+[OUT]   actual_max_layer: 3
+[OUT] 
+[OUT]   avg_degree_l0: 57.447374
+[OUT] 
+[OUT]   avg_degree_upper: 0.129794
+[OUT] 
+[OUT] 
+[OUT]   Layer Distribution:
+[OUT] 
+[OUT]     L0: 1183514 nodes (100.00%)
+[OUT] 
+[OUT]     L1: 18751 nodes (1.58%)
+[OUT] 
+[OUT]     L2: 307 nodes (0.03%)
+[OUT] 
+[OUT]     L3: 3 nodes (0.00%)
+[OUT] 
+[OUT] 
+[OUT] 
+[OUT] Executing queries...
+[OUT] 
+[OUT]   Processed 1000 queries
+[OUT] 
+[OUT]   Processed 2000 queries
+[OUT] 
+[OUT]   Processed 3000 queries
+[OUT] 
+[OUT]   Processed 4000 queries
+[OUT] 
+[OUT]   Processed 5000 queries
+[OUT] 
+[OUT]   Processed 6000 queries
+[OUT] 
+[OUT]   Processed 7000 queries
+[OUT] 
+[OUT]   Processed 8000 queries
+[OUT] 
+[OUT]   Processed 9000 queries
+[OUT] 
+[OUT]   Processed 10000 queries
+[OUT] 
+[OUT] 
+[OUT] ========== RESULTS ==========
+[OUT] 
+[OUT] Total queries: 10000
+[OUT] 
+[OUT] Average recall@10: 0.998900
+[OUT] 
+[OUT] Average query time: 7.079867 ms
+[OUT] 
+[OUT] Total query time: 70798.666381 ms
+[OUT] 
+[OUT] 
+[OUT] ========== DISTANCE STATISTICS ==========
+[OUT] 
+[OUT] Total queries reported by index: 10000
+[OUT] 
+[OUT] Total distance computations: 774367606
+[OUT] 
+[OUT] Average distance ops per query: 77436.760600
+[OUT] 
+[OUT] Last query distance ops: 52003
+[OUT] 
+[OUT] 
+[OUT] ========== PERFORMANCE SUMMARY ==========
+[OUT] 
+[OUT] Data loading time: 2244.612637 ms
+[OUT] 
+[OUT] Index build time: 812173.451764 ms
+[OUT] 
+[OUT] Query execution time: 70798.666381 ms
+[OUT] 
+[OUT] Total elapsed time: 899787.844783 ms
+[OUT] 
+[OUT] 
+[OUT] ========== EFFICIENCY METRICS ==========
+[OUT] 
+[OUT] Queries per second: 141.245598
+[OUT] 
+[OUT] Distance ops per second: 10937601.590301
+[OUT] 
+[OUT] 
+[OUT] ========== END OF LOG ==========
+[OUT] 
+[OUT] Log saved to: Log/run_20251204_090135_233.log
+[OUT] 
+   [RESULT] Rec=0.9989 Time=7.0799ms

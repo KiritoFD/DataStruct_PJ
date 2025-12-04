@@ -14,8 +14,8 @@ import sys
 
 # ==================== 配置区 ====================
 BIN_PATH = "./hng1"
-MIN_RECALL = 0.99          # 约束条件下界
-TARGET_RECALL = 0.99         # EFS 二分搜索目标召回率
+MIN_RECALL = 0.98          # 约束条件下界
+TARGET_RECALL = 0.98         # EFS 二分搜索目标召回率
 FIXED_K = 10
 BATCH_SIZE = 20
 NUM_RUNS = 1

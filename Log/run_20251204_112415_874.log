@@ -1,0 +1,134 @@
+========== HNSW Search Test ==========
+
+Timestamp: Thu Dec  4 11:24:15 2025
+
+Command line arguments:
+  argv[0]: ./hng1
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: -1
+  Max layer: -1
+  EFC: -1
+  EFS: -1
+  Threads: -1
+  Debug: -1
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 2205.921086 ms
+
+Loading query vectors...
+✓ Queries loaded in 86.694288 ms
+
+Loading ground truth...
+✓ Truth loaded in 71.278541 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=3832.328389 ms
+  build_time(internal)=3827.230956 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 4
+
+  actual_max_layer: 4
+
+  avg_degree_l0: 56.845631
+
+  avg_degree_upper: 0.141073
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 27546 nodes (2.33%)
+
+    L2: 625 nodes (0.05%)
+
+    L3: 12 nodes (0.00%)
+
+    L4: 1 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.979940
+
+Average query time: 1.333934 ms
+
+Total query time: 13339.336590 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 191667112
+
+Average distance ops per query: 19166.711200
+
+Last query distance ops: 16026
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2363.893915 ms
+
+Index build time: 3827.230956 ms
+
+Query execution time: 13339.336590 ms
+
+Total elapsed time: 19535.558894 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 749.662469
+
+Distance ops per second: 14368564.036662
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_112415_874.log
+
