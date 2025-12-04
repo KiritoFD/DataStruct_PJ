@@ -23,7 +23,7 @@ NUM_RUNS = 1
 # --- 初始点 (只有前三个参数) ---
 INITIAL_M = 51
 INITIAL_MAX_LAYER = 7
-INITIAL_EFC = 603
+INITIAL_EFC = 648
 
 # --- 参数搜索范围 ---
 M_RANGE = (16, 64)
@@ -35,9 +35,8 @@ LOG_DIR = "Log"
 RESULT_CSV = "optuna_hng.csv"
 
 # --- 差异化惩罚常量 ---
-PENALTY_TIER_1 = 100000.0
-PENALTY_TIER_2 = 50000.0
-PENALTY_TIER_3 = 10000.0
+# 不可行解的惩罚：使其分数远大于任何可行解的时间
+INFEASIBLE_PENALTY_BASE = 1000000.0  # 基础惩罚，确保不可行解永远比可行解差
 
 # --- 全局缓存 ---
 # 完整缓存: (m, ml, efc, efs) -> (recall, time_ms, build_ms)
@@ -194,16 +193,12 @@ def run_test(m: int, max_layer: int, efc: int, efs: int, silent: bool = False) -
 
 def save_result_to_csv(m: int, ml: int, efc: int, efs: int, recall: float, time_ms: float, build_ms: float, study_name: str = 'efs_search'):
     """保存单条结果到 CSV"""
+    # 与 objective 函数一致的评分逻辑
     if recall > MIN_RECALL:
         score = time_ms
     else:
         gap = MIN_RECALL - recall
-        if gap >= 0.0099:
-            score = PENALTY_TIER_1 * (1.0 + gap * 100.0)
-        elif gap >= 0.0049:
-            score = PENALTY_TIER_2 * (1.0 + gap * 100.0)
-        else:
-            score = PENALTY_TIER_3 * (1.0 + gap * 100.0)
+        score = INFEASIBLE_PENALTY_BASE + gap * 10000.0
     
     data = {
         'timestamp': datetime.now().isoformat(),
@@ -230,7 +225,8 @@ def save_result_to_csv(m: int, ml: int, efc: int, efs: int, recall: float, time_
 
 def binary_search_optimal_efs(m: int, max_layer: int, efc: int, target_recall: float = TARGET_RECALL) -> Tuple[int, float, float]:
     """
-    二分搜索找到刚好满足 target_recall 的最小 EFS
+    二分搜索找到满足 target_recall 的 EFS 范围，
+    然后在所有满足召回率的 EFS 中，返回查询时间最短的那个。
     返回: (optimal_efs, recall, time_ms)
     """
     graph_key = (m, max_layer, efc)
@@ -238,25 +234,28 @@ def binary_search_optimal_efs(m: int, max_layer: int, efc: int, target_recall: f
     # 检查图缓存
     if graph_key in GRAPH_CACHE:
         cached_efs, cached_recall, cached_time = GRAPH_CACHE[graph_key]
-        print(f"   [GRAPH CACHE] M={m}, ML={max_layer}, EFC={efc} -> EFS={cached_efs}, Rec={cached_recall:.4f}")
+        print(f"   [GRAPH CACHE] M={m}, ML={max_layer}, EFC={efc} -> EFS={cached_efs}, Rec={cached_recall:.4f}, Time={cached_time:.4f}ms")
         return cached_efs, cached_recall, cached_time
     
     print(f"   🔍 Binary search EFS for M={m}, ML={max_layer}, EFC={efc}, target={target_recall}")
     
     lo, hi = EFS_RANGE[0], EFS_RANGE[1]
-    best_efs, best_recall, best_time = hi, 0.0, 99999.0
+    
+    # 收集所有满足召回率的结果: [(efs, recall, time_ms), ...]
+    feasible_results = []
     
     # 先测试最大 EFS，确认图能达到目标召回率
     recall, time_ms, build_ms = run_test(m, max_layer, efc, hi, silent=True)
     save_result_to_csv(m, max_layer, efc, hi, recall, time_ms, build_ms)
     
+    if recall >= target_recall:
+        feasible_results.append((hi, recall, time_ms))
+    
     if recall < target_recall:
         print(f"   ❌ Max EFS={hi} only gets Recall={recall:.4f}, graph cannot meet target")
         return hi, recall, time_ms
     
-    best_efs, best_recall, best_time = hi, recall, time_ms
-    
-    # 二分搜索
+    # 二分搜索找到临界点
     while lo < hi:
         mid = (lo + hi) // 2
         
@@ -266,15 +265,33 @@ def binary_search_optimal_efs(m: int, max_layer: int, efc: int, target_recall: f
         print(f"      EFS={mid} -> Recall={recall:.4f}, Time={time_ms:.4f}ms")
         
         if recall >= target_recall:
-            best_efs, best_recall, best_time = mid, recall, time_ms
+            feasible_results.append((mid, recall, time_ms))
             hi = mid
         else:
             lo = mid + 1
     
+    # 从缓存中补充：查找该图配置下所有满足召回率的测试结果
+    for (cm, cml, cefc, cefs), (crec, ctime, cbuild) in CACHE.items():
+        if cm == m and cml == max_layer and cefc == efc and crec >= target_recall:
+            # 检查是否已在 feasible_results 中
+            if not any(f[0] == cefs for f in feasible_results):
+                feasible_results.append((cefs, crec, ctime))
+    
+    if not feasible_results:
+        # 不应该到这里，但保险起见
+        print(f"   ❌ No feasible EFS found")
+        return hi, 0.0, 99999.0
+    
+    # 在所有满足召回率的结果中，找查询时间最短的
+    best = min(feasible_results, key=lambda x: x[2])  # 按 time_ms 排序
+    best_efs, best_recall, best_time = best
+    
     # 更新图缓存
     GRAPH_CACHE[graph_key] = (best_efs, best_recall, best_time)
     
-    print(f"   ✅ Optimal: EFS={best_efs} -> Recall={best_recall:.4f}, Time={best_time:.4f}ms")
+    print(f"   ✅ Best feasible: EFS={best_efs} -> Recall={best_recall:.4f}, Time={best_time:.4f}ms")
+    print(f"      (Found {len(feasible_results)} feasible EFS values)")
+    
     return best_efs, best_recall, best_time
 
 def restore_trials_to_study(study: optuna.Study, trial_records: Dict):
@@ -295,16 +312,12 @@ def restore_trials_to_study(study: optuna.Study, trial_records: Dict):
             recall = user_attrs.get('avg_recall', 0)
             time_ms = user_attrs.get('avg_time_ms', 99999)
             
+            # 与 objective 函数一致的评分逻辑
             if recall > MIN_RECALL:
                 value = time_ms
             else:
                 gap = MIN_RECALL - recall
-                if gap >= 0.0099:
-                    value = PENALTY_TIER_1 * (1.0 + gap * 100.0)
-                elif gap >= 0.0049:
-                    value = PENALTY_TIER_2 * (1.0 + gap * 100.0)
-                else:
-                    value = PENALTY_TIER_3 * (1.0 + gap * 100.0)
+                value = INFEASIBLE_PENALTY_BASE + gap * 10000.0
 
             frozen_trial = optuna.trial.FrozenTrial(
                 number=trial_id,
@@ -373,6 +386,10 @@ def objective(trial: optuna.trial.Trial) -> float:
     """
     目标函数 - 只优化前三个参数 (M, max_layer, efc)
     EFS 通过二分搜索自动找到最小满足召回率的值
+    
+    目标：在召回率 > MIN_RECALL 的可行解中，最小化查询时间
+    - 可行解 (recall > 0.99): 返回 time_ms
+    - 不可行解 (recall <= 0.99): 返回大惩罚值，确保永远不会被选中
     """
     m = trial.suggest_int("m", M_RANGE[0], M_RANGE[1])
     max_layer = trial.suggest_int("max_layer", MAX_LAYER_RANGE[0], MAX_LAYER_RANGE[1])
@@ -391,19 +408,17 @@ def objective(trial: optuna.trial.Trial) -> float:
     trial.set_user_attr("build_time_ms", build_ms)
     trial.set_user_attr("opt_efs", opt_efs)
 
-    # 计算分数
+    # 核心逻辑：可行解返回时间，不可行解返回大惩罚
     if recall > MIN_RECALL:
+        # 可行解：直接返回查询时间作为优化目标
         score = time_ms
-        print(f"   ✅ FEASIBLE: EFS={opt_efs}, Recall={recall:.4f}, Time={time_ms:.4f}ms")
+        print(f"   ✅ FEASIBLE: EFS={opt_efs}, Recall={recall:.4f}, Time={time_ms:.4f}ms -> Score={score:.4f}")
     else:
+        # 不可行解：返回一个足够大的惩罚值
+        # 惩罚 = 基础惩罚 + 与目标召回率的差距（使更接近目标的解惩罚稍小，引导搜索方向）
         gap = MIN_RECALL - recall
-        if gap >= 0.0099:
-            score = PENALTY_TIER_1 * (1.0 + gap * 100.0)
-        elif gap >= 0.0049:
-            score = PENALTY_TIER_2 * (1.0 + gap * 100.0)
-        else:
-            score = PENALTY_TIER_3 * (1.0 + gap * 100.0)
-        print(f"   ❌ INFEASIBLE: EFS={opt_efs}, Recall={recall:.4f}, Penalty={score:.0f}")
+        score = INFEASIBLE_PENALTY_BASE + gap * 10000.0
+        print(f"   ❌ INFEASIBLE: EFS={opt_efs}, Recall={recall:.4f} (gap={gap:.4f}) -> Penalty={score:.0f}")
     
     return score
 
