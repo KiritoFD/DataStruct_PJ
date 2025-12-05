@@ -1,0 +1,112 @@
+========== HNSW Search Test ==========
+
+Timestamp: Thu Dec  4 14:46:38 2025
+
+Command line arguments:
+  argv[0]: ./hng1
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+========== HNSW Search Test ==========
+
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+Timestamp: Thu Dec  4 14:46:38 2025
+
+  argv[6]: data_o/glove/truth.txt
+Command line arguments:
+  argv[7]: --k
+  argv[0]: ./hng1
+  argv[8]: 10
+  argv[1]: --base
+  argv[9]: --m
+  argv[2]: data_o/glove/base.txt
+  argv[10]: 43
+  argv[3]: --query
+  argv[11]: --max_layer
+  argv[4]: data_o/glove/query.txt
+  argv[12]: 10
+  argv[13]: --efc
+  argv[5]: --truth
+  argv[14]: 735
+  argv[6]: data_o/glove/truth.txt
+  argv[15]: --efs
+  argv[7]: --k
+  argv[16]: 500
+  argv[8]: 10
+  argv[17]: --threads
+  argv[9]: --m
+  argv[18]: 32
+  argv[10]: 43
+  argv[19]: --ablate_csr
+  argv[11]: --max_layer
+  argv[20]: 0
+  argv[12]: 10
+  argv[21]: --ablate_prefetch
+  argv[13]: --efc
+  argv[22]: 0
+  argv[14]: 735
+  argv[23]: --ablate_simd
+  argv[15]: --efs
+  argv[24]: 0
+  argv[16]: 600
+  argv[17]: --threads
+  argv[25]: --ablate_pruning
+  argv[18]: 32
+  argv[26]: 1
+  argv[19]: --ablate_csr
+  argv[27]: --ablate_heap
+  argv[20]: 0
+  argv[21]: --ablate_prefetch
+  argv[28]: 0
+  argv[29]: --ablate_flat_index
+  argv[22]: 0
+  argv[30]: 0
+  argv[23]: --ablate_simd
+  argv[31]: --ablate_reorder
+  argv[24]: 0
+  argv[32]: 0
+  argv[25]: --ablate_pruning
+
+Configuration:
+  argv[26]: 0
+  Base file: data_o/glove/base.txt
+  argv[27]: --ablate_heap
+  Query file: data_o/glove/query.txt
+  argv[28]: 1
+  Truth file: data_o/glove/truth.txt
+  argv[29]: --ablate_flat_index
+  K: 10
+  argv[30]: 0
+  M: 43
+  argv[31]: --ablate_reorder
+  Max layer: 10
+  argv[32]: 0
+  EFC: 735
+
+Configuration:
+  EFS: 500
+  Base file: data_o/glove/base.txt
+  Threads: 32
+  Query file: data_o/glove/query.txt
+  Debug: -1
+  Truth file: data_o/glove/truth.txt
+
+  K: 10
+HNSW parameters set.
+
+  M: 43
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=1, heap=0
+
+  Max layer: 10
+Loading base vectors...
+  EFC: 735
+  EFS: 600
+  Threads: 32
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=1
+
+Loading base vectors...

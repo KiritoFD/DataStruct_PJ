@@ -1,0 +1,1648 @@
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+========== HNSW Search Test ==========
+
+Command line arguments:
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+Timestamp: Thu Dec  4 20:34:50 2025
+
+  argv[0]: ./hng1
+Command line arguments:
+Command line arguments:
+Command line arguments:
+Command line arguments:
+Command line arguments:
+Command line arguments:
+Command line arguments:
+Command line arguments:
+Command line arguments:
+  argv[1]: --base
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[0]: ./hng1
+  argv[2]: data_o/glove/base.txt
+  argv[1]: --base
+  argv[1]: --base
+  argv[1]: --base
+  argv[1]: --base
+  argv[1]: --base
+  argv[1]: --base
+  argv[1]: --base
+  argv[1]: --base
+  argv[1]: --base
+  argv[3]: --query
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[4]: data_o/glove/query.txt
+  argv[3]: --query
+  argv[3]: --query
+  argv[3]: --query
+  argv[3]: --query
+  argv[3]: --query
+  argv[3]: --query
+  argv[3]: --query
+  argv[3]: --query
+  argv[3]: --query
+  argv[5]: --truth
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[7]: --k
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[8]: 10
+  argv[7]: --k
+  argv[7]: --k
+  argv[7]: --k
+  argv[7]: --k
+  argv[7]: --k
+  argv[7]: --k
+  argv[7]: --k
+  argv[7]: --k
+  argv[7]: --k
+  argv[9]: --m
+  argv[8]: 10
+  argv[8]: 10
+  argv[8]: 10
+  argv[8]: 10
+  argv[8]: 10
+  argv[8]: 10
+  argv[8]: 10
+  argv[8]: 10
+  argv[8]: 10
+  argv[10]: 59
+  argv[9]: --m
+  argv[9]: --m
+  argv[9]: --m
+  argv[9]: --m
+  argv[9]: --m
+  argv[9]: --m
+  argv[9]: --m
+  argv[9]: --m
+  argv[9]: --m
+  argv[11]: --max_layer
+  argv[10]: 59
+  argv[10]: 59
+  argv[10]: 59
+  argv[10]: 59
+  argv[10]: 59
+  argv[10]: 59
+  argv[10]: 59
+  argv[10]: 59
+  argv[10]: 59
+  argv[12]: 5
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[13]: --efc
+  argv[12]: 5
+  argv[12]: 5
+  argv[12]: 5
+  argv[12]: 5
+  argv[12]: 5
+  argv[12]: 5
+  argv[12]: 5
+  argv[12]: 5
+  argv[12]: 5
+  argv[14]: 763
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[15]: --efs
+  argv[14]: 763
+  argv[14]: 763
+  argv[14]: 763
+  argv[14]: 763
+  argv[14]: 763
+  argv[14]: 763
+  argv[14]: 763
+  argv[14]: 763
+  argv[14]: 763
+  argv[16]: 425
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[17]: --threads
+  argv[16]: 500
+  argv[16]: 425
+  argv[16]: 425
+  argv[16]: 425
+  argv[16]: 500
+  argv[16]: 425
+  argv[16]: 425
+  argv[16]: 425
+  argv[16]: 425
+  argv[18]: 32
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[19]: --ablate_csr
+  argv[18]: 32
+  argv[18]: 32
+  argv[18]: 32
+  argv[18]: 32
+  argv[18]: 32
+  argv[18]: 32
+  argv[18]: 32
+  argv[18]: 32
+  argv[18]: 32
+  argv[20]: 0
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[19]: --ablate_csr
+  argv[21]: --ablate_prefetch
+  argv[20]: 0
+  argv[20]: 0
+  argv[20]: 0
+  argv[20]: 1
+  argv[20]: 1
+  argv[20]: 0
+  argv[20]: 0
+  argv[20]: 0
+  argv[20]: 0
+  argv[22]: 0
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[21]: --ablate_prefetch
+  argv[23]: --ablate_simd
+  argv[22]: 0
+  argv[22]: 0
+  argv[22]: 0
+  argv[22]: 0
+  argv[22]: 0
+  argv[22]: 0
+  argv[22]: 0
+  argv[22]: 0
+  argv[22]: 1
+  argv[24]: 0
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[23]: --ablate_simd
+  argv[25]: --ablate_pruning
+  argv[24]: 0
+  argv[24]: 0
+  argv[24]: 1
+  argv[24]: 0
+  argv[24]: 0
+  argv[24]: 0
+  argv[24]: 0
+  argv[24]: 0
+  argv[24]: 0
+  argv[26]: 0
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[25]: --ablate_pruning
+  argv[27]: --ablate_heap
+  argv[26]: 0
+  argv[26]: 0
+  argv[26]: 0
+  argv[26]: 0
+  argv[26]: 0
+  argv[26]: 1
+  argv[26]: 0
+  argv[26]: 0
+  argv[26]: 0
+  argv[28]: 0
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[27]: --ablate_heap
+  argv[29]: --ablate_flat_index
+  argv[28]: 0
+  argv[28]: 0
+  argv[28]: 0
+  argv[28]: 0
+  argv[28]: 0
+  argv[28]: 0
+  argv[28]: 0
+  argv[28]: 0
+  argv[28]: 0
+  argv[30]: 0
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[29]: --ablate_flat_index
+  argv[31]: --ablate_reorder
+  argv[30]: 0
+  argv[30]: 1
+  argv[30]: 0
+  argv[30]: 0
+  argv[30]: 0
+  argv[30]: 0
+  argv[30]: 0
+  argv[30]: 1
+  argv[30]: 0
+  argv[32]: 1
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+  argv[31]: --ablate_reorder
+
+Configuration:
+  argv[32]: 0
+  argv[32]: 0
+  argv[32]: 0
+  argv[32]: 0
+  argv[32]: 0
+  argv[32]: 0
+  argv[32]: 0
+  argv[32]: 0
+  argv[32]: 0
+  Base file: data_o/glove/base.txt
+
+Configuration:
+
+Configuration:
+
+Configuration:
+
+Configuration:
+
+Configuration:
+
+Configuration:
+
+Configuration:
+
+Configuration:
+
+Configuration:
+  Query file: data_o/glove/query.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Truth file: data_o/glove/truth.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  K: 10
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  M: 59
+  K: 10
+  K: 10
+  K: 10
+  K: 10
+  K: 10
+  K: 10
+  K: 10
+  K: 10
+  K: 10
+  Max layer: 5
+  M: 59
+  M: 59
+  M: 59
+  M: 59
+  M: 59
+  M: 59
+  M: 59
+  M: 59
+  M: 59
+  EFC: 763
+  Max layer: 5
+  Max layer: 5
+  Max layer: 5
+  Max layer: 5
+  Max layer: 5
+  Max layer: 5
+  Max layer: 5
+  Max layer: 5
+  Max layer: 5
+  EFS: 425
+  EFC: 763
+  EFC: 763
+  EFC: 763
+  EFC: 763
+  EFC: 763
+  EFC: 763
+  EFC: 763
+  EFC: 763
+  EFC: 763
+  Threads: 32
+  EFS: 500
+  EFS: 425
+  EFS: 425
+  EFS: 425
+  EFS: 500
+  EFS: 425
+  EFS: 425
+  EFS: 425
+  EFS: 425
+  Debug: -1
+  Threads: 32
+  Threads: 32
+  Threads: 32
+  Threads: 32
+  Threads: 32
+  Threads: 32
+  Threads: 32
+  Threads: 32
+  Threads: 32
+
+  Debug: -1
+  Debug: -1
+  Debug: -1
+  Debug: -1
+  Debug: -1
+  Debug: -1
+  Debug: -1
+  Debug: -1
+  Debug: -1
+HNSW parameters set.
+
+
+
+
+
+
+
+
+
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+Loading base vectors...
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=0, prefetch=0, simd=1, pruning=0, heap=0
+
+Ablation flags: csr=1, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=1, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=1, heap=0
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=0, prefetch=1, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+Loading base vectors...
+Loading base vectors...
+Loading base vectors...
+Loading base vectors...
+Loading base vectors...
+Loading base vectors...
+Loading base vectors...
+Loading base vectors...
+✓ Base loaded in 20322.191021 ms
+
+Loading query vectors...
+✓ Base loaded in 20346.281946 ms
+
+Loading query vectors...
+✓ Base loaded in 20352.162729 ms
+
+Loading query vectors...
+✓ Base loaded in 20354.012287 ms
+
+Loading query vectors...
+✓ Base loaded in 20389.623721 ms
+
+Loading query vectors...
+✓ Base loaded in 20413.113019 ms
+
+Loading query vectors...
+✓ Base loaded in 20419.453582 ms
+
+Loading query vectors...
+✓ Base loaded in 20429.796744 ms
+
+✓ Base loaded in 20429.806694 ms
+
+Loading query vectors...
+Loading query vectors...
+✓ Base loaded in 20436.461320 ms
+
+Loading query vectors...
+✓ Queries loaded in 286.988054 ms
+
+Loading ground truth...
+✓ Queries loaded in 270.220251 ms
+
+Loading ground truth...
+✓ Queries loaded in 265.789730 ms
+
+Loading ground truth...
+✓ Queries loaded in 264.851185 ms
+
+Loading ground truth...
+✓ Queries loaded in 246.138773 ms
+
+Loading ground truth...
+✓ Queries loaded in 230.429431 ms
+
+Loading ground truth...
+✓ Queries loaded in 229.002552 ms
+
+Loading ground truth...
+✓ Queries loaded in 227.142073 ms
+
+Loading ground truth...
+✓ Queries loaded in 229.675003 ms
+
+Loading ground truth...
+✓ Queries loaded in 228.723243 ms
+
+Loading ground truth...
+✓ Truth loaded in 237.394003 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 241.371516 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 242.341702 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+✓ Truth loaded in 242.109561 ms
+
+Building HNSW index...
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 263.201375 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 276.824216 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 280.915209 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 299.656477 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 304.030999 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 327.884216 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=32501.543824 ms
+  build_time(internal)=32490.748442 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 60.350342
+
+  avg_degree_upper: 0.146105
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 20263 nodes (1.71%)
+
+    L2: 320 nodes (0.03%)
+
+    L3: 5 nodes (0.00%)
+
+
+
+Executing queries...
+
+✓ Index built.
+  build_time(local)=32592.126848 ms
+  build_time(internal)=32579.424661 ms
+
+
+========== GRAPH QUALITY ==========
+
+✓ Index built.
+  build_time(local)=32626.131244 ms
+  build_time(internal)=32616.279748 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 60.350342
+
+  avg_degree_upper: 0.146105
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 20263 nodes (1.71%)
+
+✓ Index built.
+  build_time(local)=32647.955757 ms
+  build_time(internal)=32637.959747 ms
+
+    L2: 320 nodes (0.03%)
+
+
+========== GRAPH QUALITY ==========
+
+    L3: 5 nodes (0.00%)
+
+
+
+Executing queries...
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 60.350342
+
+  avg_degree_upper: 0.146105
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 20263 nodes (1.71%)
+
+    L2: 320 nodes (0.03%)
+
+    L3: 5 nodes (0.00%)
+
+
+
+Executing queries...
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 60.350342
+
+  avg_degree_upper: 0.146105
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 20263 nodes (1.71%)
+
+    L2: 320 nodes (0.03%)
+
+    L3: 5 nodes (0.00%)
+
+
+
+Executing queries...
+
+✓ Index built.
+  build_time(local)=32671.203801 ms
+  build_time(internal)=32656.373109 ms
+
+✓ Index built.
+  build_time(local)=32706.296764 ms
+  build_time(internal)=32691.597982 ms
+
+
+========== GRAPH QUALITY ==========
+
+
+========== GRAPH QUALITY ==========
+
+✓ Index built.
+  build_time(local)=32730.993296 ms
+  build_time(internal)=32719.602318 ms
+
+
+========== GRAPH QUALITY ==========
+
+✓ Index built.
+  build_time(local)=32659.813585 ms
+  build_time(internal)=32647.064900 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 60.350342
+
+  avg_degree_upper: 0.146105
+
+  num_nodes: 1183514
+
+
+  Layer Distribution:
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 60.350342
+
+    L0: 1183514 nodes (100.00%)
+
+  avg_degree_upper: 0.146105
+
+
+  Layer Distribution:
+
+    L1: 20263 nodes (1.71%)
+
+    L0: 1183514 nodes (100.00%)
+
+    L2: 320 nodes (0.03%)
+
+    L1: 20263 nodes (1.71%)
+
+    L3: 5 nodes (0.00%)
+
+    L2: 320 nodes (0.03%)
+
+
+
+Executing queries...
+
+    L3: 5 nodes (0.00%)
+
+
+
+Executing queries...
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 60.350342
+
+  avg_degree_upper: 0.146105
+
+  num_nodes: 1183514
+
+
+  Layer Distribution:
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+    L0: 1183514 nodes (100.00%)
+
+  avg_degree_l0: 60.350342
+
+  avg_degree_upper: 0.146105
+
+
+  Layer Distribution:
+
+    L1: 20263 nodes (1.71%)
+
+    L2: 320 nodes (0.03%)
+
+    L3: 5 nodes (0.00%)
+
+    L0: 1183514 nodes (100.00%)
+
+
+
+    L1: 20263 nodes (1.71%)
+
+Executing queries...
+
+    L2: 320 nodes (0.03%)
+
+    L3: 5 nodes (0.00%)
+
+
+
+Executing queries...
+
+✓ Index built.
+  build_time(local)=40716.464074 ms
+  build_time(internal)=32704.640541 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 0
+
+  max_level (entry point): 0
+
+  actual_max_layer: 0
+
+  avg_degree_l0: 0.000000
+
+  avg_degree_upper: 0.000000
+
+
+  Layer Distribution:
+
+    L0: 0 nodes (0.00%)
+
+
+
+Executing queries...
+
+✓ Index built.
+  build_time(local)=40728.744591 ms
+  build_time(internal)=32681.746298 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 0
+
+  max_level (entry point): 0
+
+  actual_max_layer: 0
+
+  avg_degree_l0: 0.000000
+
+  avg_degree_upper: 0.000000
+
+
+  Layer Distribution:
+
+    L0: 0 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 1000 queries
+
+  Processed 1000 queries
+
+  Processed 1000 queries
+
+  Processed 1000 queries
+
+  Processed 1000 queries
+
+  Processed 1000 queries
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 2000 queries
+
+  Processed 2000 queries
+
+  Processed 2000 queries
+
+  Processed 2000 queries
+
+  Processed 2000 queries
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 2000 queries
+
+  Processed 1000 queries
+
+  Processed 3000 queries
+
+  Processed 3000 queries
+
+  Processed 3000 queries
+
+  Processed 3000 queries
+
+  Processed 3000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 4000 queries
+
+  Processed 4000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 2000 queries
+
+  Processed 5000 queries
+
+  Processed 5000 queries
+
+  Processed 4000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 5000 queries
+
+  Processed 5000 queries
+
+  Processed 2000 queries
+
+  Processed 6000 queries
+
+  Processed 6000 queries
+
+  Processed 6000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 6000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 7000 queries
+
+  Processed 7000 queries
+
+  Processed 3000 queries
+
+  Processed 7000 queries
+
+  Processed 7000 queries
+
+  Processed 7000 queries
+
+  Processed 6000 queries
+
+  Processed 8000 queries
+
+  Processed 6000 queries
+
+  Processed 8000 queries
+
+  Processed 8000 queries
+
+  Processed 3000 queries
+
+  Processed 8000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 7000 queries
+
+  Processed 9000 queries
+
+  Processed 7000 queries
+
+  Processed 4000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.982750
+
+Average query time: 10.286339 ms
+
+Total query time: 102863.386909 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210934299
+
+Average distance ops per query: 21093.429900
+
+Last query distance ops: 16854
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20846.573078 ms
+
+Index build time: 32490.748442 ms
+
+Query execution time: 102863.386909 ms
+
+Total elapsed time: 156211.503811 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 97.216321
+
+Distance ops per second: 2050625.643764
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 9000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.982750
+
+Average query time: 10.686338 ms
+
+Total query time: 106863.382928 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210934299
+
+Average distance ops per query: 21093.429900
+
+Last query distance ops: 16854
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20860.294161 ms
+
+Index build time: 32579.424661 ms
+
+Query execution time: 106863.382928 ms
+
+Total elapsed time: 160315.803937 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 93.577423
+
+Distance ops per second: 1973868.814748
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.982750
+
+Average query time: 10.754797 ms
+
+Total query time: 107547.973779 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210934299
+
+Average distance ops per query: 21093.429900
+
+Last query distance ops: 16854
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20963.502746 ms
+
+Index build time: 32656.373109 ms
+
+Query execution time: 107547.973779 ms
+
+Total elapsed time: 161182.680326 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 92.981761
+
+Distance ops per second: 1961304.258818
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 8000 queries
+
+  Processed 8000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.982750
+
+Average query time: 11.348740 ms
+
+Total query time: 113487.403332 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210934299
+
+Average distance ops per query: 21093.429900
+
+Last query distance ops: 16854
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20860.973033 ms
+
+Index build time: 32637.959747 ms
+
+Query execution time: 113487.403332 ms
+
+Total elapsed time: 166996.332122 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 88.115506
+
+Distance ops per second: 1858658.254634
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.982750
+
+Average query time: 11.356295 ms
+
+Total query time: 113562.945149 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210934299
+
+Average distance ops per query: 21093.429900
+
+Last query distance ops: 16854
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20929.371343 ms
+
+Index build time: 32691.597982 ms
+
+Query execution time: 113562.945149 ms
+
+Total elapsed time: 167198.613256 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 88.056892
+
+Distance ops per second: 1857421.879322
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.982750
+
+Average query time: 11.454419 ms
+
+Total query time: 114544.191493 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210934299
+
+Average distance ops per query: 21093.429900
+
+Last query distance ops: 16854
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20920.366666 ms
+
+Index build time: 32719.602318 ms
+
+Query execution time: 114544.191493 ms
+
+Total elapsed time: 168195.551455 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 87.302550
+
+Distance ops per second: 1841510.217590
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 4000 queries
+
+  Processed 9000 queries
+
+  Processed 9000 queries
+
+  Processed 5000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.982750
+
+Average query time: 12.609007 ms
+
+Total query time: 126090.071676 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210934299
+
+Average distance ops per query: 21093.429900
+
+Last query distance ops: 16854
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20857.873713 ms
+
+Index build time: 32616.279748 ms
+
+Query execution time: 126090.071676 ms
+
+Total elapsed time: 179574.076633 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 79.308385
+
+Distance ops per second: 1672885.867985
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.986780
+
+Average query time: 12.616300 ms
+
+Total query time: 126163.001956 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 243476616
+
+Average distance ops per query: 24347.661600
+
+Last query distance ops: 19198
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20993.068779 ms
+
+Index build time: 32647.064900 ms
+
+Query execution time: 126163.001956 ms
+
+Total elapsed time: 179815.884320 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 79.262540
+
+Distance ops per second: 1929857.503588
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 7000 queries
+
+  Processed 9000 queries
+
+  Processed 8000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.000000
+
+Average query time: 18.312956 ms
+
+Total query time: 183129.563449 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 210879283
+
+Average distance ops per query: 21087.928300
+
+Last query distance ops: 16727
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20956.605244 ms
+
+Index build time: 32681.746298 ms
+
+Query execution time: 183129.563449 ms
+
+Total elapsed time: 244814.913284 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 54.606148
+
+Distance ops per second: 1151530.528596
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.000000
+
+Average query time: 19.018807 ms
+
+Total query time: 190188.069112 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 243418425
+
+Average distance ops per query: 24341.842500
+
+Last query distance ops: 19072
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 20898.963869 ms
+
+Index build time: 32704.640541 ms
+
+Query execution time: 190188.069112 ms
+
+Total elapsed time: 251803.497055 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 52.579534
+
+Distance ops per second: 1279882.729430
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251204_203450_796.log
+

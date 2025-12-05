@@ -1,0 +1,60 @@
+💾 CSV backed up to: optuna_hng_20251204_140346.bak
+Loading entries from CSV...
+Loading history from optuna_hng.csv...
+Loaded 84 cached results, 7 graph configs, 9 trials.
+Pre-loaded 84 entries, 7 graph configs.
+
+============================================================
+🚀 HNSW Graph Parameter Optimization
+🎯 Target Recall: 0.99 (constraint: > 0.98)
+📊 Optimizing: M, max_layer, efc (EFS auto-tuned via binary search)
+🔧 Initial: M=51, ML=7, EFC=648
+============================================================
+Restoring 9 trials from history...
+
+🔄 Batch #1, Trials: 9
+
+📊 Trial #9: M=33, ML=12, EFC=647
+   🔍 Binary search EFS for M=33, ML=12, EFC=647, target=0.99
+      EFS=1040 -> Recall=0.9932, Time=3.3193ms
+      EFS=560 -> Recall=0.9818, Time=1.8489ms
+      EFS=800 -> Recall=0.9895, Time=2.5844ms
+      EFS=920 -> Recall=0.9917, Time=2.9539ms
+      EFS=860 -> Recall=0.9905, Time=3.0758ms
+      EFS=830 -> Recall=0.9900, Time=2.6717ms
+      EFS=815 -> Recall=0.9897, Time=2.7176ms
+      EFS=823 -> Recall=0.9899, Time=2.8064ms
+      EFS=827 -> Recall=0.9899, Time=2.7113ms
+      EFS=829 -> Recall=0.9900, Time=2.6060ms
+   ✅ Best feasible: EFS=830 -> Recall=0.9900, Time=2.6717ms
+      (Found 5 feasible EFS values)
+   ✅ FEASIBLE: EFS=830, Recall=0.9900, Time=2.6717ms -> Score=2.6717
+
+📊 Trial #10: M=34, ML=7, EFC=445
+   🔍 Binary search EFS for M=34, ML=7, EFC=445, target=0.99
+      EFS=1040 -> Recall=0.9916, Time=3.1896ms
+      EFS=560 -> Recall=0.9791, Time=1.7278ms
+      EFS=800 -> Recall=0.9874, Time=2.9008ms
+      EFS=920 -> Recall=0.9899, Time=2.8030ms
+      EFS=980 -> Recall=0.9908, Time=2.9744ms
+      EFS=950 -> Recall=0.9904, Time=2.9340ms
+      EFS=935 -> Recall=0.9902, Time=2.9167ms
+      EFS=928 -> Recall=0.9900, Time=3.2259ms
+      EFS=924 -> Recall=0.9900, Time=2.9512ms
+      EFS=926 -> Recall=0.9900, Time=3.0042ms
+      EFS=925 -> Recall=0.9900, Time=2.7164ms
+   ✅ Best feasible: EFS=935 -> Recall=0.9902, Time=2.9167ms
+      (Found 7 feasible EFS values)
+   ✅ FEASIBLE: EFS=935, Recall=0.9902, Time=2.9167ms -> Score=2.9167
+
+📊 Trial #11: M=38, ML=11, EFC=652
+   🔍 Binary search EFS for M=38, ML=11, EFC=652, target=0.99
+
+🛑 Stopped by user.
+
+============================================================
+🏆 Final Winner:
+   M=33, ML=5, EFC=511
+   EFS=560
+   Recall=0.9802, Time=1.5150ms
+Total trials: 12

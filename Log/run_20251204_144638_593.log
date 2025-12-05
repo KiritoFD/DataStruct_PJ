@@ -1,0 +1,112 @@
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+Timestamp: Thu Dec  4 14:46:38 2025
+
+Command line arguments:
+Timestamp: Thu Dec  4 14:46:38 2025
+
+  argv[0]: ./hng1
+Command line arguments:
+  argv[1]: --base
+  argv[0]: ./hng1
+  argv[2]: data_o/glove/base.txt
+  argv[1]: --base
+  argv[3]: --query
+  argv[2]: data_o/glove/base.txt
+  argv[4]: data_o/glove/query.txt
+  argv[3]: --query
+  argv[5]: --truth
+  argv[4]: data_o/glove/query.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[5]: --truth
+  argv[7]: --k
+  argv[6]: data_o/glove/truth.txt
+  argv[8]: 10
+  argv[7]: --k
+  argv[9]: --m
+  argv[8]: 10
+  argv[10]: 43
+  argv[9]: --m
+  argv[11]: --max_layer
+  argv[10]: 43
+  argv[12]: 10
+  argv[11]: --max_layer
+  argv[13]: --efc
+  argv[12]: 10
+  argv[14]: 735
+  argv[13]: --efc
+  argv[15]: --efs
+  argv[14]: 735
+  argv[16]: 425
+  argv[15]: --efs
+  argv[17]: --threads
+  argv[16]: 425
+  argv[18]: 32
+  argv[17]: --threads
+  argv[19]: --ablate_csr
+  argv[18]: 32
+  argv[20]: 0
+  argv[19]: --ablate_csr
+  argv[21]: --ablate_prefetch
+  argv[20]: 0
+  argv[22]: 0
+  argv[21]: --ablate_prefetch
+  argv[23]: --ablate_simd
+  argv[22]: 0
+  argv[24]: 0
+  argv[23]: --ablate_simd
+  argv[25]: --ablate_pruning
+  argv[24]: 0
+  argv[26]: 1
+  argv[25]: --ablate_pruning
+  argv[27]: --ablate_heap
+  argv[26]: 0
+  argv[28]: 0
+  argv[27]: --ablate_heap
+  argv[29]: --ablate_flat_index
+  argv[28]: 0
+  argv[30]: 0
+  argv[29]: --ablate_flat_index
+  argv[31]: --ablate_reorder
+  argv[30]: 1
+  argv[32]: 0
+  argv[31]: --ablate_reorder
+
+Configuration:
+  argv[32]: 0
+  Base file: data_o/glove/base.txt
+
+Configuration:
+  Query file: data_o/glove/query.txt
+  Base file: data_o/glove/base.txt
+  Truth file: data_o/glove/truth.txt
+  Query file: data_o/glove/query.txt
+  K: 10
+  Truth file: data_o/glove/truth.txt
+  M: 43
+  K: 10
+  Max layer: 10
+  M: 43
+  EFC: 735
+  Max layer: 10
+  EFS: 425
+  EFC: 735
+  Threads: 32
+  EFS: 425
+  Debug: -1
+  Threads: 32
+
+  Debug: -1
+HNSW parameters set.
+
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=1, heap=0
+
+HNSW parameters set.
+
+Loading base vectors...
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...

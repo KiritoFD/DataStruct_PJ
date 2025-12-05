@@ -1,1 +1,0 @@
-variant,point_type,point_index,m,ml,efc,efs,recall_cached,csr,prefetch,simd,pruning,heap,flat_index,build_time_internal_ms,build_time_local_ms,queries_per_sec,avg_recall,avg_query_time_ms,avg_dists,last_query_dists,total_query_time_ms,log_file,run_index

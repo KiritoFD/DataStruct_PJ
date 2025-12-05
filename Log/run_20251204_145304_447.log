@@ -1,0 +1,111 @@
+========== HNSW Search Test ==========
+
+Timestamp: Thu Dec  4 14:53:04 2025
+
+Command line arguments:
+  argv[0]: ./hng1
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+  argv[7]: --k
+  argv[8]: 10
+  argv[9]: --m
+  argv[10]: 43
+  argv[11]: --max_layer
+  argv[12]: 10
+  argv[13]: --efc
+  argv[14]: 735
+  argv[15]: --efs
+  argv[16]: 600
+  argv[17]: --threads
+  argv[18]: 32
+  argv[19]: --ablate_csr
+  argv[20]: 1
+  argv[21]: --ablate_prefetch
+  argv[22]: 1
+  argv[23]: --ablate_simd
+  argv[24]: 1
+  argv[25]: --ablate_pruning
+  argv[26]: 1
+  argv[27]: --ablate_heap
+  argv[28]: 1
+  argv[29]: --ablate_flat_index
+  argv[30]: 1
+  argv[31]: --ablate_reorder
+  argv[32]: 1
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 43
+  Max layer: 10
+  EFC: 735
+  EFS: 600
+  Threads: 32
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=1, prefetch=1, simd=1, pruning=1, heap=1
+
+Loading base vectors...
+✓ Base loaded in 3982.697739 ms
+
+Loading query vectors...
+✓ Queries loaded in 148.817649 ms
+
+Loading ground truth...
+✓ Truth loaded in 134.093703 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=6978.316687 ms
+  build_time(internal)=5436.772581 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 0
+
+  max_level (entry point): 0
+
+  actual_max_layer: 0
+
+  avg_degree_l0: 0.000000
+
+  avg_degree_upper: 0.000000
+
+
+  Layer Distribution:
+
+    L0: 0 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+

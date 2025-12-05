@@ -1,0 +1,168 @@
+========== HNSW Search Test ==========
+
+Timestamp: Thu Dec  4 14:46:38 2025
+
+Command line arguments:
+========== HNSW Search Test ==========
+
+  argv[0]: ./hng1
+  argv[1]: --base
+Timestamp: Thu Dec  4 14:46:38 2025
+
+  argv[2]: data_o/glove/base.txt
+========== HNSW Search Test ==========
+
+Command line arguments:
+  argv[3]: --query
+  argv[0]: ./hng1
+Timestamp: Thu Dec  4 14:46:38 2025
+
+  argv[4]: data_o/glove/query.txt
+  argv[1]: --base
+Command line arguments:
+  argv[5]: --truth
+  argv[0]: ./hng1
+  argv[2]: data_o/glove/base.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[1]: --base
+  argv[3]: --query
+  argv[7]: --k
+  argv[2]: data_o/glove/base.txt
+  argv[4]: data_o/glove/query.txt
+  argv[8]: 10
+  argv[3]: --query
+  argv[5]: --truth
+  argv[9]: --m
+  argv[4]: data_o/glove/query.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[10]: 43
+  argv[5]: --truth
+  argv[7]: --k
+  argv[11]: --max_layer
+  argv[6]: data_o/glove/truth.txt
+  argv[8]: 10
+  argv[12]: 10
+  argv[7]: --k
+  argv[9]: --m
+  argv[13]: --efc
+  argv[8]: 10
+  argv[10]: 43
+  argv[14]: 735
+  argv[9]: --m
+  argv[11]: --max_layer
+  argv[15]: --efs
+  argv[10]: 43
+  argv[12]: 10
+  argv[16]: 625
+  argv[11]: --max_layer
+  argv[13]: --efc
+  argv[17]: --threads
+  argv[12]: 10
+  argv[14]: 735
+  argv[18]: 32
+  argv[13]: --efc
+  argv[15]: --efs
+  argv[19]: --ablate_csr
+  argv[14]: 735
+  argv[16]: 500
+  argv[20]: 1
+  argv[15]: --efs
+  argv[17]: --threads
+  argv[21]: --ablate_prefetch
+  argv[16]: 600
+  argv[18]: 32
+  argv[22]: 0
+  argv[17]: --threads
+  argv[19]: --ablate_csr
+  argv[23]: --ablate_simd
+  argv[20]: 0
+  argv[18]: 32
+  argv[24]: 0
+  argv[21]: --ablate_prefetch
+  argv[19]: --ablate_csr
+  argv[25]: --ablate_pruning
+  argv[22]: 0
+  argv[20]: 0
+  argv[26]: 0
+  argv[23]: --ablate_simd
+  argv[21]: --ablate_prefetch
+  argv[27]: --ablate_heap
+  argv[24]: 0
+  argv[22]: 0
+  argv[28]: 0
+  argv[25]: --ablate_pruning
+  argv[23]: --ablate_simd
+  argv[29]: --ablate_flat_index
+  argv[26]: 0
+  argv[24]: 0
+  argv[30]: 0
+  argv[27]: --ablate_heap
+  argv[25]: --ablate_pruning
+  argv[31]: --ablate_reorder
+  argv[26]: 0
+  argv[28]: 0
+  argv[32]: 0
+  argv[27]: --ablate_heap
+
+Configuration:
+  argv[29]: --ablate_flat_index
+  Base file: data_o/glove/base.txt
+  argv[28]: 0
+  Query file: data_o/glove/query.txt
+  argv[30]: 1
+  argv[29]: --ablate_flat_index
+  Truth file: data_o/glove/truth.txt
+  argv[30]: 0
+  argv[31]: --ablate_reorder
+  K: 10
+  argv[32]: 0
+  argv[31]: --ablate_reorder
+  M: 43
+
+Configuration:
+  argv[32]: 0
+  Max layer: 10
+  Base file: data_o/glove/base.txt
+
+Configuration:
+  EFC: 735
+  Query file: data_o/glove/query.txt
+  Base file: data_o/glove/base.txt
+  EFS: 625
+  Truth file: data_o/glove/truth.txt
+  Query file: data_o/glove/query.txt
+  Threads: 32
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  Debug: -1
+  K: 10
+  M: 43
+
+  M: 43
+  Max layer: 10
+HNSW parameters set.
+
+  Max layer: 10
+  EFC: 735
+Ablation flags: csr=1, prefetch=0, simd=0, pruning=0, heap=0
+
+  EFC: 735
+  EFS: 500
+Loading base vectors...
+  EFS: 600
+  Threads: 32
+  Threads: 32
+  Debug: -1
+  Debug: -1
+
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+Loading base vectors...

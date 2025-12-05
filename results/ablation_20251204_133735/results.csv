@@ -1,0 +1,3 @@
+variant,csr,prefetch,simd,pruning,heap,flat_index,reorder,M,ML,EFC,EFS,build_time_internal_ms,build_time_local_ms,queries_per_sec,avg_recall,avg_query_time_ms,avg_dists,last_query_dists,total_query_time_ms,log_file,run_index
+full,0,0,0,0,0,0,0,43,10,735,425,3960.613519,3965.718604, 684.760867, 0.980000, 1.460364, 19206.545900, 16068, 14603.638257
+results/ablation_20251204_133735/params_M43_ML10_EFC735_EFS425/full/run_20251204_133736_146.log,1,,,,,,,,,,,,,,,,,,

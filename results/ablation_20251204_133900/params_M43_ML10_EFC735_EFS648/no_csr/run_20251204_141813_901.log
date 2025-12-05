@@ -1,0 +1,79 @@
+========== HNSW Search Test ==========
+
+Timestamp: Thu Dec  4 14:18:13 2025
+
+Command line arguments:
+  argv[0]: ./hng1
+  argv[1]: --m
+  argv[2]: 33
+  argv[3]: --max_layer
+  argv[4]: 12
+  argv[5]: --efc
+  argv[6]: 647
+  argv[7]: --efs
+  argv[8]: 800
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 33
+  Max layer: 12
+  EFC: 647
+  EFS: 800
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 2218.372275 ms
+
+Loading query vectors...
+✓ Queries loaded in 74.824466 ms
+
+Loading ground truth...
+✓ Truth loaded in 72.029621 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=3570.288483 ms
+  build_time(internal)=3567.272029 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 4
+
+  actual_max_layer: 4
+
+  avg_degree_l0: 49.557230
+
+  avg_degree_upper: 0.153136
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 35967 nodes (3.04%)
+
+    L2: 1052 nodes (0.09%)
+
+    L3: 44 nodes (0.00%)
+
+    L4: 2 nodes (0.00%)
+
+
+
+Executing queries...
+

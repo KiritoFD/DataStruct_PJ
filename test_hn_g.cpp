@@ -1,4 +1,4 @@
-#include "MySolution.h"
+#include "src/MySolution.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
