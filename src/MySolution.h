@@ -4,10 +4,10 @@
 #include <cstring>
 
 // 默认参数常量
-constexpr int HNSW_DEFAULT_M = 48;
-constexpr int HNSW_DEFAULT_MAX_LAYER = 5;
+constexpr int HNSW_DEFAULT_M = 64;
+constexpr int HNSW_DEFAULT_MAX_LAYER = 7;
 constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 1600;
-constexpr int HNSW_DEFAULT_EF_SEARCH = 1800;
+constexpr int HNSW_DEFAULT_EF_SEARCH = 800;
 
 
 // 使用宏守卫避免与 visited_list.h 重复定义

@@ -124,6 +124,9 @@ static inline void my_prefetch_l1(const void* ptr) {
 #endif
 }
 
+// 新增：统一的 prefetch 跳跃距离
+static constexpr int PREFETCH_AHEAD = 7;
+
 // =========================================================
 // Part 1: SimpleHNSW (动态构建结构)
 // =========================================================
@@ -371,11 +374,15 @@ public:
             if (curr.first > lower_bound && (int)top_candidates.size() >= ef) break;
             
             int count; const int* links = get_l0_links(curr.second, count);
-            if (count > 0) my_prefetch_l1(get_vec(links[0]));
+            if (count > 0) {
+                // 预取第 PREFETCH_AHEAD 个邻居（或最后一个）
+                int pf_idx = std::min(count - 1, PREFETCH_AHEAD);
+                my_prefetch_l1(get_vec(links[pf_idx]));
+            }
             
             for (int i = 0; i < count; ++i) {
                 int nb = links[i];
-                if (i + 2 < count) my_prefetch_l1(get_vec(links[i+2]));
+                if (i + PREFETCH_AHEAD < count) my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD]));
                 if (visited.isVisited(nb)) continue;
                 visited.mark(nb);
                 float d = dist(nb, q);
@@ -564,11 +571,15 @@ struct Candidate {
 }
 
 static FlatHNSW* convert_to_flat(SimpleHNSW* src, bool debug) {
-    // 调整后的参数：更保守的剪枝策略
-    constexpr int TARGET_M_L0 = 28;        // 从 24 提升到 28
-    constexpr int TARGET_M_UPPER = 20;     // 从 16 提升到 20
-    constexpr float PRUNE_ALPHA = 1.25f;   // 从 1.0 提升到 1.25（松弛RNG）
-    constexpr int MIN_EDGES = 3;           // 最小边数保证
+    // 参数配置
+    constexpr int TARGET_M_L0 = 32;
+    constexpr int TARGET_M_UPPER = 24;
+    constexpr float PRUNING_ALPHA = 1.2f;
+    constexpr int MIN_EDGES = 4;
+    
+    // 二跳扩展参数
+    constexpr int TWO_HOP_WIDTH = 6;   // 只对最近的6个邻居扩展
+    constexpr int TWO_HOP_DEPTH = 10;  // 每个中间点最多取10个邻居
 
     FlatHNSW* flat = new FlatHNSW(src->dim);
     int N = src->size();
@@ -601,7 +612,8 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src, bool debug) {
     std::vector<std::vector<int>> reverse_links(N);
     for (int oid = 0; oid < N; ++oid) {
         std::shared_lock<std::shared_mutex> lk(src->nodes[oid]->lock);
-        for (int nb : src->nodes[oid]->links[0]) if (nb >= 0 && nb < N) reverse_links[nb].push_back(oid);
+        for (int nb : src->nodes[oid]->links[0]) 
+            if (nb >= 0 && nb < N) reverse_links[nb].push_back(oid);
     }
 
     flat->l0_offsets.resize(N + 1);
@@ -613,91 +625,104 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src, bool debug) {
         int oid = new2old[nid];
         const float* curr_vec = flat->data.data() + (size_t)nid * flat->dim;
 
-        // Phase 1: 收集1-hop邻居（正向 + 反向）
-        std::vector<int> l1_pool;
-        l1_pool.reserve(128);
+        // =========================================================
+        // 第一步：构建高质量的一跳基础（带距离排序）
+        // =========================================================
+        std::vector<std::pair<float, int>> sorted_1hop;
+        sorted_1hop.reserve(128);
+
+        // 1.1 收集正向邻居
         {
             std::shared_lock<std::shared_mutex> lk(src->nodes[oid]->lock);
-            l1_pool.insert(l1_pool.end(), src->nodes[oid]->links[0].begin(), src->nodes[oid]->links[0].end());
+            for (int nb : src->nodes[oid]->links[0]) {
+                if (nb < 0 || nb >= N || nb == oid) continue;
+                int nb_nid = old2new[nb];
+                if (nb_nid < 0) continue;
+                float d = l2sq_100d(curr_vec, flat->data.data() + (size_t)nb_nid * flat->dim);
+                sorted_1hop.push_back({d, nb}); // 存 {dist, old_id}
+            }
         }
-        // 反向邻居是关键的"回溯路径"
-        l1_pool.insert(l1_pool.end(), reverse_links[oid].begin(), reverse_links[oid].end());
-        
-        // 去重
-        std::sort(l1_pool.begin(), l1_pool.end());
-        l1_pool.erase(std::unique(l1_pool.begin(), l1_pool.end()), l1_pool.end());
 
-        // Phase 2: 计算距离并排序1-hop
-        std::vector<std::pair<float, int>> sorted_l1;
-        sorted_l1.reserve(l1_pool.size());
-        for (int nb_oid : l1_pool) {
-            if (nb_oid == oid) continue;
-            int nb_nid = old2new[nb_oid];
+        // 1.2 收集反向邻居（解决单向死路）
+        for (int rev_nb : reverse_links[oid]) {
+            if (rev_nb == oid) continue;
+            int nb_nid = old2new[rev_nb];
             if (nb_nid < 0) continue;
             float d = l2sq_100d(curr_vec, flat->data.data() + (size_t)nb_nid * flat->dim);
-            sorted_l1.push_back({d, nb_nid});
+            sorted_1hop.push_back({d, rev_nb});
         }
-        std::sort(sorted_l1.begin(), sorted_l1.end());
 
-        // Phase 3: 智能2-hop扩展 - 只对最近的5个邻居扩展
+        // 1.3 排序与去重（必须先排序，这是精准扩展的前提）
+        std::sort(sorted_1hop.begin(), sorted_1hop.end());
+        {
+            auto unique_end = std::unique(sorted_1hop.begin(), sorted_1hop.end(), 
+                [](const auto& a, const auto& b){ return a.second == b.second; });
+            sorted_1hop.erase(unique_end, sorted_1hop.end());
+        }
+
+        // =========================================================
+        // 第二步：精准二跳扩展
+        // =========================================================
         std::vector<std::pair<float, int>> final_candidates;
-        final_candidates.reserve(sorted_l1.size() + 50);
+        final_candidates.reserve(sorted_1hop.size() + TWO_HOP_WIDTH * TWO_HOP_DEPTH);
         
-        // 先添加所有1-hop邻居
-        for (const auto& p : sorted_l1) {
-            final_candidates.push_back(p);
+        // 先加入所有一跳邻居（转换为 new_id）
+        for (const auto& p : sorted_1hop) {
+            final_candidates.push_back({p.first, old2new[p.second]});
         }
 
-        // 限制2-hop扩展：只对最近的5个邻居
-        constexpr int TWO_HOP_EXPAND_LIMIT = 5;
-        constexpr int TWO_HOP_PER_NEIGHBOR = 8;
+        // 【核心策略】只对最近的 TWO_HOP_WIDTH 个邻居进行扩展
+        int expand_limit = std::min((int)sorted_1hop.size(), TWO_HOP_WIDTH);
         
-        int expand_count = std::min((int)sorted_l1.size(), TWO_HOP_EXPAND_LIMIT);
-        for (int i = 0; i < expand_count; ++i) {
-            // sorted_l1[i].second 是 new_id，需要转回 old_id
-            int neighbor_nid = sorted_l1[i].second;
-            int neighbor_oid = new2old[neighbor_nid];
-            float dist_to_neighbor = sorted_l1[i].first;
+        for (int i = 0; i < expand_limit; ++i) {
+            int intermediate_oid = sorted_1hop[i].second; // 中间跳板节点
             
-            std::shared_lock<std::shared_mutex> lk(src->nodes[neighbor_oid]->lock);
-            const auto& nn_links = src->nodes[neighbor_oid]->links[0];
+            std::shared_lock<std::shared_mutex> lk(src->nodes[intermediate_oid]->lock);
+            const auto& next_links = src->nodes[intermediate_oid]->links[0];
             
-            int nn_count = 0;
-            for (int nn_oid : nn_links) {
-                if (nn_count++ >= TWO_HOP_PER_NEIGHBOR) break;
-                if (nn_oid == oid) continue;
-                int nn_nid = old2new[nn_oid];
-                if (nn_nid < 0) continue;
+            // 【核心策略】只取中间节点的前 TWO_HOP_DEPTH 个连接
+            int limit_count = 0;
+            for (int leaf_oid : next_links) {
+                if (++limit_count > TWO_HOP_DEPTH) break;
                 
-                float d = l2sq_100d(curr_vec, flat->data.data() + (size_t)nn_nid * flat->dim);
+                // 排除回路
+                if (leaf_oid == oid) continue;
                 
-                // 关键：只有当2-hop距离小于到中间节点的距离时才加入（构成更优三角边）
-                if (d < dist_to_neighbor * 1.5f) {
-                    final_candidates.push_back({d, nn_nid});
+                int leaf_nid = old2new[leaf_oid];
+                if (leaf_nid < 0) continue;
+                
+                // 计算直接距离
+                float d = l2sq_100d(curr_vec, flat->data.data() + (size_t)leaf_nid * flat->dim);
+                final_candidates.push_back({d, leaf_nid});
+            }
+        }
+
+        // =========================================================
+        // 第三步：整理与最终剪枝
+        // =========================================================
+        
+        // 3.1 排序与去重
+        std::sort(final_candidates.begin(), final_candidates.end());
+        {
+            std::vector<std::pair<float, int>> unique_cands;
+            unique_cands.reserve(final_candidates.size());
+            int last_id = -1;
+            for (const auto& c : final_candidates) {
+                if (c.second != last_id && c.second != nid) {
+                    unique_cands.push_back(c);
+                    last_id = c.second;
                 }
             }
-        }
-
-        // Phase 4: 排序、去重、剪枝
-        std::sort(final_candidates.begin(), final_candidates.end());
-        
-        // 去重（基于ID）
-        std::vector<std::pair<float, int>> unique_candidates;
-        unique_candidates.reserve(final_candidates.size());
-        int last_id = -1;
-        for (const auto& c : final_candidates) {
-            if (c.second != last_id && c.second != nid) {
-                unique_candidates.push_back(c);
-                last_id = c.second;
-            }
+            final_candidates = std::move(unique_cands);
         }
         
-        // 使用松弛RNG剪枝，带最小边数保证
-        heuristic_prune(curr_vec, unique_candidates, optimized_l0[nid], 
+        // 3.2 启发式剪枝（Alpha=1.2 保留适度冗余边）
+        heuristic_prune(curr_vec, final_candidates, optimized_l0[nid], 
                        TARGET_M_L0, flat->data.data(), flat->dim, 
-                       PRUNE_ALPHA, MIN_EDGES);
+                       PRUNING_ALPHA, MIN_EDGES);
     }
 
+    // ...existing code for building l0_links array and upper layers...
     uint64_t off = 0;
     for (const auto& v : optimized_l0) off += v.size();
     flat->l0_links.resize(off);
@@ -711,7 +736,6 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src, bool debug) {
     }
     flat->l0_offsets[N] = off;
 
-    // ...existing code for upper layers...
     flat->max_level = 0;
     for (int i = 0; i < N; ++i) flat->max_level = std::max(flat->max_level, (int)src->nodes[i]->links.size() - 1);
     flat->max_level = std::min(flat->max_level, 100);
@@ -741,7 +765,8 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src, bool debug) {
         }
     }
 
-    if (debug) std::cout << "[Convert] Relaxed RNG: M=" << TARGET_M_L0 << ", Alpha=" << PRUNE_ALPHA << std::endl;
+    if (debug) std::cout << "[Convert] Precise 2-Hop: M=" << TARGET_M_L0 << ", Alpha=" << PRUNING_ALPHA 
+                         << ", Width=" << TWO_HOP_WIDTH << ", Depth=" << TWO_HOP_DEPTH << std::endl;
     return flat;
 }
 
