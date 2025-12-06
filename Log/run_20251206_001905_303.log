@@ -1,0 +1,116 @@
+========== HNSW Search Test ==========
+
+Timestamp: Sat Dec  6 00:19:05 2025
+
+Command line arguments:
+  argv[0]: ./basic
+  argv[1]: --m
+  argv[2]: 59
+  argv[3]: --max_layer
+  argv[4]: 7
+  argv[5]: --efc
+  argv[6]: 763
+  argv[7]: --efs
+  argv[8]: 500
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 59
+  Max layer: 7
+  EFC: 763
+  EFS: 500
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 2258.381201 ms
+
+Loading query vectors...
+✓ Queries loaded in 71.501562 ms
+
+Loading ground truth...
+✓ Truth loaded in 71.757120 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=7763.838573 ms
+  build_time(internal)=7758.842015 ms
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.437120
+
+Average query time: 0.110838 ms
+
+Total query time: 1108.383774 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 9465313
+
+Average distance ops per query: 946.531300
+
+Last query distance ops: 1006
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2401.639883 ms
+
+Index build time: 7758.842015 ms
+
+Query execution time: 1108.383774 ms
+
+Total elapsed time: 11273.862230 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 9022.145790
+
+Distance ops per second: 8539743.383143
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251206_001905_303.log
+

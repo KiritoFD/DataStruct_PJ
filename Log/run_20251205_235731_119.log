@@ -1,0 +1,189 @@
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+Timestamp: Fri Dec  5 23:57:31 2025
+
+Command line arguments:
+Timestamp: Fri Dec  5 23:57:31 2025
+
+Timestamp: Fri Dec  5 23:57:31 2025
+
+  argv[0]: ./basic
+Command line arguments:
+Command line arguments:
+  argv[1]: --base
+  argv[0]: ./basic
+  argv[0]: ./basic
+  argv[2]: data_o/glove/base.txt
+  argv[1]: --base
+  argv[1]: --base
+  argv[3]: --query
+  argv[2]: data_o/glove/base.txt
+  argv[2]: data_o/glove/base.txt
+  argv[4]: data_o/glove/query.txt
+  argv[3]: --query
+  argv[3]: --query
+  argv[5]: --truth
+  argv[4]: data_o/glove/query.txt
+  argv[4]: data_o/glove/query.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[5]: --truth
+  argv[5]: --truth
+  argv[7]: --k
+  argv[6]: data_o/glove/truth.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[8]: 10
+  argv[7]: --k
+  argv[7]: --k
+  argv[9]: --m
+  argv[8]: 10
+  argv[8]: 10
+  argv[10]: 59
+  argv[9]: --m
+  argv[9]: --m
+  argv[11]: --max_layer
+  argv[10]: 59
+  argv[10]: 59
+  argv[12]: 7
+  argv[11]: --max_layer
+  argv[11]: --max_layer
+  argv[13]: --efc
+  argv[12]: 7
+  argv[12]: 7
+  argv[14]: 763
+  argv[13]: --efc
+  argv[13]: --efc
+  argv[15]: --efs
+  argv[14]: 763
+  argv[14]: 763
+  argv[16]: 275
+  argv[15]: --efs
+  argv[15]: --efs
+  argv[17]: --threads
+  argv[16]: 300
+  argv[16]: 250
+  argv[18]: 32
+  argv[17]: --threads
+  argv[17]: --threads
+  argv[19]: --debug
+  argv[18]: 32
+  argv[18]: 32
+  argv[20]: 1
+  argv[19]: --debug
+  argv[19]: --debug
+
+Configuration:
+  argv[20]: 1
+  argv[20]: 1
+  Base file: data_o/glove/base.txt
+
+Configuration:
+
+Configuration:
+  Query file: data_o/glove/query.txt
+  Base file: data_o/glove/base.txt
+  Base file: data_o/glove/base.txt
+  Truth file: data_o/glove/truth.txt
+  Query file: data_o/glove/query.txt
+  Query file: data_o/glove/query.txt
+  K: 10
+  Truth file: data_o/glove/truth.txt
+  Truth file: data_o/glove/truth.txt
+  M: 59
+  K: 10
+  K: 10
+  Max layer: 7
+  M: 59
+  M: 59
+  EFC: 763
+  Max layer: 7
+  Max layer: 7
+  EFS: 275
+  EFC: 763
+  EFC: 763
+  Threads: 32
+  EFS: 300
+  EFS: 250
+  Debug: 1
+  Threads: 32
+  Threads: 32
+
+  Debug: 1
+  Debug: 1
+HNSW parameters set.
+
+
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+HNSW parameters set.
+
+HNSW parameters set.
+
+Loading base vectors...
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+Loading base vectors...
+✓ Base loaded in 9335.234206 ms
+
+✓ Base loaded in 9335.068495 ms
+
+✓ Base loaded in 9334.968938 ms
+
+Loading query vectors...
+Loading query vectors...
+Loading query vectors...
+✓ Queries loaded in 138.334128 ms
+
+✓ Queries loaded in 138.478025 ms
+
+Loading ground truth...
+Loading ground truth...
+✓ Queries loaded in 139.564293 ms
+
+Loading ground truth...
+✓ Truth loaded in 140.654953 ms
+
+✓ Truth loaded in 139.561029 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+Building HNSW index...
+✓ Truth loaded in 141.100892 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=18465.550594 ms
+  build_time(internal)=18457.846641 ms
+
+Executing queries...
+
+✓ Index built.
+  build_time(local)=18467.496601 ms
+  build_time(internal)=18460.410290 ms
+
+Executing queries...
+
+✓ Index built.
+  build_time(local)=18475.879402 ms
+  build_time(internal)=18468.869982 ms
+
+Executing queries...
+

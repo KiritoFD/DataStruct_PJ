@@ -1,0 +1,62 @@
+========== HNSW Search Test ==========
+
+Timestamp: Fri Dec  5 21:40:22 2025
+
+Command line arguments:
+  argv[0]: ./basic
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+  argv[7]: --k
+  argv[8]: 10
+  argv[9]: --m
+  argv[10]: 59
+  argv[11]: --max_layer
+  argv[12]: 5
+  argv[13]: --efc
+  argv[14]: 763
+  argv[15]: --efs
+  argv[16]: 50
+  argv[17]: --threads
+  argv[18]: 8
+  argv[19]: --debug
+  argv[20]: 1
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 59
+  Max layer: 5
+  EFC: 763
+  EFS: 50
+  Threads: 8
+  Debug: 1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+Loaded base from binary cache: data_o/glove/base.txt.bin
+✓ Base loaded in 7593.181957 ms
+
+Loading query vectors...
+Loaded queries from binary cache: data_o/glove/query.txt.bin
+✓ Queries loaded in 135.704458 ms
+
+Loading ground truth...
+Loaded truth from binary cache: data_o/glove/truth.txt.bin
+✓ Truth loaded in 207.631834 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+[Cache] Cache miss, building index...
+[Progress] 119001/1183514 (10.1%) Time: 180207.50 ms

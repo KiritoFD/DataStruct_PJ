@@ -15,7 +15,7 @@ import sys
 # ==================== 配置区 ====================
 BIN_PATH = "./hng1"
 MIN_RECALL = 0.98         # 约束条件下界
-TARGET_RECALL = 0.99         # EFS 二分搜索目标召回率
+TARGET_RECALL = 0.98        # EFS 二分搜索目标召回率
 FIXED_K = 10
 BATCH_SIZE = 20
 NUM_RUNS = 1
@@ -26,9 +26,9 @@ INITIAL_MAX_LAYER = 5
 INITIAL_EFC = 763
 
 # --- 参数搜索范围 ---
-M_RANGE = (16, 64)
+M_RANGE = (12,96)
 MAX_LAYER_RANGE = (0, 20)
-EFC_RANGE = (80, 1000)
+EFC_RANGE = (400, 2000)
 EFS_RANGE = (80, 2000)  # EFS 二分搜索范围
 
 LOG_DIR = "Log"

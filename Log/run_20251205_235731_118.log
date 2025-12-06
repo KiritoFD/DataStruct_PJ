@@ -1,0 +1,126 @@
+========== HNSW Search Test ==========
+
+Timestamp: Fri Dec  5 23:57:31 2025
+
+Command line arguments:
+  argv[0]: ./basic
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+========== HNSW Search Test ==========
+
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+Timestamp: Fri Dec  5 23:57:31 2025
+
+  argv[7]: --k
+Command line arguments:
+  argv[8]: 10
+  argv[0]: ./basic
+  argv[9]: --m
+  argv[1]: --base
+  argv[10]: 59
+  argv[2]: data_o/glove/base.txt
+  argv[11]: --max_layer
+  argv[3]: --query
+  argv[12]: 7
+  argv[4]: data_o/glove/query.txt
+  argv[13]: --efc
+  argv[5]: --truth
+  argv[14]: 763
+  argv[6]: data_o/glove/truth.txt
+  argv[15]: --efs
+  argv[7]: --k
+  argv[16]: 225
+  argv[8]: 10
+  argv[17]: --threads
+  argv[9]: --m
+  argv[18]: 32
+  argv[10]: 59
+  argv[19]: --debug
+  argv[11]: --max_layer
+  argv[20]: 1
+  argv[12]: 7
+
+Configuration:
+  argv[13]: --efc
+  Base file: data_o/glove/base.txt
+  argv[14]: 763
+  Query file: data_o/glove/query.txt
+  argv[15]: --efs
+  Truth file: data_o/glove/truth.txt
+  argv[16]: 325
+  K: 10
+  argv[17]: --threads
+  M: 59
+  argv[18]: 32
+  Max layer: 7
+  argv[19]: --debug
+  EFC: 763
+  argv[20]: 1
+  EFS: 225
+
+Configuration:
+  Threads: 32
+  Base file: data_o/glove/base.txt
+  Debug: 1
+  Query file: data_o/glove/query.txt
+
+  Truth file: data_o/glove/truth.txt
+HNSW parameters set.
+
+  K: 10
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+  M: 59
+Loading base vectors...
+  Max layer: 7
+  EFC: 763
+  EFS: 325
+  Threads: 32
+  Debug: 1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 9336.303568 ms
+
+✓ Base loaded in 9334.697359 ms
+
+Loading query vectors...
+Loading query vectors...
+✓ Queries loaded in 138.546197 ms
+
+✓ Queries loaded in 138.556395 ms
+
+Loading ground truth...
+Loading ground truth...
+✓ Truth loaded in 140.540973 ms
+
+✓ Truth loaded in 140.679398 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+Building HNSW index...
+✓ Index built.
+  build_time(local)=18465.757452 ms
+  build_time(internal)=18457.892060 ms
+
+Executing queries...
+
+✓ Index built.
+  build_time(local)=18476.030682 ms
+  build_time(internal)=18469.516628 ms
+
+Executing queries...
+

@@ -1,0 +1,171 @@
+========== HNSW Search Test ==========
+
+========== HNSW Search Test ==========
+
+Timestamp: Fri Dec  5 22:05:57 2025
+
+Command line arguments:
+Timestamp: Fri Dec  5 22:05:57 2025
+
+  argv[0]: ./basic
+Command line arguments:
+  argv[1]: --base
+  argv[0]: ./basic
+  argv[2]: data_o/glove/base.txt
+  argv[1]: --base
+  argv[3]: --query
+  argv[2]: data_o/glove/base.txt
+  argv[4]: data_o/glove/query.txt
+  argv[3]: --query
+========== HNSW Search Test ==========
+
+  argv[5]: --truth
+  argv[4]: data_o/glove/query.txt
+  argv[6]: data_o/glove/truth.txt
+  argv[5]: --truth
+Timestamp: Fri Dec  5 22:05:57 2025
+
+  argv[7]: --k
+  argv[6]: data_o/glove/truth.txt
+Command line arguments:
+  argv[8]: 10
+  argv[7]: --k
+  argv[0]: ./basic
+  argv[9]: --m
+  argv[8]: 10
+  argv[1]: --base
+  argv[10]: 59
+  argv[9]: --m
+  argv[2]: data_o/glove/base.txt
+  argv[11]: --max_layer
+  argv[10]: 59
+  argv[3]: --query
+  argv[12]: 5
+  argv[11]: --max_layer
+  argv[4]: data_o/glove/query.txt
+  argv[13]: --efc
+  argv[12]: 5
+  argv[5]: --truth
+  argv[14]: 763
+  argv[13]: --efc
+  argv[6]: data_o/glove/truth.txt
+  argv[15]: --efs
+  argv[14]: 763
+  argv[7]: --k
+  argv[16]: 50
+  argv[15]: --efs
+  argv[8]: 10
+  argv[17]: --threads
+  argv[16]: 100
+  argv[9]: --m
+  argv[18]: 16
+  argv[17]: --threads
+  argv[10]: 59
+  argv[19]: --debug
+  argv[18]: 16
+  argv[11]: --max_layer
+  argv[20]: 1
+  argv[19]: --debug
+  argv[12]: 5
+
+Configuration:
+  argv[20]: 1
+  argv[13]: --efc
+  Base file: data_o/glove/base.txt
+
+Configuration:
+  argv[14]: 763
+  Query file: data_o/glove/query.txt
+  Base file: data_o/glove/base.txt
+  argv[15]: --efs
+  Truth file: data_o/glove/truth.txt
+  Query file: data_o/glove/query.txt
+  argv[16]: 125
+  K: 10
+  Truth file: data_o/glove/truth.txt
+  argv[17]: --threads
+  M: 59
+  K: 10
+  argv[18]: 16
+  Max layer: 5
+  M: 59
+  argv[19]: --debug
+  EFC: 763
+  Max layer: 5
+  argv[20]: 1
+  EFS: 50
+  EFC: 763
+
+Configuration:
+  Threads: 16
+  EFS: 100
+  Base file: data_o/glove/base.txt
+  Debug: 1
+  Threads: 16
+  Query file: data_o/glove/query.txt
+
+  Debug: 1
+  Truth file: data_o/glove/truth.txt
+HNSW parameters set.
+
+
+  K: 10
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+HNSW parameters set.
+
+  M: 59
+Loading base vectors...
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+  Max layer: 5
+Loading base vectors...
+  EFC: 763
+  EFS: 125
+  Threads: 16
+  Debug: 1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 4577.175848 ms
+
+Loading query vectors...
+✓ Base loaded in 4580.319970 ms
+
+Loading query vectors...
+✓ Base loaded in 4583.904814 ms
+
+Loading query vectors...
+✓ Queries loaded in 91.483961 ms
+
+Loading ground truth...
+✓ Queries loaded in 90.135370 ms
+
+Loading ground truth...
+✓ Queries loaded in 89.201455 ms
+
+Loading ground truth...
+✓ Truth loaded in 88.377906 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 88.639881 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Truth loaded in 88.111985 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...

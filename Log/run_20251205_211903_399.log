@@ -1,0 +1,22 @@
+========== HNSW Search Test ==========
+
+Timestamp: Fri Dec  5 21:19:03 2025
+
+Command line arguments:
+  argv[0]: ./basic
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: -1
+  Max layer: -1
+  EFC: -1
+  EFS: -1
+  Threads: -1
+  Debug: -1
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...

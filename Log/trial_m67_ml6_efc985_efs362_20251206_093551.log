@@ -1,0 +1,149 @@
+   [START] m=67, ml=6, efc=985, efs=362
+[OUT] ========== HNSW Search Test ==========
+[OUT] 
+[OUT] Timestamp: Sat Dec  6 09:35:51 2025
+[OUT] 
+[OUT] Command line arguments:
+[OUT]   argv[0]: ./hng1
+[OUT]   argv[1]: --m
+[OUT]   argv[2]: 67
+[OUT]   argv[3]: --max_layer
+[OUT]   argv[4]: 6
+[OUT]   argv[5]: --efc
+[OUT]   argv[6]: 985
+[OUT]   argv[7]: --efs
+[OUT]   argv[8]: 362
+[OUT] 
+[OUT] Configuration:
+[OUT]   Base file: data_o/glove/base.txt
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[OUT]   Query file: data_o/glove/query.txt
+[OUT]   Truth file: data_o/glove/truth.txt
+[OUT]   K: 10
+[OUT]   M: 67
+[OUT]   Max layer: 6
+[OUT]   EFC: 985
+[OUT]   EFS: 362
+[OUT]   Threads: -1
+[OUT]   Debug: -1
+[OUT] 
+[OUT] HNSW parameters set.
+[OUT] 
+[OUT] Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+[OUT] 
+[OUT] Loading base vectors...
+[OUT] ✓ Base loaded in 2213.349525 ms
+[OUT] 
+[OUT] Loading query vectors...
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[OUT] ✓ Queries loaded in 66.183361 ms
+[OUT] 
+[OUT] Loading ground truth...
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] ✓ Truth loaded in 67.678687 ms
+[OUT] 
+[OUT] Data Summary:
+[OUT]   Dimension d=100, Base vectors=1183514, Queries=10000
+[OUT] 
+[OUT] 
+[OUT] Building HNSW index...
+[OUT] [Cache] Loaded index from: cache/hnsw_n1183514_d100_M67_L6_efc985.idx
+[OUT] [Cache] Load time: 3922.17 ms
+[OUT] ✓ Index built.
+[OUT]   build_time(local)=3927.044842 ms
+[OUT]   build_time(internal)=3922.169704 ms
+[OUT] 
+[OUT] 
+[OUT] ========== GRAPH QUALITY ==========
+[OUT] 
+[OUT]   num_nodes: 1183514
+[OUT] 
+[OUT]   max_level (entry point): 3
+[OUT] 
+[OUT]   actual_max_layer: 3
+[OUT] 
+[OUT]   avg_degree_l0: 65.869713
+[OUT] 
+[OUT]   avg_degree_upper: 0.106636
+[OUT] 
+[OUT] 
+[OUT]   Layer Distribution:
+[OUT] 
+[OUT]     L0: 1183514 nodes (100.00%)
+[OUT] 
+[OUT]     L1: 17554 nodes (1.48%)
+[OUT] 
+[OUT]     L2: 268 nodes (0.02%)
+[OUT] 
+[OUT]     L3: 5 nodes (0.00%)
+[OUT] 
+[OUT] 
+[OUT] 
+[OUT] Executing queries...
+[OUT] 
+[OUT]   Processed 1000 queries
+[OUT] 
+[OUT]   Processed 2000 queries
+[OUT] 
+[OUT]   Processed 3000 queries
+[OUT] 
+[OUT]   Processed 4000 queries
+[OUT] 
+[OUT]   Processed 5000 queries
+[OUT] 
+[OUT]   Processed 6000 queries
+[OUT] 
+[OUT]   Processed 7000 queries
+[OUT] 
+[OUT]   Processed 8000 queries
+[OUT] 
+[OUT]   Processed 9000 queries
+[OUT] 
+[OUT]   Processed 10000 queries
+[OUT] 
+[OUT] 
+[OUT] ========== RESULTS ==========
+[OUT] 
+[OUT] Total queries: 10000
+[OUT] 
+[OUT] Average recall@10: 0.980030
+[OUT] 
+[OUT] Average query time: 1.373966 ms
+[OUT] 
+[OUT] Total query time: 13739.663215 ms
+[OUT] 
+[OUT] 
+[OUT] ========== DISTANCE STATISTICS ==========
+[OUT] 
+[OUT] Total queries reported by index: 10000
+[OUT] 
+[OUT] Total distance computations: 200416761
+[OUT] 
+[OUT] Average distance ops per query: 20041.676100
+[OUT] 
+[OUT] Last query distance ops: 15903
+[OUT] 
+[OUT] 
+[OUT] ========== PERFORMANCE SUMMARY ==========
+[OUT] 
+[OUT] Data loading time: 2347.211573 ms
+[OUT] 
+[OUT] Index build time: 3922.169704 ms
+[OUT] 
+[OUT] Query execution time: 13739.663215 ms
+[OUT] 
+[OUT] Total elapsed time: 20013.919630 ms
+[OUT] 
+[OUT] 
+[OUT] ========== EFFICIENCY METRICS ==========
+[OUT] 
+[OUT] Queries per second: 727.819878
+[OUT] 
+[OUT] Distance ops per second: 14586730.246867
+[OUT] 
+[OUT] 
+[OUT] ========== END OF LOG ==========
+[OUT] 
+[OUT] Log saved to: Log/run_20251206_093551_335.log
+[OUT] 
+   [RESULT] Rec=0.9800 Time=1.3740ms

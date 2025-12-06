@@ -1,0 +1,112 @@
+========== HNSW Search Test ==========
+
+Timestamp: Sat Dec  6 02:25:41 2025
+
+Command line arguments:
+  argv[0]: ./hng1
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+  argv[7]: --k
+  argv[8]: 10
+  argv[9]: --m
+========== HNSW Search Test ==========
+
+  argv[10]: 59
+  argv[11]: --max_layer
+  argv[12]: 5
+Timestamp: Sat Dec  6 02:25:41 2025
+
+  argv[13]: --efc
+Command line arguments:
+  argv[14]: 763
+  argv[0]: ./hng1
+  argv[15]: --efs
+  argv[1]: --base
+  argv[16]: 525
+  argv[2]: data_o/glove/base.txt
+  argv[17]: --threads
+  argv[3]: --query
+  argv[18]: 32
+  argv[4]: data_o/glove/query.txt
+  argv[19]: --ablate_csr
+  argv[5]: --truth
+  argv[20]: 0
+  argv[6]: data_o/glove/truth.txt
+  argv[21]: --ablate_prefetch
+  argv[7]: --k
+  argv[22]: 0
+  argv[8]: 10
+  argv[23]: --ablate_simd
+  argv[9]: --m
+  argv[24]: 0
+  argv[10]: 59
+  argv[25]: --ablate_pruning
+  argv[11]: --max_layer
+  argv[26]: 0
+  argv[12]: 5
+  argv[27]: --ablate_heap
+  argv[13]: --efc
+  argv[28]: 0
+  argv[14]: 763
+  argv[29]: --ablate_flat_index
+  argv[15]: --efs
+  argv[30]: 0
+  argv[16]: 725
+  argv[31]: --ablate_reorder
+  argv[17]: --threads
+  argv[32]: 0
+  argv[18]: 32
+
+Configuration:
+  argv[19]: --ablate_csr
+  argv[20]: 0
+  Base file: data_o/glove/base.txt
+  argv[21]: --ablate_prefetch
+  Query file: data_o/glove/query.txt
+  argv[22]: 0
+  Truth file: data_o/glove/truth.txt
+  argv[23]: --ablate_simd
+  K: 10
+  argv[24]: 0
+  M: 59
+  argv[25]: --ablate_pruning
+  Max layer: 5
+  argv[26]: 0
+  EFC: 763
+  argv[27]: --ablate_heap
+  EFS: 525
+  argv[28]: 0
+  Threads: 32
+  argv[29]: --ablate_flat_index
+  Debug: -1
+  argv[30]: 0
+
+  argv[31]: --ablate_reorder
+HNSW parameters set.
+
+  argv[32]: 0
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+
+Configuration:
+Loading base vectors...
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 59
+  Max layer: 5
+  EFC: 763
+  EFS: 725
+  Threads: 32
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...

@@ -24,7 +24,7 @@
 #endif
 
 // ---------------------------------------------------------
-// 内存对齐工具
+// 32字节对齐内存分配工具 (必须在 FlatHNSW 之前定义)
 // ---------------------------------------------------------
 static constexpr size_t ALIGN_SIZE = 32;
 
@@ -34,7 +34,10 @@ static inline void* aligned_alloc_32(size_t size) {
     return _aligned_malloc(size, ALIGN_SIZE);
 #else
     void* ptr = nullptr;
-    return (posix_memalign(&ptr, ALIGN_SIZE, size) == 0) ? ptr : nullptr;
+    if (posix_memalign(&ptr, ALIGN_SIZE, size) != 0) {
+        return nullptr;
+    }
+    return ptr;
 #endif
 }
 
@@ -47,27 +50,67 @@ static inline void aligned_free_32(void* ptr) {
 #endif
 }
 
+// 对齐的 float 数组包装器
 struct AlignedFloatArray {
     float* ptr = nullptr;
     size_t size_ = 0;
+    
     AlignedFloatArray() = default;
     ~AlignedFloatArray() { clear(); }
+    
+    // 禁止拷贝
     AlignedFloatArray(const AlignedFloatArray&) = delete;
     AlignedFloatArray& operator=(const AlignedFloatArray&) = delete;
-    AlignedFloatArray(AlignedFloatArray&& o) noexcept : ptr(o.ptr), size_(o.size_) { o.ptr = nullptr; o.size_ = 0; }
-    AlignedFloatArray& operator=(AlignedFloatArray&& o) noexcept {
-        if (this != &o) { clear(); ptr = o.ptr; size_ = o.size_; o.ptr = nullptr; o.size_ = 0; }
+    
+    // 允许移动
+    AlignedFloatArray(AlignedFloatArray&& other) noexcept 
+        : ptr(other.ptr), size_(other.size_) {
+        other.ptr = nullptr;
+        other.size_ = 0;
+    }
+    
+    AlignedFloatArray& operator=(AlignedFloatArray&& other) noexcept {
+        if (this != &other) {
+            clear();
+            ptr = other.ptr;
+            size_ = other.size_;
+            other.ptr = nullptr;
+            other.size_ = 0;
+        }
         return *this;
     }
-    void resize(size_t n) { if (n != size_) { clear(); if (n > 0) { ptr = (float*)aligned_alloc_32(n * sizeof(float)); size_ = n; } } }
-    void clear() { if (ptr) { aligned_free_32(ptr); ptr = nullptr; } size_ = 0; }
+    
+    void resize(size_t n) {
+        if (n == size_) return;
+        clear();
+        if (n > 0) {
+            ptr = (float*)aligned_alloc_32(n * sizeof(float));
+            size_ = n;
+        }
+    }
+    
+    void clear() {
+        if (ptr) {
+            aligned_free_32(ptr);
+            ptr = nullptr;
+        }
+        size_ = 0;
+    }
+    
     size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
     float* data() { return ptr; }
     const float* data() const { return ptr; }
+    float* begin() { return ptr; }
+    float* end() { return ptr + size_; }
+    const float* begin() const { return ptr; }
+    const float* end() const { return ptr + size_; }
+    float& operator[](size_t i) { return ptr[i]; }
+    const float& operator[](size_t i) const { return ptr[i]; }
 };
 
 // ---------------------------------------------------------
-// 全局配置
+// 距离统计相关全局变量
 // ---------------------------------------------------------
 static std::atomic<uint64_t> g_total_dist_count{0};
 static std::atomic<uint64_t> g_total_query_count{0};
@@ -75,7 +118,9 @@ static std::atomic<uint64_t> g_last_query_dist{0};
 static thread_local uint64_t tl_dist_counter = 0;
 static std::atomic<double> g_last_build_ms{0.0};
 
-// 消融标签
+// ---------------------------------------------------------
+// Ablation flags (runtime toggles for experiments) - 提前声明
+// ---------------------------------------------------------
 static std::atomic<bool> ABLATE_CSR(false);
 static std::atomic<bool> ABLATE_PREFETCH(false);
 static std::atomic<bool> ABLATE_SIMD(false);
@@ -84,19 +129,24 @@ static std::atomic<bool> ABLATE_HEAP(false);
 static std::atomic<bool> ABLATE_FLAT_INDEX(false);
 static std::atomic<bool> ABLATE_REORDER(false);
 
-// 优化配置
-std::atomic<bool> ENABLE_POST_OPTIMIZATION(true);
-std::atomic<int> POST_OPT_M(32);
-std::atomic<float> PRUNING_ALPHA(1.0f);
+// 【新增】三角不等式剪枝开关 (默认开启)
+static std::atomic<bool> ENABLE_TRIANGLE_PRUNING(true);
 
-static std::atomic<bool> ENABLE_RUNTIME_DIST_COUNTING(false);
-static bool DEBUG_TIMING = true;
+// 新增：runtime toggle to enable/disable distance counting (avoid TLS increment when disabled)
+static std::atomic<bool> ENABLE_RUNTIME_DIST_COUNTING(true);
 
+// ---------------------------------------------------------
+// SIMD 距离计算 (带/不带计数)
+// ---------------------------------------------------------
+// 通过宏 ENABLE_DIST_COUNTING 控制是否统计距离计算次数以避免 TLS 开销（默认关闭）
 #ifndef ENABLE_DIST_COUNTING
 #define ENABLE_DIST_COUNTING 1
 #endif
 
 #include "distance.h"
+// ---------------------------------------------------------
+// 全局线程池
+// ---------------------------------------------------------
 #include "Threadf.h"
 
 static std::atomic<int> g_HNSW_M{HNSW_DEFAULT_M};
@@ -111,862 +161,1219 @@ static std::atomic<int> HNSW_BUILD_THREADS = [](){
 
 static ThreadPool* g_thread_pool = nullptr;
 static std::mutex g_pool_mutex;
+
 static ThreadPool* getThreadPool() {
-    std::lock_guard<std::mutex> lk(g_pool_mutex);
+    std::lock_guard<std::mutex> lock(g_pool_mutex);
     if (!g_thread_pool) g_thread_pool = new ThreadPool(HNSW_BUILD_THREADS);
     return g_thread_pool;
 }
 
+static bool DEBUG_TIMING = true;  // 改为 false，关闭调试输出
+
+// Prefetch wrapper (runtime toggle)
 static inline void my_prefetch_l1(const void* ptr) {
 #ifdef __GNUC__
-    if (!ABLATE_PREFETCH.load(std::memory_order_relaxed))
-        _mm_prefetch((const char*)ptr, _MM_HINT_T0);
+    if (ABLATE_PREFETCH.load(std::memory_order_relaxed)) return;
+    _mm_prefetch((const char*)ptr, _MM_HINT_T0);
+#else
+    (void)ptr;
 #endif
 }
 
 // 新增：统一的 prefetch 跳跃距离
 static constexpr int PREFETCH_AHEAD = 7;
 
-// =========================================================
-// Part 1: SimpleHNSW (动态构建结构)
-// =========================================================
+// ---------------------------------------------------------
+// 扁平化 HNSW 索引 (Read-Only Optimized) - CSR 格式
+// ---------------------------------------------------------
+class FlatHNSW {
+public:
+    int dim;
+    int max_m;
+    int max_m_upper;
+    int enter_point;
+    int num_nodes;
+    int max_level;
+    
+    // 数据存储 - 32字节对齐
+    AlignedFloatArray data; 
+    
+    // [优化] CSR 存储结构 - 消除 Padding，高度紧凑
+    std::vector<uint64_t> l0_offsets;
+    std::vector<int> l0_links;
+    
+    // 上层图结构 (扁平化存储)
+    std::vector<int> node_levels;
+    std::vector<int> upper_link_offsets;
+    std::vector<int> upper_link_storage;
+    
+    // [新增] ID 映射表：New ID -> Old ID (原始 index)
+    std::vector<int> label_lookup;
+
+    // 【新增】存储每个节点到 Pivot (Entry Point) 的 L2 距离（开方后）
+    // 用于三角不等式剪枝
+    AlignedFloatArray pivot_dists;
+
+    FlatHNSW(int d) : dim(d), max_m(0), max_m_upper(0), enter_point(-1), num_nodes(0), max_level(0) {}
+
+    inline int size() const { return num_nodes; }
+
+    // [优化] CSR 格式获取第0层邻居 - 无 Padding，全是有效数据
+    inline const int* get_l0_links(int id, int& count) const {
+        uint64_t start = l0_offsets[id];
+        uint64_t end = l0_offsets[id + 1];
+        count = (int)(end - start);
+        return l0_links.data() + start;
+    }
+    
+    // 获取上层邻居
+    inline const int* get_upper_links(int id, int level, int& count) const {
+        if (level <= 0 || level > node_levels[id]) {
+            count = 0;
+            return nullptr;
+        }
+        int offset = upper_link_offsets[(size_t)id * max_level + level];
+        if (offset < 0) {
+            count = 0;
+            return nullptr;
+        }
+        const int* base = upper_link_storage.data() + offset;
+        count = *base;
+        return base + 1;
+    }
+    
+    inline const float* get_vec(int id) const {
+        return data.data() + (size_t)id * dim;
+    }
+
+    inline float dist(int id, const float* q) const {
+        return l2sq_100d(get_vec(id), q);
+    }
+    
+    inline float distNodes(int id_a, int id_b) const {
+        return l2sq_100d(get_vec(id_a), get_vec(id_b));
+    }
+    
+    // 上层贪婪搜索 (无锁)
+    int greedySearchUpper(int ep, const float* q, int level) const {
+        if (ep < 0 || ep >= num_nodes) return -1;
+        
+        float curd = dist(ep, q);
+        bool changed = true;
+        
+        while (changed) {
+            changed = false;
+            int count;
+            const int* links = get_upper_links(ep, level, count);
+            
+            if (count > 0) {
+                my_prefetch_l1(get_vec(links[0]));
+            }
+            
+            int best_nb = -1;
+            float best_d = curd;
+            
+            for (int i = 0; i < count; ++i) {
+                int nb = links[i];
+                if (i + 1 < count) {
+                    my_prefetch_l1(get_vec(links[i+1]));
+                }
+                float nd = dist(nb, q);
+                if (nd < best_d) {
+                    best_d = nd;
+                    best_nb = nb;
+                }
+            }
+            
+            if (best_nb >= 0) {
+                curd = best_d;
+                ep = best_nb;
+                changed = true;
+            }
+        }
+        return ep;
+    }
+    
+    // -------------------------------------------------------------
+    // 【优化】带三角不等式剪枝的 L0 搜索
+    // -------------------------------------------------------------
+    std::vector<std::pair<float, int>> searchL0(const float* q, int ep, int ef) const {
+        if (ep < 0 || ep >= num_nodes) return {};
+        
+        using Pair = std::pair<float, int>;
+        
+        static thread_local std::vector<Pair> candidates;
+        static thread_local std::vector<Pair> top_results;
+        static thread_local std::vector<int> expand_queue;
+        static thread_local TagVisitedList visited;
+        
+        candidates.clear(); 
+        top_results.clear();
+        expand_queue.clear();
+        
+        candidates.reserve(ef * 2);
+        top_results.reserve(ef + 1);
+        expand_queue.reserve(64);
+
+        visited.init(num_nodes);
+        visited.advance();
+        
+        const uint16_t* visited_ptr = visited.data();
+        uint16_t cur_tag = visited.currentTag();
+
+        // 【三角不等式】预计算 Query 到 Pivot 的距离
+        float d_q_pivot = 0.0f;
+        bool use_triangle = ENABLE_TRIANGLE_PRUNING.load(std::memory_order_relaxed) 
+                           && (enter_point >= 0) 
+                           && (pivot_dists.size() > 0);
+        if (use_triangle) {
+            float sq = dist(enter_point, q);
+            d_q_pivot = std::sqrt(sq);
+        }
+
+        float d0 = dist(ep, q);
+        visited.mark(ep);
+        
+        candidates.push_back({d0, ep});
+        top_results.push_back({d0, ep});
+
+        float worst_dist = d0;
+
+        auto min_comp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
+        auto max_comp = [](const Pair& a, const Pair& b) { return a.first < b.first; };
+        
+        // 内联处理候选点的 lambda
+        auto process_candidate = [&](float d, int nb) {
+            if ((int)top_results.size() < ef) {
+                top_results.push_back({d, nb});
+                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                if ((int)top_results.size() == ef) {
+                    worst_dist = top_results.front().first;
+                }
+                candidates.push_back({d, nb});
+                std::push_heap(candidates.begin(), candidates.end(), min_comp);
+            } else if (d < worst_dist) {
+                std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                top_results.back() = {d, nb};
+                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                worst_dist = top_results.front().first;
+                
+                candidates.push_back({d, nb});
+                std::push_heap(candidates.begin(), candidates.end(), min_comp);
+            }
+        };
+
+        while (!candidates.empty()) {
+            std::pop_heap(candidates.begin(), candidates.end(), min_comp);
+            Pair curr = candidates.back();
+            candidates.pop_back();
+
+            if ((int)top_results.size() >= ef && curr.first > worst_dist) {
+                break;
+            }
+
+            expand_queue.clear();
+            expand_queue.push_back(curr.second);
+
+            for (size_t qi = 0; qi < expand_queue.size(); ++qi) {
+                int x = expand_queue[qi];
+                int count;
+                const int* links = get_l0_links(x, count);
+
+                // 预取
+                if (count > 0) {
+                    int pf_idx = std::min(count - 1, PREFETCH_AHEAD);
+                    my_prefetch_l1(get_vec(links[pf_idx]));
+                }
+
+                int i = 0;
+                
+                // --- 2-way Batching Loop with Triangle Pruning ---
+                for (; i <= count - 2; i += 2) {
+                    if (i + PREFETCH_AHEAD < count) {
+                        my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD]));
+                    }
+                    if (i + PREFETCH_AHEAD + 1 < count) {
+                        my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD + 1]));
+                    }
+
+                    int nb1 = links[i];
+                    int nb2 = links[i + 1];
+                    
+                    bool v1 = (visited_ptr[nb1] == cur_tag);
+                    bool v2 = (visited_ptr[nb2] == cur_tag);
+                    
+                    if (v1 && v2) continue;
+                    
+                    if (!v1) visited.mark(nb1);
+                    if (!v2) visited.mark(nb2);
+
+                    // 【三角不等式剪枝】
+                    bool skip1 = false, skip2 = false;
+                    if (use_triangle && (int)top_results.size() >= ef) {
+                        float sqrt_worst = std::sqrt(worst_dist);
+                        if (!v1) {
+                            float d_n1_pivot = pivot_dists.ptr[nb1];
+                            float diff1 = d_q_pivot - d_n1_pivot;
+                            if (diff1 < 0) diff1 = -diff1;
+                            if (diff1 > sqrt_worst * 1.0001f) skip1 = true;
+                        }
+                        if (!v2) {
+                            float d_n2_pivot = pivot_dists.ptr[nb2];
+                            float diff2 = d_q_pivot - d_n2_pivot;
+                            if (diff2 < 0) diff2 = -diff2;
+                            if (diff2 > sqrt_worst * 1.0001f) skip2 = true;
+                        }
+                    }
+                    
+                    // 根据剪枝结果决定是否计算距离
+                    if (skip1 && skip2) continue;
+                    
+                    float d1 = 0, d2 = 0;
+                    
+                    if (!v1 && !skip1 && !v2 && !skip2) {
+                        l2sq_100d_2x(q, get_vec(nb1), get_vec(nb2), d1, d2);
+                    } else if (!v1 && !skip1) {
+                        d1 = dist(nb1, q);
+                    } else if (!v2 && !skip2) {
+                        d2 = dist(nb2, q);
+                    }
+
+                    if (!v1 && !skip1) process_candidate(d1, nb1);
+                    if (!v2 && !skip2) process_candidate(d2, nb2);
+                }
+                
+                // 处理剩余的 1 个
+                for (; i < count; ++i) {
+                    if (i + PREFETCH_AHEAD < count) {
+                        my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD]));
+                    }
+                    
+                    int nb = links[i];
+                    if (visited_ptr[nb] == cur_tag) continue;
+                    visited.mark(nb);
+                    
+                    // 【三角不等式剪枝】
+                    if (use_triangle && (int)top_results.size() >= ef) {
+                        float d_n_pivot = pivot_dists.ptr[nb];
+                        float diff = d_q_pivot - d_n_pivot;
+                        if (diff < 0) diff = -diff;
+                        float sqrt_worst = std::sqrt(worst_dist);
+                        if (diff > sqrt_worst * 1.0001f) continue;
+                    }
+                    
+                    float d = dist(nb, q);
+                    process_candidate(d, nb);
+                }
+            }
+        }
+
+        std::sort_heap(top_results.begin(), top_results.end(), max_comp);
+        return top_results;
+    }
+};
+
+// ---------------------------------------------------------
+// Node Structure
+// ---------------------------------------------------------
 struct HNSWNode {
     std::vector<std::vector<int>> links;
     mutable std::shared_mutex lock;
-    HNSWNode(int max_level, int M) { links.resize(max_level + 1); for(auto& l : links) l.reserve(M * 2 + 1); }
+    
+    HNSWNode(int max_level, int M) {
+        links.resize(max_level + 1);
+        for(auto& l : links) l.reserve(M * 2 + 1);
+    }
 };
 
+// ---------------------------------------------------------
+// SimpleHNSW - 优化版本
+// ---------------------------------------------------------
 class SimpleHNSW {
 public:
-    int dim, M, maxLayer, enter_point = -1;
-    std::vector<float> data_flat;
+    int dim;
+    int M;
+    int maxLayer;
+    
+    // 扁平化数据存储：连续内存，Cache友好
+    std::vector<float> data_flat;  // size = n * dim
     std::vector<HNSWNode*> nodes;
+    
+    int enter_point;
     std::shared_mutex global_mutex;
 
-    SimpleHNSW(int d, int m = 16, int ml = 16) : dim(d), M(m), maxLayer(ml) {}
+    SimpleHNSW(int d, int m = 16, int ml = 16)
+        : dim(d), M(m), maxLayer(ml), enter_point(-1) {}
+
     ~SimpleHNSW() { for (auto p : nodes) delete p; }
-    
+
     inline int size() const { return (int)nodes.size(); }
-    inline const float* getVec(int id) const { return data_flat.data() + (size_t)id * dim; }
-    inline float dist(int id, const float* q) const { return l2sq_100d(getVec(id), q); }
-    inline float distNodes(int a, int b) const { return l2sq_100d(getVec(a), getVec(b)); }
+    
+    // 获取第 id 个向量的指针
+    inline const float* getVec(int id) const {
+        return data_flat.data() + (size_t)id * dim;
+    }
 
     int randomLevel() {
         static thread_local std::minstd_rand rng((unsigned)std::random_device{}());
         static thread_local std::uniform_real_distribution<float> ud(0.f, 1.f);
-        return (int)(-std::log(ud(rng)) / std::log((float)M));
+        float r = ud(rng);
+        return (int)(-std::log(r) * (1.0 / std::log((float)M)));
     }
 
+    // 计算 query 到节点 id 的距离
+    inline float dist(int id, const float* q) const {
+        return l2sq_100d(getVec(id), q);
+    }
+    
+    // 计算两个节点之间的距离
+    inline float distNodes(int id_a, int id_b) const {
+        return l2sq_100d(getVec(id_a), getVec(id_b));
+    }
+
+    // -------------------------------------------------------
+    // greedySearch
+    // -------------------------------------------------------
     template<bool UseLock>
     int greedySearch(int ep, const float* q, int l) const {
-        if (ep < 0 || ep >= size()) return -1;
+        if (__builtin_expect(ep < 0 || ep >= size(), 0)) return -1;
+        
         float curd = dist(ep, q);
         bool changed = true;
+        
         while (changed) {
             changed = false;
-            std::shared_lock<std::shared_mutex> lk;
-            if constexpr (UseLock) lk = std::shared_lock(nodes[ep]->lock);
-            for (int nb : nodes[ep]->links[l]) {
+            
+            const std::vector<int>* neighbors_ptr;
+            std::shared_lock<std::shared_mutex> lock_guard;
+            
+            if constexpr (UseLock) {
+                lock_guard = std::shared_lock<std::shared_mutex>(nodes[ep]->lock);
+            }
+            neighbors_ptr = &nodes[ep]->links[l];
+            
+            const auto& neighbors = *neighbors_ptr;
+            const int nsize = (int)neighbors.size();
+            
+            if (nsize > 0) {
+                my_prefetch_l1(getVec(neighbors[0]));
+            }
+            
+            int best_nb = -1;
+            float best_d = curd;
+            
+            for (int i = 0; i < nsize; ++i) {
+                int nb = neighbors[i];
+                if (i + 1 < nsize) {
+                    my_prefetch_l1(getVec(neighbors[i+1]));
+                }
                 float nd = dist(nb, q);
-                if (nd < curd) { curd = nd; ep = nb; changed = true; }
+                if (nd < best_d) {
+                    best_d = nd;
+                    best_nb = nb;
+                }
+            }
+            
+            if (best_nb >= 0) {
+                curd = best_d;
+                ep = best_nb;
+                changed = true;
             }
         }
         return ep;
     }
 
+    // -------------------------------------------------------
+    // 优化后的 searchLayer：使用排序数组代替 priority_queue
+    // -------------------------------------------------------
     template<bool UseLock>
     std::vector<std::pair<float, int>> searchLayer(const float* q, int ep, int l, int ef) const {
-        if (ep < 0 || ep >= size()) return {};
+        if (__builtin_expect(ep < 0 || ep >= size(), 0)) return {};
+        
         using Pair = std::pair<float, int>;
-        static thread_local std::vector<Pair> top, cand;
-        static thread_local VisitedList vis;
         
-        top.clear(); cand.clear();
-        vis.init(size()); vis.advance();
+        static thread_local std::vector<Pair> top_candidates;
+        static thread_local std::vector<Pair> candidate_queue;
+        static thread_local std::priority_queue<Pair, std::vector<Pair>, std::function<bool(const Pair&, const Pair&)>> top_heap(
+            std::function<bool(const Pair&, const Pair&)>([](const Pair& a, const Pair& b) { return a.first < b.first; })
+        );
+        static thread_local VisitedList visited_list;
         
+        top_candidates.clear();
+        candidate_queue.clear();
+        top_candidates.reserve(ef + 1);
+        candidate_queue.reserve(ef * 2);
+        
+        visited_list.init(size());
+        visited_list.advance();
+
+        // 最小堆比较器
+        auto greater_comp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
+
         float d0 = dist(ep, q);
-        vis.mark(ep);
-        top.push_back({d0, ep});
-        cand.push_back({d0, ep});
-        auto gt = [](const Pair& a, const Pair& b) { return a.first > b.first; };
-        std::push_heap(cand.begin(), cand.end(), gt);
-        float lb = d0;
+        visited_list.mark(ep);
         
-        while (!cand.empty()) {
-            std::pop_heap(cand.begin(), cand.end(), gt);
-            auto curr = cand.back(); cand.pop_back();
-            if (curr.first > lb && (int)top.size() >= ef) break;
+        if (ABLATE_HEAP.load(std::memory_order_relaxed)) {
+            while (!top_heap.empty()) top_heap.pop();
+            top_heap.push({d0, ep});
+        } else {
+            top_candidates.push_back({d0, ep});
+        }
+        candidate_queue.push_back({d0, ep});
+        std::push_heap(candidate_queue.begin(), candidate_queue.end(), greater_comp);
+
+        float lower_bound = d0;
+
+        while (!candidate_queue.empty()) {
+            std::pop_heap(candidate_queue.begin(), candidate_queue.end(), greater_comp);
+            auto curr = candidate_queue.back();
+            candidate_queue.pop_back();
+
+            // 关键剪枝：当前最近候选已超过结果集最远距离
+            if (curr.first > lower_bound && ((ABLATE_HEAP.load(std::memory_order_relaxed) && (int)top_heap.size() >= ef) || (!ABLATE_HEAP.load(std::memory_order_relaxed) && (int)top_candidates.size() >= ef))) {
+                break;
+            }
+
+            const std::vector<int>* neighbors_ptr;
+            std::shared_lock<std::shared_mutex> lock_guard;
             
-            std::shared_lock<std::shared_mutex> lk;
-            if constexpr (UseLock) lk = std::shared_lock(nodes[curr.second]->lock);
+            if constexpr (UseLock) {
+                lock_guard = std::shared_lock<std::shared_mutex>(nodes[curr.second]->lock);
+            }
+            neighbors_ptr = &nodes[curr.second]->links[l];
             
-            for (int nb : nodes[curr.second]->links[l]) {
-                if (vis.isVisited(nb)) continue;
-                vis.mark(nb);
-                float d = dist(nb, q);
-                if ((int)top.size() < ef || d < lb) {
-                    auto it = std::upper_bound(top.begin(), top.end(), Pair{d, nb}, 
-                        [](const Pair& a, const Pair& b) { return a.first < b.first; });
-                    top.insert(it, {d, nb});
-                    if ((int)top.size() > ef) top.pop_back();
-                    lb = top.back().first;
+            const auto& neighbors = *neighbors_ptr;
+            const int nsize = (int)neighbors.size();
+
+            if (nsize > 0) {
+                my_prefetch_l1(getVec(neighbors[0]));
+            }
+
+            for (int i = 0; i < nsize; ++i) {
+                int nb = neighbors[i];
+                if (i + 1 < nsize) {
+                    my_prefetch_l1(getVec(neighbors[i+1]));
                 }
-                cand.push_back({d, nb}); std::push_heap(cand.begin(), cand.end(), gt);
+
+                if (!visited_list.isVisited(nb)) {
+                    visited_list.mark(nb);
+                    float d_nb = dist(nb, q);
+
+                    if (ABLATE_HEAP.load(std::memory_order_relaxed)) {
+                        if ((int)top_heap.size() < ef) {
+                            top_heap.push({d_nb, nb});
+                        } else if (d_nb < top_heap.top().first) {
+                            top_heap.pop();
+                            top_heap.push({d_nb, nb});
+                        }
+                        // recompute lower bound
+                        if (!top_heap.empty()) lower_bound = top_heap.top().first;
+                    } else {
+                        if ((int)top_candidates.size() < ef || d_nb < lower_bound) {
+                            // 二分查找插入位置（保持升序）
+                            auto it = std::upper_bound(top_candidates.begin(), top_candidates.end(),
+                                Pair{d_nb, nb}, [](const Pair& a, const Pair& b) { return a.first < b.first; });
+                            top_candidates.insert(it, {d_nb, nb});
+
+                            if ((int)top_candidates.size() > ef) {
+                                top_candidates.pop_back();
+                            }
+                            lower_bound = top_candidates.back().first;
+                        }
+                    }
+
+                    candidate_queue.push_back({d_nb, nb});
+                    std::push_heap(candidate_queue.begin(), candidate_queue.end(), greater_comp);
+                }
             }
         }
-        return top;
+
+        if (ABLATE_HEAP.load(std::memory_order_relaxed)) {
+            top_candidates.clear();
+            while (!top_heap.empty()) {
+                top_candidates.push_back(top_heap.top());
+                top_heap.pop();
+            }
+            std::sort(top_candidates.begin(), top_candidates.end(), [](const Pair& a, const Pair& b){ return a.first < b.first; });
+            return top_candidates;
+        }
+
+        return top_candidates;
     }
 
-    void connectNodeHeuristic(int id, const std::vector<std::pair<float, int>>& candidates, int l, float alpha = 1.0f) {
+    // -------------------------------------------------------
+    // Robust Pruning (启发式选边) - 核心优化
+    // -------------------------------------------------------
+    void connectNodeHeuristic(int id, const std::vector<std::pair<float, int>>& candidates, int l) {
         if (id < 0 || id >= size()) return;
         int m_max = (l == 0) ? M * 2 : M;
 
-        std::vector<std::pair<float, int>> all;
-        all.reserve(candidates.size() + m_max);
-        for (const auto& p : candidates) all.push_back(p);
-        {
-            std::shared_lock lk(nodes[id]->lock);
-            for (int nb : nodes[id]->links[l])
-                if (nb >= 0 && nb < size()) all.push_back({distNodes(id, nb), nb});
-        }
-
-        std::sort(all.begin(), all.end());
-        all.erase(std::unique(all.begin(), all.end(), [](auto& a, auto& b) { return a.second == b.second; }), all.end());
-
-        std::vector<int> result;
-        result.reserve(m_max);
-        bool skip_pruning = ABLATE_PRUNING.load(std::memory_order_relaxed);
+        std::vector<std::pair<float, int>> all_candidates;
+        all_candidates.reserve(candidates.size() + m_max);
         
-        for (const auto& c : all) {
-            if ((int)result.size() >= m_max) break;
-            if (c.second == id) continue;
-            bool keep = true;
-            if (!skip_pruning) {
-                for (int sel : result)
-                    if (distNodes(c.second, sel) < alpha * c.first) { keep = false; break; }
-            }
-            if (keep) result.push_back(c.second);
+        for (const auto& p : candidates) {
+            all_candidates.push_back(p);
         }
-        { std::unique_lock lk(nodes[id]->lock); nodes[id]->links[l] = std::move(result); }
 
-        for (const auto& p : all) {
+        {
+            std::shared_lock<std::shared_mutex> lock(nodes[id]->lock);
+            const auto& old_links = nodes[id]->links[l];
+            for (int old_nb : old_links) {
+                if (old_nb >= 0 && old_nb < size()) {
+                    all_candidates.push_back({distNodes(id, old_nb), old_nb});
+                }
+            }
+        }
+
+        std::sort(all_candidates.begin(), all_candidates.end());
+        all_candidates.erase(
+            std::unique(all_candidates.begin(), all_candidates.end(),
+                [](const auto& a, const auto& b) { return a.second == b.second; }),
+            all_candidates.end()
+        );
+
+        std::vector<int> result_links;
+        result_links.reserve(m_max);
+
+        if (ABLATE_PRUNING.load(std::memory_order_relaxed)) {
+            int taken = 0;
+            for (const auto& cand : all_candidates) {
+                if (taken >= m_max) break;
+                if (cand.second == id) continue;
+                result_links.push_back(cand.second);
+                ++taken;
+            }
+        } else {
+            for (const auto& cand : all_candidates) {
+                if ((int)result_links.size() >= m_max) break;
+
+                float d_cand_to_curr = cand.first;
+                int cand_id = cand.second;
+                
+                if (cand_id == id) continue;
+
+                bool keep = true;
+                for (int selected_nbr : result_links) {
+                    float d_cand_to_selected = distNodes(cand_id, selected_nbr);
+                    if (d_cand_to_selected < d_cand_to_curr) {
+                        keep = false;
+                        break;
+                    }
+                }
+
+                if (keep) {
+                    result_links.push_back(cand_id);
+                }
+            }
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> lock(nodes[id]->lock);
+            nodes[id]->links[l] = std::move(result_links);
+        }
+
+        for (const auto& p : all_candidates) {
             int nb = p.second;
             if (nb < 0 || nb >= size() || nb == id) continue;
+            
             bool in_result = false;
-            { std::shared_lock lk(nodes[id]->lock); for (int r : nodes[id]->links[l]) if (r == nb) { in_result = true; break; } }
+            {
+                std::shared_lock<std::shared_mutex> lock(nodes[id]->lock);
+                for (int r : nodes[id]->links[l]) {
+                    if (r == nb) { in_result = true; break; }
+                }
+            }
             if (!in_result) continue;
 
-            std::vector<std::pair<float, int>> nb_all;
-            { std::shared_lock lk(nodes[nb]->lock); for (int x : nodes[nb]->links[l]) if (x >= 0 && x < size()) nb_all.push_back({distNodes(nb, x), x}); }
-            nb_all.push_back({distNodes(nb, id), id});
-            std::sort(nb_all.begin(), nb_all.end());
-            nb_all.erase(std::unique(nb_all.begin(), nb_all.end(), [](auto& a, auto& b) { return a.second == b.second; }), nb_all.end());
+            std::vector<std::pair<float, int>> nb_candidates;
+            {
+                std::shared_lock<std::shared_mutex> lock(nodes[nb]->lock);
+                const auto& nb_links = nodes[nb]->links[l];
+                nb_candidates.reserve(nb_links.size() + 1);
+                for (int x : nb_links) {
+                    if (x >= 0 && x < size()) {
+                        nb_candidates.push_back({distNodes(nb, x), x});
+                    }
+                }
+            }
+            nb_candidates.push_back({distNodes(nb, id), id});
+
+            std::sort(nb_candidates.begin(), nb_candidates.end());
+            nb_candidates.erase(
+                std::unique(nb_candidates.begin(), nb_candidates.end(),
+                    [](const auto& a, const auto& b) { return a.second == b.second; }),
+                nb_candidates.end()
+            );
 
             std::vector<int> nb_result;
             nb_result.reserve(m_max);
-            for (const auto& c : nb_all) {
-                if ((int)nb_result.size() >= m_max) break;
-                if (c.second == nb) continue;
-                bool keep = true;
-                if (!skip_pruning) {
-                    for (int sel : nb_result) if (distNodes(c.second, sel) < alpha * c.first) { keep = false; break; }
+
+            if (ABLATE_PRUNING.load(std::memory_order_relaxed)) {
+                int taken = 0;
+                for (const auto& c : nb_candidates) {
+                    if (taken >= m_max) break;
+                    if (c.second == nb) continue;
+                    nb_result.push_back(c.second);
+                    ++taken;
                 }
-                if (keep) nb_result.push_back(c.second);
+            } else {
+                for (const auto& c : nb_candidates) {
+                    if ((int)nb_result.size() >= m_max) break;
+                    if (c.second == nb) continue;
+
+                    bool keep = true;
+                    for (int sel : nb_result) {
+                        if (distNodes(c.second, sel) < c.first) {
+                            keep = false;
+                            break;
+                        }
+                    }
+                    if (keep) nb_result.push_back(c.second);
+                }
             }
-            { std::unique_lock lk(nodes[nb]->lock); nodes[nb]->links[l] = std::move(nb_result); }
+
+            {
+                std::unique_lock<std::shared_mutex> lock(nodes[nb]->lock);
+                nodes[nb]->links[l] = std::move(nb_result);
+            }
         }
     }
 
     void insertPointParallel(int id, int level) {
         int ep_curr;
-        { std::shared_lock lk(global_mutex); ep_curr = enter_point; }
-        
+        {
+            std::shared_lock<std::shared_mutex> lock(global_mutex);
+            ep_curr = enter_point;
+        }
+
         if (ep_curr != -1) {
             int max_l = (int)nodes[ep_curr]->links.size() - 1;
             int curr = ep_curr;
-            for (int l = max_l; l > level; l--) curr = greedySearch<true>(curr, getVec(id), l);
+            
+            for (int l = max_l; l > level; l--) {
+                curr = greedySearch<true>(curr, getVec(id), l);
+            }
+
             for (int l = std::min(level, max_l); l >= 0; l--) {
                 auto top = searchLayer<true>(getVec(id), curr, l, g_HNSW_EF_CONSTRUCTION.load());
                 if (!top.empty()) curr = top[0].second;
                 connectNodeHeuristic(id, top, l);
             }
         }
-        { std::unique_lock lk(global_mutex); if (enter_point == -1 || level > (int)nodes[enter_point]->links.size() - 1) enter_point = id; }
+
+        {
+            std::unique_lock<std::shared_mutex> lock(global_mutex);
+            if (enter_point == -1 || level > (int)nodes[enter_point]->links.size() - 1) {
+                enter_point = id;
+            }
+        }
     }
 };
 
-// =========================================================
-// Part 2: 缓存系统
-// =========================================================
+// Forward declarations so functions are visible before usage
+static FlatHNSW* convert_to_flat(SimpleHNSW* src);
+
 #include "cache.h"
 
-// =========================================================
-// Part 3: FlatHNSW (只读查询结构)
-// =========================================================
-class FlatHNSW {
-public:
-    int dim, max_m, max_m_upper, enter_point, num_nodes, max_level;
-    AlignedFloatArray data;
-    std::vector<uint64_t> l0_offsets;
-    std::vector<int> l0_links;
-    std::vector<int> node_levels;
-    std::vector<int> upper_link_offsets;
-    std::vector<int> upper_link_storage;
-    std::vector<int> label_lookup;
-
-    FlatHNSW(int d) : dim(d), max_m(0), max_m_upper(0), enter_point(-1), num_nodes(0), max_level(0) {}
-    
-    inline const int* get_l0_links(int id, int& count) const {
-        count = (int)(l0_offsets[id + 1] - l0_offsets[id]);
-        return l0_links.data() + l0_offsets[id];
-    }
-    
-    inline const int* get_upper_links(int id, int level, int& count) const {
-        if (level <= 0 || level > node_levels[id]) { count = 0; return nullptr; }
-        int off = upper_link_offsets[(size_t)id * max_level + level];
-        if (off < 0) { count = 0; return nullptr; }
-        count = upper_link_storage[off];
-        return upper_link_storage.data() + off + 1;
-    }
-    
-    inline const float* get_vec(int id) const { return data.data() + (size_t)id * dim; }
-    inline float dist(int id, const float* q) const { return l2sq_100d(get_vec(id), q); }
-    
-    int greedySearchUpper(int ep, const float* q, int level) const {
-        if (ep < 0 || ep >= num_nodes) return -1;
-        float curd = dist(ep, q);
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            int count; const int* links = get_upper_links(ep, level, count);
-            for (int i = 0; i < count; ++i) {
-                float nd = dist(links[i], q);
-                if (nd < curd) { curd = nd; ep = links[i]; changed = true; }
-            }
-        }
-        return ep;
-    }
-    
-    std::vector<std::pair<float, int>> searchL0(const float* q, int ep, int ef) const {
-        if (ep < 0 || ep >= num_nodes) return {};
-        using Pair = std::pair<float, int>;
-        static thread_local std::vector<Pair> top_candidates;
-        static thread_local std::vector<Pair> search_queue;
-        static thread_local TagVisitedList visited;
-        
-        top_candidates.clear(); search_queue.clear();
-        top_candidates.reserve(ef + 1);
-        search_queue.reserve(ef * 2);
-        visited.init(num_nodes); visited.advance();
-        
-        float d0 = dist(ep, q);
-        visited.mark(ep);
-        top_candidates.push_back({d0, ep});
-        search_queue.push_back({d0, ep});
-        float lower_bound = d0;
-        
-        auto min_cmp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
-        auto max_cmp = [](const Pair& a, const Pair& b) { return a.first < b.first; };
-        
-        while (!search_queue.empty()) {
-            std::pop_heap(search_queue.begin(), search_queue.end(), min_cmp);
-            Pair curr = search_queue.back(); search_queue.pop_back();
-            if (curr.first > lower_bound && (int)top_candidates.size() >= ef) break;
-            
-            int count; const int* links = get_l0_links(curr.second, count);
-            if (count > 0) {
-                // 预取第 PREFETCH_AHEAD 个邻居（或最后一个）
-                int pf_idx = std::min(count - 1, PREFETCH_AHEAD);
-                my_prefetch_l1(get_vec(links[pf_idx]));
-            }
-            
-            for (int i = 0; i < count; ++i) {
-                int nb = links[i];
-                if (i + PREFETCH_AHEAD < count) my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD]));
-                if (visited.isVisited(nb)) continue;
-                visited.mark(nb);
-                float d = dist(nb, q);
-                
-                if ((int)top_candidates.size() < ef || d < lower_bound) {
-                    top_candidates.push_back({d, nb});
-                    std::push_heap(top_candidates.begin(), top_candidates.end(), max_cmp);
-                    if ((int)top_candidates.size() > ef) {
-                        std::pop_heap(top_candidates.begin(), top_candidates.end(), max_cmp);
-                        top_candidates.pop_back();
-                    }
-                    lower_bound = top_candidates.front().first;
-                    search_queue.push_back({d, nb});
-                    std::push_heap(search_queue.begin(), search_queue.end(), min_cmp);
-                }
-            }
-        }
-        std::sort_heap(top_candidates.begin(), top_candidates.end(), max_cmp);
-        return top_candidates;
-    }
-};
-
 // ---------------------------------------------------------
-// 优化后的启发式剪枝 (RNG) - 增加最小边数保证
+// 并行包装类 - 修改以支持缓存
 // ---------------------------------------------------------
-static void heuristic_prune(
-    const float* curr_vec,
-    const std::vector<std::pair<float, int>>& candidates,
-    std::vector<int>& result,
-    int max_m,
-    const float* all_data,
-    int dim,
-    float alpha = 1.0f,
-    int min_edges = 2  // 新增：最小边数保证
-) {
-    result.clear();
-    result.reserve(max_m);
-    if (candidates.empty()) return;
-    
-    // Phase 1: RNG pruning
-    std::vector<bool> selected(candidates.size(), false);
-    selected[0] = true;
-    result.push_back(candidates[0].second);
-    
-    int size = (int)candidates.size();
-    for (int i = 1; i < size && (int)result.size() < max_m; ++i) {
-        const auto& cand = candidates[i];
-        int cand_id = cand.second;
-        float dist_to_curr = cand.first;
-        const float* cand_vec = all_data + (size_t)cand_id * dim;
-        bool keep = true;
-        for (int existing_id : result) {
-            const float* exist_vec = all_data + (size_t)existing_id * dim;
-            float dist_to_exist = l2sq_100d(cand_vec, exist_vec);
-            if (dist_to_exist < alpha * dist_to_curr) { keep = false; break; }
-        }
-        if (keep) {
-            result.push_back(cand_id);
-            selected[i] = true;
-        }
-    }
-    
-    // Phase 2: Connectivity enforcement - ensure minimum edges
-    if ((int)result.size() < min_edges) {
-        for (int i = 0; i < size && (int)result.size() < min_edges; ++i) {
-            if (!selected[i]) {
-                result.push_back(candidates[i].second);
-                selected[i] = true;
-            }
-        }
-    }
-}
-
-// =========================================================
-// Part 4: 图重排 + 转换函数
-// =========================================================
-
-
-// DFS 重排：模拟贪婪路径，优化 Cache 布局
-static void generate_dfs_reordering(SimpleHNSW* src, std::vector<int>& old2new, std::vector<int>& new2old) {
-    int N = src->size();
-    old2new.assign(N, -1);
-    new2old.resize(N);
-    int current_id = 0;
-    std::vector<int> stack;
-    stack.reserve(N);
-    std::vector<bool> visited(N, false);
-
-    if (src->enter_point >= 0 && src->enter_point < N) {
-        stack.push_back(src->enter_point);
-        visited[src->enter_point] = true;
-    }
-    for (int root = 0; root < N; ++root) {
-        if (old2new[root] != -1) continue;
-        if (stack.empty()) { stack.push_back(root); visited[root] = true; }
-        while (!stack.empty()) {
-            int u = stack.back(); stack.pop_back();
-            if (old2new[u] == -1) { old2new[u] = current_id; new2old[current_id++] = u; }
-            std::shared_lock<std::shared_mutex> lk(src->nodes[u]->lock);
-            const auto& links = src->nodes[u]->links[0];
-            for (auto it = links.rbegin(); it != links.rend(); ++it) {
-                int v = *it;
-                if (v >= 0 && v < N && !visited[v]) { visited[v] = true; stack.push_back(v); }
-            }
-        }
-    }
-}
-
-struct Candidate {
-    int id;
-    float dist;
-    bool operator<(const Candidate& o) const { return dist < o.dist; }
-};
-
-[[maybe_unused]] static void reorder_ids_by_coordinate(SimpleHNSW* src, std::vector<int>& old2new, std::vector<int>& new2old, bool debug) {
-    int N = src->size();
-    old2new.assign(N, -1);
-    new2old.resize(N);
-    struct NodeInfo { int id; float key; };
-    std::vector<NodeInfo> nodes;
-    nodes.reserve(N);
-    for (int i = 0; i < N; ++i) {
-        const float* vec = src->getVec(i);
-        float key = 0.f;
-        int dims = std::min(src->dim, 4);
-        for (int d = 0; d < dims; ++d) key += vec[d];
-        nodes.push_back({i, key});
-    }
-    std::sort(nodes.begin(), nodes.end(), [](const NodeInfo& a, const NodeInfo& b) { return a.key < b.key; });
-    for (int rank = 0; rank < N; ++rank) {
-        int orig = nodes[rank].id;
-        new2old[rank] = orig;
-        old2new[orig] = rank;
-    }
-    if (debug) std::cout << "[Reorder] Coordinate mapping done for " << N << " nodes" << std::endl;
-}
-
-[[maybe_unused]] static void rewire_and_prune(SimpleHNSW* src, int target_M, float prune_alpha = 1.0f) {
-    int N = src->size();
-    if (N <= 0 || target_M <= 0) return;
-    std::vector<std::vector<int>> reverse_links(N);
-    for (int i = 0; i < N; ++i) {
-        std::shared_lock<std::shared_mutex> lk(src->nodes[i]->lock);
-        for (int nb : src->nodes[i]->links[0]) {
-            if (nb >= 0 && nb < N) reverse_links[nb].push_back(i);
-        }
-    }
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(dynamic)
-#endif
-    for (int i = 0; i < N; ++i) {
-        std::vector<int> pool;
-        pool.reserve(target_M * 4);
-        {
-            std::shared_lock lk(src->nodes[i]->lock);
-            pool = src->nodes[i]->links[0];
-        }
-        pool.insert(pool.end(), reverse_links[i].begin(), reverse_links[i].end());
-        std::sort(pool.begin(), pool.end());
-        pool.erase(std::unique(pool.begin(), pool.end()), pool.end());
-        std::vector<Candidate> candidates;
-        candidates.reserve(pool.size());
-        const float* vec_i = src->getVec(i);
-        for (int nb : pool) {
-            if (nb == i || nb < 0 || nb >= N) continue;
-            float d = l2sq_100d(vec_i, src->getVec(nb));
-            candidates.push_back({nb, d});
-        }
-        std::sort(candidates.begin(), candidates.end());
-        std::vector<int> result;
-        result.reserve(target_M);
-        if (!candidates.empty()) result.push_back(candidates[0].id);
-        for (size_t c = 1; c < candidates.size() && result.size() < (size_t)target_M; ++c) {
-            const auto& curr = candidates[c];
-            bool keep = true;
-            const float* vec_c = src->getVec(curr.id);
-            for (int existing_nb : result) {
-                float dist_between = l2sq_100d(vec_c, src->getVec(existing_nb));
-                if (dist_between < prune_alpha * curr.dist) { keep = false; break; }
-            }
-            if (keep) result.push_back(curr.id);
-        }
-        std::unique_lock<std::shared_mutex> lk(src->nodes[i]->lock);
-        src->nodes[i]->links[0] = std::move(result);
-    }
-}
-
-static FlatHNSW* convert_to_flat(SimpleHNSW* src, bool debug) {
-    // 参数配置
-    constexpr int TARGET_M_L0 = 32;
-    constexpr int TARGET_M_UPPER = 24;
-    constexpr float PRUNING_ALPHA = 1.2f;
-    constexpr int MIN_EDGES = 4;
-    
-    // 二跳扩展参数
-    constexpr int TWO_HOP_WIDTH = 6;   // 只对最近的6个邻居扩展
-    constexpr int TWO_HOP_DEPTH = 10;  // 每个中间点最多取10个邻居
-
-    FlatHNSW* flat = new FlatHNSW(src->dim);
-    int N = src->size();
-    flat->num_nodes = N;
-    flat->max_m = TARGET_M_L0;
-    flat->max_m_upper = TARGET_M_UPPER;
-
-    std::vector<int> old2new, new2old;
-    bool do_reorder = !ABLATE_REORDER.load(std::memory_order_relaxed);
-    if (do_reorder) {
-        generate_dfs_reordering(src, old2new, new2old);
-        flat->enter_point = (src->enter_point == -1) ? -1 : old2new[src->enter_point];
-        flat->label_lookup = new2old;
-    } else {
-        flat->enter_point = src->enter_point;
-        old2new.resize(N); new2old.resize(N);
-        for (int i = 0; i < N; ++i) { old2new[i] = i; new2old[i] = i; }
-    }
-
-    flat->data.resize((size_t)N * flat->dim);
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(static, 4096)
-#endif
-    for (int nid = 0; nid < N; ++nid) {
-        std::memcpy(flat->data.data() + (size_t)nid * flat->dim,
-                    src->getVec(new2old[nid]), flat->dim * sizeof(float));
-    }
-
-    // 构建反向链接
-    std::vector<std::vector<int>> reverse_links(N);
-    for (int oid = 0; oid < N; ++oid) {
-        std::shared_lock<std::shared_mutex> lk(src->nodes[oid]->lock);
-        for (int nb : src->nodes[oid]->links[0]) 
-            if (nb >= 0 && nb < N) reverse_links[nb].push_back(oid);
-    }
-
-    flat->l0_offsets.resize(N + 1);
-    std::vector<std::vector<int>> optimized_l0(N);
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(dynamic, 64)
-#endif
-    for (int nid = 0; nid < N; ++nid) {
-        int oid = new2old[nid];
-        const float* curr_vec = flat->data.data() + (size_t)nid * flat->dim;
-
-        // =========================================================
-        // 第一步：构建高质量的一跳基础（带距离排序）
-        // =========================================================
-        std::vector<std::pair<float, int>> sorted_1hop;
-        sorted_1hop.reserve(128);
-
-        // 1.1 收集正向邻居
-        {
-            std::shared_lock<std::shared_mutex> lk(src->nodes[oid]->lock);
-            for (int nb : src->nodes[oid]->links[0]) {
-                if (nb < 0 || nb >= N || nb == oid) continue;
-                int nb_nid = old2new[nb];
-                if (nb_nid < 0) continue;
-                float d = l2sq_100d(curr_vec, flat->data.data() + (size_t)nb_nid * flat->dim);
-                sorted_1hop.push_back({d, nb}); // 存 {dist, old_id}
-            }
-        }
-
-        // 1.2 收集反向邻居（解决单向死路）
-        for (int rev_nb : reverse_links[oid]) {
-            if (rev_nb == oid) continue;
-            int nb_nid = old2new[rev_nb];
-            if (nb_nid < 0) continue;
-            float d = l2sq_100d(curr_vec, flat->data.data() + (size_t)nb_nid * flat->dim);
-            sorted_1hop.push_back({d, rev_nb});
-        }
-
-        // 1.3 排序与去重（必须先排序，这是精准扩展的前提）
-        std::sort(sorted_1hop.begin(), sorted_1hop.end());
-        {
-            auto unique_end = std::unique(sorted_1hop.begin(), sorted_1hop.end(), 
-                [](const auto& a, const auto& b){ return a.second == b.second; });
-            sorted_1hop.erase(unique_end, sorted_1hop.end());
-        }
-
-        // =========================================================
-        // 第二步：精准二跳扩展
-        // =========================================================
-        std::vector<std::pair<float, int>> final_candidates;
-        final_candidates.reserve(sorted_1hop.size() + TWO_HOP_WIDTH * TWO_HOP_DEPTH);
-        
-        // 先加入所有一跳邻居（转换为 new_id）
-        for (const auto& p : sorted_1hop) {
-            final_candidates.push_back({p.first, old2new[p.second]});
-        }
-
-        // 【核心策略】只对最近的 TWO_HOP_WIDTH 个邻居进行扩展
-        int expand_limit = std::min((int)sorted_1hop.size(), TWO_HOP_WIDTH);
-        
-        for (int i = 0; i < expand_limit; ++i) {
-            int intermediate_oid = sorted_1hop[i].second; // 中间跳板节点
-            
-            std::shared_lock<std::shared_mutex> lk(src->nodes[intermediate_oid]->lock);
-            const auto& next_links = src->nodes[intermediate_oid]->links[0];
-            
-            // 【核心策略】只取中间节点的前 TWO_HOP_DEPTH 个连接
-            int limit_count = 0;
-            for (int leaf_oid : next_links) {
-                if (++limit_count > TWO_HOP_DEPTH) break;
-                
-                // 排除回路
-                if (leaf_oid == oid) continue;
-                
-                int leaf_nid = old2new[leaf_oid];
-                if (leaf_nid < 0) continue;
-                
-                // 计算直接距离
-                float d = l2sq_100d(curr_vec, flat->data.data() + (size_t)leaf_nid * flat->dim);
-                final_candidates.push_back({d, leaf_nid});
-            }
-        }
-
-        // =========================================================
-        // 第三步：整理与最终剪枝
-        // =========================================================
-        
-        // 3.1 排序与去重
-        std::sort(final_candidates.begin(), final_candidates.end());
-        {
-            std::vector<std::pair<float, int>> unique_cands;
-            unique_cands.reserve(final_candidates.size());
-            int last_id = -1;
-            for (const auto& c : final_candidates) {
-                if (c.second != last_id && c.second != nid) {
-                    unique_cands.push_back(c);
-                    last_id = c.second;
-                }
-            }
-            final_candidates = std::move(unique_cands);
-        }
-        
-        // 3.2 启发式剪枝（Alpha=1.2 保留适度冗余边）
-        heuristic_prune(curr_vec, final_candidates, optimized_l0[nid], 
-                       TARGET_M_L0, flat->data.data(), flat->dim, 
-                       PRUNING_ALPHA, MIN_EDGES);
-    }
-
-    // ...existing code for building l0_links array and upper layers...
-    uint64_t off = 0;
-    for (const auto& v : optimized_l0) off += v.size();
-    flat->l0_links.resize(off);
-    off = 0;
-    for (int i = 0; i < N; ++i) {
-        flat->l0_offsets[i] = off;
-        if (!optimized_l0[i].empty()) {
-            std::memcpy(flat->l0_links.data() + off, optimized_l0[i].data(), optimized_l0[i].size() * sizeof(int));
-            off += optimized_l0[i].size();
-        }
-    }
-    flat->l0_offsets[N] = off;
-
-    flat->max_level = 0;
-    for (int i = 0; i < N; ++i) flat->max_level = std::max(flat->max_level, (int)src->nodes[i]->links.size() - 1);
-    flat->max_level = std::min(flat->max_level, 100);
-    flat->node_levels.resize(N);
-    flat->upper_link_offsets.assign((size_t)N * (flat->max_level + 1), -1);
-
-    for (int nid = 0; nid < N; ++nid) {
-        int oid = new2old[nid];
-        int lv = (int)src->nodes[oid]->links.size() - 1;
-        flat->node_levels[nid] = lv;
-        for (int l = 1; l <= lv && l <= flat->max_level; ++l) {
-            const auto& src_links = src->nodes[oid]->links[l];
-            std::vector<std::pair<float, int>> cand;
-            const float* vec_u = flat->data.data() + (size_t)nid * flat->dim;
-            for (int ob : src_links) {
-                int nb = old2new[ob];
-                if (nb < 0) continue;
-                cand.push_back({l2sq_100d(vec_u, flat->data.data() + (size_t)nb * flat->dim), nb});
-            }
-            std::sort(cand.begin(), cand.end());
-            std::vector<int> res;
-            heuristic_prune(vec_u, cand, res, TARGET_M_UPPER, flat->data.data(), flat->dim, 1.15f, 2);
-            int idx = (int)flat->upper_link_storage.size();
-            flat->upper_link_offsets[(size_t)nid * (flat->max_level + 1) + l] = idx;
-            flat->upper_link_storage.push_back((int)res.size());
-            for (int nb : res) flat->upper_link_storage.push_back(nb);
-        }
-    }
-
-    if (debug) std::cout << "[Convert] Precise 2-Hop: M=" << TARGET_M_L0 << ", Alpha=" << PRUNING_ALPHA 
-                         << ", Width=" << TWO_HOP_WIDTH << ", Depth=" << TWO_HOP_DEPTH << std::endl;
-    return flat;
-}
-
-// =========================================================
-// Part 5: 主控类
-// =========================================================
 class HnswSolutionParallel {
 public:
     SimpleHNSW* hnsw = nullptr;
     FlatHNSW* flat_index = nullptr;
     std::vector<int> point_ids;
 
-    ~HnswSolutionParallel() { delete hnsw; delete flat_index; }
+    ~HnswSolutionParallel() { 
+        delete hnsw; 
+        delete flat_index;
+    }
 
     void build_from_memory(int d, const float* data, int n) {
-        delete flat_index; flat_index = nullptr;
-        delete hnsw; hnsw = nullptr;
+        delete flat_index;
+        flat_index = nullptr;
+        delete hnsw;
+        hnsw = nullptr;
         
-        int M = g_HNSW_M.load(), ml = g_HNSW_MAX_LAYER.load(), efc = g_HNSW_EF_CONSTRUCTION.load();
-        std::string cache_path = get_index_cache_path(n, d, M, ml, efc);
+        int M = g_HNSW_M.load();
+        int max_layer = g_HNSW_MAX_LAYER.load();
+        int efc = g_HNSW_EF_CONSTRUCTION.load();
+
+        // no_csr / flat_index ablation: 禁用 flat 转换与缓存
+        bool disable_flat = ABLATE_CSR.load(std::memory_order_relaxed) ||
+                            ABLATE_FLAT_INDEX.load(std::memory_order_relaxed);
+
+        FlatHNSW* cached_flat = nullptr;
+        std::string cache_path;
+        if (!disable_flat) {
+            cache_path = get_index_cache_path(n, d, M, max_layer, efc);
+            #ifdef _WIN32
+            _mkdir("cache");
+            #else
+            mkdir("cache", 0755);
+            #endif
+            auto cache_start = std::chrono::high_resolution_clock::now();
+            cached_flat = load_flat_index(cache_path);
+            auto cache_end = std::chrono::high_resolution_clock::now();
+            if (cached_flat != nullptr) {
+                double cache_ms = std::chrono::duration<double, std::milli>(cache_end - cache_start).count();
+                if (DEBUG_TIMING) {
+                    std::cout << "[Cache] Loaded index from: " << cache_path << std::endl;
+                    std::cout << "[Cache] Load time: " << std::fixed << std::setprecision(2) 
+                              << cache_ms << " ms" << std::endl;
+                }
+                g_last_build_ms.store(cache_ms, std::memory_order_relaxed);
+                point_ids.resize(n);
+                for (int i = 0; i < n; ++i) point_ids[i] = i;
+                flat_index = cached_flat;
+                return;
+            }
+        }
+
+        // 缓存未命中，正常构建
+        hnsw = new SimpleHNSW(d, M, max_layer);
         
-        #ifdef _WIN32
-        _mkdir("cache");
-        #else
-        mkdir("cache", 0755);
-        #endif
+        hnsw->data_flat.resize((size_t)n * d);
+        std::memcpy(hnsw->data_flat.data(), data, (size_t)n * d * sizeof(float));
+        
+        hnsw->nodes.reserve(n);
+        
+        std::vector<int> levels(n);
+        for (int i = 0; i < n; ++i) {
+            levels[i] = std::min(hnsw->randomLevel(), max_layer);
+            hnsw->nodes.push_back(new HNSWNode(levels[i], M));
+        }
         
         point_ids.resize(n);
         for (int i = 0; i < n; ++i) point_ids[i] = i;
-        
-        auto total_start = std::chrono::high_resolution_clock::now();
-        
-        // Phase 1: 加载或构建原始图
-        auto t0 = std::chrono::high_resolution_clock::now();
-        SimpleHNSW* raw_hnsw = load_simple_index(cache_path, data, d, n, DEBUG_TIMING);
-        auto t1 = std::chrono::high_resolution_clock::now();
 
-        if (raw_hnsw) {
-            if (DEBUG_TIMING) std::cout << "[Phase1-Cache] " << std::chrono::duration<double,std::milli>(t1-t0).count() << " ms" << std::endl;
-        } else {
-            if (DEBUG_TIMING) std::cout << "[Phase1-Build] Starting..." << std::endl;
+        if (n > 0) hnsw->enter_point = 0;
 
-            auto build_start = std::chrono::high_resolution_clock::now();
+        auto build_start = std::chrono::high_resolution_clock::now();
 
-            raw_hnsw = new SimpleHNSW(d, M, ml);
-            raw_hnsw->data_flat.resize((size_t)n * d);
-            std::memcpy(raw_hnsw->data_flat.data(), data, (size_t)n * d * sizeof(float));
+        ThreadPool* pool = getThreadPool();
+        std::atomic<int> processed(1);
+        int chunk_size = 1000;
 
-            std::vector<int> levels(n);
-            for (int i = 0; i < n; ++i) {
-                levels[i] = std::min(raw_hnsw->randomLevel(), ml);
-                raw_hnsw->nodes.push_back(new HNSWNode(levels[i], M));
-            }
-            if (n > 0) raw_hnsw->enter_point = 0;
-
-            ThreadPool* pool = getThreadPool();
-            std::atomic<int> processed(1);
-            int chunk_size = 1000;
-
-            // Enqueue work
-            for (int i = 1; i < n; i += chunk_size) {
-                int end = std::min(i + chunk_size, n);
-                pool->enqueue([raw_hnsw, i, end, &levels, &processed]() {
-                    for (int j = i; j < end; ++j) raw_hnsw->insertPointParallel(j, levels[j]);
-                    processed.fetch_add(end - i);
-                });
-            }
-
-            // New: progress reporter thread (only during building)
-            std::thread progress_thread([&processed, n, build_start]() {
-                int last_reported = 0;
-                int step = std::max(50000, n / 10);
-                while (processed.load(std::memory_order_acquire) < n) {
-                    int curr = processed.load(std::memory_order_acquire);
-                    if (curr - last_reported >= step) {
-                        double pct = 100.0 * curr / n;
-                        auto now = std::chrono::high_resolution_clock::now();
-                        double elapsed_ms = std::chrono::duration<double, std::milli>(now - build_start).count();
-                        if (DEBUG_TIMING) {
-                            std::cout << "[Progress] " << curr << "/" << n 
-                                      << " (" << std::fixed << std::setprecision(1) << pct << "%) "
-                                      << "Elapsed: " << std::fixed << std::setprecision(2) << elapsed_ms << " ms"
-                                      << std::endl;
-                        }
-                        last_reported = curr;
-                    }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        for (int i = 1; i < n; i += chunk_size) {
+            int end = std::min(i + chunk_size, n);
+            pool->enqueue([this, i, end, &levels, &processed]() {
+                for (int j = i; j < end; ++j) {
+                    hnsw->insertPointParallel(j, levels[j]);
                 }
+                processed.fetch_add(end - i, std::memory_order_release);
             });
+        }
 
-            // Wait for build complete
+        // 进度监控
+        std::thread progress_thread([&processed, n, &build_start]() {
+            int last_reported = 0;
             while (processed.load(std::memory_order_acquire) < n) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                int curr = processed.load(std::memory_order_acquire);
+                if (curr - last_reported >= std::max(50000, n / 10)) {
+                    double pct = 100.0 * curr / n;
+                    auto now = std::chrono::high_resolution_clock::now();
+                    double elapsed_ms = std::chrono::duration<double, std::milli>(now - build_start).count();
+                    if (DEBUG_TIMING) {
+                        std::cout << "[Progress] " << curr << "/" << n 
+                                  << " (" << std::fixed << std::setprecision(1) << pct << "%) "
+                                  << "Time: " << std::fixed << std::setprecision(2) << elapsed_ms << " ms" << std::endl;
+                        std::cout.flush();
+                    }
+                    last_reported = curr;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
-            if (progress_thread.joinable()) progress_thread.join();
+        });
 
-            auto build_end = std::chrono::high_resolution_clock::now();
-            if (DEBUG_TIMING) std::cout << "[Phase1-Build] " << std::chrono::duration<double,std::milli>(build_end-build_start).count() << " ms" << std::endl;
-
-            // Save to cache
-            auto save_start = std::chrono::high_resolution_clock::now();
-            save_simple_index(raw_hnsw, cache_path, DEBUG_TIMING);
-            auto save_end = std::chrono::high_resolution_clock::now();
-            if (DEBUG_TIMING) std::cout << "[Phase1-Save] " << std::chrono::duration<double,std::milli>(save_end-save_start).count() << " ms" << std::endl;
+        while (processed.load(std::memory_order_acquire) < n) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        progress_thread.join();
 
-        // Phase 2: 后处理优化 (unchanged)
-        if (ABLATE_CSR.load() || ABLATE_FLAT_INDEX.load()) {
-            hnsw = raw_hnsw;
-            if (DEBUG_TIMING) std::cout << "[Phase2] Ablation - using SimpleHNSW" << std::endl;
-        } else {
-            auto t2 = std::chrono::high_resolution_clock::now();
-            flat_index = convert_to_flat(raw_hnsw, DEBUG_TIMING);
-            auto t3 = std::chrono::high_resolution_clock::now();
-            if (DEBUG_TIMING) std::cout << "[Phase2-Convert] " << std::chrono::duration<double,std::milli>(t3-t2).count() << " ms" << std::endl;
-            delete raw_hnsw;
-        }
+        auto build_end = std::chrono::high_resolution_clock::now();
+        double total_ms = std::chrono::duration<double, std::milli>(build_end - build_start).count();
         
-        auto total_end = std::chrono::high_resolution_clock::now();
-        double total_ms = std::chrono::duration<double,std::milli>(total_end-total_start).count();
+        if (DEBUG_TIMING) {
+            std::cout << "[Timing] Parallel Build: " << std::fixed << std::setprecision(2) 
+                      << total_ms << " ms for " << n << " points." << std::endl;
+            std::cout.flush();
+        }
         g_last_build_ms.store(total_ms, std::memory_order_relaxed);
-        if (DEBUG_TIMING) std::cout << "[Total] " << total_ms << " ms" << std::endl;
+
+        if (!disable_flat) {
+            // 转换为扁平化结构并缓存
+            auto convert_start = std::chrono::high_resolution_clock::now();
+            flat_index = convert_to_flat(hnsw);
+            auto convert_end = std::chrono::high_resolution_clock::now();
+            double convert_ms = std::chrono::duration<double, std::milli>(convert_end - convert_start).count();
+            
+            if (DEBUG_TIMING) {
+                std::cout << "[Timing] Flat Conversion: " << std::fixed << std::setprecision(2) 
+                          << convert_ms << " ms" << std::endl;
+                std::cout.flush();
+            }
+            auto save_start = std::chrono::high_resolution_clock::now();
+            if (save_flat_index(flat_index, cache_path)) {
+                auto save_end = std::chrono::high_resolution_clock::now();
+                double save_ms = std::chrono::duration<double, std::milli>(save_end - save_start).count();
+                if (DEBUG_TIMING) {
+                    std::cout << "[Cache] Saved index to: " << cache_path << std::endl;
+                    std::cout << "[Cache] Save time: " << std::fixed << std::setprecision(2) 
+                              << save_ms << " ms" << std::endl;
+                }
+            }
+        }
+
+        // 根据消融标志决定保留哪个结构
+        if (ABLATE_CSR.load(std::memory_order_relaxed) || ABLATE_FLAT_INDEX.load(std::memory_order_relaxed)) {
+            // 消融：保留动态结构，删除扁平化索引
+            delete flat_index;
+            flat_index = nullptr;
+            if (DEBUG_TIMING) {
+                std::cout << "[Ablation] Keeping SimpleHNSW for dynamic queries" << std::endl;
+            }
+        } else {
+            // 正常：删除动态结构，保留扁平化索引
+            delete hnsw;
+            hnsw = nullptr;
+        }
     }
 
-    struct SearchDistanceCountingGuard {
-        bool prev;
-        SearchDistanceCountingGuard() : prev(ENABLE_RUNTIME_DIST_COUNTING.exchange(true)) {}
-        ~SearchDistanceCountingGuard() { ENABLE_RUNTIME_DIST_COUNTING.store(prev); }
-    };
-    
-    struct SearchDistanceStats {
-        bool flushed = false;
-        void flush() {
-            if (flushed) return;
-            flushed = true;
-            uint64_t cnt = tl_dist_counter;
-            g_total_dist_count.fetch_add(cnt, std::memory_order_relaxed);
-            g_last_query_dist.store(cnt, std::memory_order_relaxed);
-            g_total_query_count.fetch_add(1, std::memory_order_relaxed);
-            tl_dist_counter = 0;
-        }
-        ~SearchDistanceStats() { flush(); }
-    };
-
+    // -------------------------------------------------------
+    // search 方法 - 【优化3】multi-queue + 【优化4】skip-layer
+    // -------------------------------------------------------
     std::vector<std::pair<int, float>> search(const std::vector<float>& query, int k) {
-        SearchDistanceCountingGuard guard;
-        SearchDistanceStats stats;
-        if (hnsw) {
+        tl_dist_counter = 0;
+
+        if (ABLATE_CSR.load(std::memory_order_relaxed) && hnsw != nullptr) {
             int ep = hnsw->enter_point;
-            if (ep < 0) return {};
+            if (ep < 0 || ep >= (int)hnsw->nodes.size()) return {};
+            int max_l = (int)hnsw->nodes[ep]->links.size() - 1;
             int curr = ep;
-            for (int l = std::min((int)hnsw->nodes[ep]->links.size()-1, 4); l > 0; l--) 
+            int start_l = std::min(max_l, 4);
+            for (int l = start_l; l > 0; l--) {
                 curr = hnsw->greedySearch<true>(curr, query.data(), l);
+            }
             auto top = hnsw->searchLayer<true>(query.data(), curr, 0, g_HNSW_EF_SEARCH.load());
-            
             std::vector<std::pair<int, float>> out;
-            for (int i = 0; i < std::min(k, (int)top.size()); ++i) 
-                out.push_back({point_ids[top[i].second], top[i].first});
+            int cnt = std::min(k, (int)top.size());
+            out.reserve(cnt);
+            for (int i = 0; i < cnt; ++i) {
+                int idx = top[i].second;
+                if (idx >= 0 && idx < (int)point_ids.size()) {
+                    out.push_back({point_ids[idx], top[i].first});
+                }
+            }
+            uint64_t last = tl_dist_counter;
+            tl_dist_counter = 0;
+            g_last_query_dist.store(last, std::memory_order_relaxed);
+            g_total_dist_count.fetch_add(last, std::memory_order_relaxed);
+            g_total_query_count.fetch_add(1, std::memory_order_relaxed);
             return out;
         }
+
         if (!flat_index || flat_index->enter_point < 0) return {};
-        
+
         int ep = flat_index->enter_point;
+        int max_l = flat_index->node_levels[ep];
         int curr = ep;
-        for (int l = std::min(flat_index->node_levels[ep], 4); l > 0; l = (l>1) ? l-2 : l-1)
+
+        int l = std::min(max_l, 4);
+        while (l > 0) {
             curr = flat_index->greedySearchUpper(curr, query.data(), l);
-        
+            l = (l > 1) ? (l - 2) : (l - 1);
+        }
+    
         auto top = flat_index->searchL0(query.data(), curr, g_HNSW_EF_SEARCH.load());
         
         std::vector<std::pair<int, float>> out;
-        for (int i = 0; i < std::min(k, (int)top.size()); ++i) {
-            int iid = top[i].second;
-            int oid = flat_index->label_lookup.empty() ? iid : flat_index->label_lookup[iid];
-            out.push_back({point_ids[oid], top[i].first});
+        int cnt = std::min(k, (int)top.size());
+        out.reserve(cnt);
+        for (int i = 0; i < cnt; ++i) {
+            int internal_id = top[i].second;
+            float dist = top[i].first;
+            
+            // 转换 ID：如果使用了重排，需要映射回原始 ID
+            int original_idx;
+            if (!flat_index->label_lookup.empty()) {
+                original_idx = flat_index->label_lookup[internal_id];
+            } else {
+                original_idx = internal_id;
+            }
+            
+            if (original_idx >= 0 && original_idx < (int)point_ids.size()) {
+                out.push_back({point_ids[original_idx], dist});
+            }
         }
+
+        uint64_t last = tl_dist_counter;
+        tl_dist_counter = 0;
+        g_last_query_dist.store(last, std::memory_order_relaxed);
+        g_total_dist_count.fetch_add(last, std::memory_order_relaxed);
+        g_total_query_count.fetch_add(1, std::memory_order_relaxed);
+
         return out;
     }
 };
 
-// =========================================================
-// Part 6: 对外接口
-// =========================================================
+// ---------------------------------------------------------
+// 对外接口
+// ---------------------------------------------------------
 static HnswSolutionParallel* g_impl = nullptr;
 
 void build_hnsw(int d, const std::vector<float>& base) {
+    int n = (int)base.size() / d;
     delete g_impl;
     g_impl = new HnswSolutionParallel();
-    g_impl->build_from_memory(d, base.data(), (int)base.size() / d);
+    g_impl->build_from_memory(d, base.data(), n);
 }
 
 std::vector<std::pair<int, float>> search_hnsw(const std::vector<float>& query, int k) {
-    return g_impl ? g_impl->search(query, k) : std::vector<std::pair<int, float>>{};
+    if (!g_impl) return {};
+    return g_impl->search(query, k);
 }
 
 Solution::Solution() : k_(10) {}
-void Solution::build(int d, const std::vector<float>& base) { build_hnsw(d, base); }
+
+void Solution::build(int d, const std::vector<float>& base) {
+    build_hnsw(d, base);
+}
+
 void Solution::search(const std::vector<float>& query, int* result) {
     std::fill(result, result + k_, -1);
     auto res = search_hnsw(query, k_);
-    for (size_t i = 0; i < res.size() && i < (size_t)k_; ++i) result[i] = res[i].first;
+    for (size_t i = 0; i < res.size() && i < static_cast<size_t>(k_); ++i) {
+        result[i] = res[i].first;
+    }
 }
-
+static void generate_dfs_reordering(SimpleHNSW* src, std::vector<int>& old_to_new, std::vector<int>& new_to_old) {
+    int N = src->size();
+    // 初始化映射表：old_to_new 初始化为 -1 表示未访问
+    old_to_new.assign(N, -1);
+    new_to_old.resize(N);
+    
+    int new_id_counter = 0;
+    std::vector<int> stack;
+    // 预分配内存以避免频繁扩容，N 为节点总数
+    stack.reserve(N);
+    
+    // 优先从入口点开始遍历，保证搜索起点的局部性
+    if (src->enter_point != -1 && src->enter_point < N) {
+        stack.push_back(src->enter_point);
+    }
+    
+    // 用于处理非连通图或初始点的扫描指针
+    int scan_idx = 0;
+    
+    while (new_id_counter < N) {
+        // 如果栈空了，说明当前连通分量遍历完毕，或者刚开始
+        if (stack.empty()) {
+            // 寻找下一个未访问的节点
+            while (scan_idx < N && old_to_new[scan_idx] != -1) {
+                scan_idx++;
+            }
+            if (scan_idx < N) {
+                stack.push_back(scan_idx);
+            } else {
+                // 所有节点都处理完毕
+                break;
+            }
+        }
+        
+        // 弹出栈顶元素
+        int u = stack.back();
+        stack.pop_back();
+        
+        // 如果已访问过，跳过
+        if (old_to_new[u] != -1) continue;
+        
+        // 建立映射关系：旧ID -> 新ID (连续递增)
+        old_to_new[u] = new_id_counter;
+        new_to_old[new_id_counter] = u;
+        new_id_counter++;
+        
+        // 将邻居入栈
+        // 使用 Layer 0 的连接，因为这层最密集，对缓存影响最大
+        if (u >= 0 && u < (int)src->nodes.size()) {
+            const auto& links = src->nodes[u]->links[0];
+            // 倒序遍历邻居并入栈，这样出栈顺序（即访问顺序）就是正序的
+            // 这有助于保持与原始构建顺序或启发式选边顺序的一致性
+            for (auto it = links.rbegin(); it != links.rend(); ++it) {
+                int v = *it;
+                // 只将合法且未访问的邻居入栈
+                if (v >= 0 && v < N && old_to_new[v] == -1) {
+                    stack.push_back(v);
+                }
+            }
+        }
+    }
+}
+// ---------------------------------------------------------
+// 设置参数接口
+// ---------------------------------------------------------
 #include "extern.h"
+
+static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
+    FlatHNSW* flat = new FlatHNSW(src->dim);
+
+    int N = src->size();
+    int M = src->M;
+    flat->num_nodes = N;
+    flat->max_m = M * 2;
+    flat->max_m_upper = M;
+
+    if (DEBUG_TIMING) {
+        std::cout << "[FlatConvert] Starting conversion for " << N << " nodes, dim=" << src->dim << std::endl;
+        std::cout.flush();
+    }
+
+    // 判断是否启用重排优化
+    bool do_reorder = !ABLATE_REORDER.load(std::memory_order_relaxed);
+
+    std::vector<int> old_to_new, new_to_old;
+
+    if (do_reorder) {
+        // 1. 生成 ID 映射（使用 DFS 重排）
+        generate_dfs_reordering(src, old_to_new, new_to_old);
+
+        // 更新入口点
+        flat->enter_point = (src->enter_point == -1) ? -1 : old_to_new[src->enter_point];
+
+        // 计算 max_level
+        flat->max_level = 0;
+        for (int i = 0; i < N; ++i) {
+            int level = (int)src->nodes[i]->links.size() - 1;
+            if (level > flat->max_level) flat->max_level = level;
+        }
+
+        if (DEBUG_TIMING) {
+            std::cout << "[FlatConvert] Reorder enabled, enter_point=" << flat->enter_point
+                      << ", max_level=" << flat->max_level << std::endl;
+            std::cout.flush();
+        }
+
+        flat->label_lookup = new_to_old;
+    } else {
+        flat->enter_point = src->enter_point;
+        flat->max_level = 0;
+        for (int i = 0; i < N; ++i) {
+            int level = (int)src->nodes[i]->links.size() - 1;
+            if (level > flat->max_level) flat->max_level = level;
+        }
+
+        if (DEBUG_TIMING) {
+            std::cout << "[FlatConvert] Reorder disabled, enter_point=" << flat->enter_point
+                      << ", max_level=" << flat->max_level << std::endl;
+            std::cout.flush();
+        }
+
+        old_to_new.resize(N);
+        new_to_old.resize(N);
+        for (int i = 0; i < N; ++i) { old_to_new[i] = i; new_to_old[i] = i; }
+        // label_lookup left empty => identity
+    }
+
+    // 2. 重排/复制向量数据
+    flat->data.resize((size_t)N * flat->dim);
+    if (flat->data.data() == nullptr) {
+        std::cerr << "[FlatConvert] ERROR: Failed to allocate data array!" << std::endl;
+        delete flat;
+        return nullptr;
+    }
+
+    for (int new_id = 0; new_id < N; ++new_id) {
+        int old_id = new_to_old[new_id];
+        const float* src_vec = src->getVec(old_id);
+        float* dst_vec = flat->data.data() + (size_t)new_id * flat->dim;
+        std::memcpy(dst_vec, src_vec, flat->dim * sizeof(float));
+    }
+
+    // 预计算三角不等式 pivot 距离（如果开启）
+    if (ENABLE_TRIANGLE_PRUNING.load(std::memory_order_relaxed) && flat->enter_point >= 0) {
+        if (DEBUG_TIMING) std::cout << "[FlatConvert] Precomputing pivot distances..." << std::endl;
+        flat->pivot_dists.resize(N);
+        int pivot_id = flat->enter_point;
+        const float* pivot_vec = flat->data.data() + (size_t)pivot_id * flat->dim;
+        #if defined(_OPENMP)
+        #pragma omp parallel for schedule(static, 2048)
+        #endif
+        for (int i = 0; i < N; ++i) {
+            const float* vec_i = flat->data.data() + (size_t)i * flat->dim;
+            float sq_d = l2sq_100d(pivot_vec, vec_i);
+            flat->pivot_dists.ptr[i] = std::sqrt(sq_d);
+        }
+        if (DEBUG_TIMING) std::cout << "[FlatConvert] Pivot distances computed." << std::endl;
+    }
+
+    // 3. 构建 L0 CSR
+    flat->l0_offsets.resize(N + 1);
+    uint64_t total_l0_links = 0;
+    for (int i = 0; i < N; ++i) total_l0_links += src->nodes[i]->links[0].size();
+    flat->l0_links.resize(total_l0_links);
+    uint64_t current_offset = 0;
+
+    std::vector<std::pair<float,int>> temp_neighbors;
+    temp_neighbors.reserve(M * 2);
+
+    for (int new_id = 0; new_id < N; ++new_id) {
+        flat->l0_offsets[new_id] = current_offset;
+        int old_id = new_to_old[new_id];
+        const auto& src_links = src->nodes[old_id]->links[0];
+        temp_neighbors.clear();
+        const float* vec_u = flat->data.data() + (size_t)new_id * flat->dim;
+
+        for (int old_nb : src_links) {
+            if (old_nb < 0 || old_nb >= N) continue;
+            int new_nb = old_to_new[old_nb];
+            if (new_nb < 0 || new_nb >= N) continue;
+            const float* vec_v = flat->data.data() + (size_t)new_nb * flat->dim;
+            float d = l2sq_100d(vec_u, vec_v);
+            temp_neighbors.emplace_back(d, new_nb);
+        }
+        std::sort(temp_neighbors.begin(), temp_neighbors.end());
+        for (const auto &p : temp_neighbors) {
+            flat->l0_links[current_offset++] = p.second;
+        }
+    }
+    flat->l0_offsets[N] = current_offset;
+
+    // 4. 构建上层结构
+    flat->node_levels.resize(N);
+    if (flat->max_level < 0) flat->max_level = 0;
+    if (flat->max_level > 100) flat->max_level = 100;
+    flat->upper_link_offsets.assign((size_t)N * (flat->max_level + 1), -1);
+    flat->upper_link_storage.reserve(N * M);
+
+    for (int new_id = 0; new_id < N; ++new_id) {
+        int old_id = new_to_old[new_id];
+        int level = (int)src->nodes[old_id]->links.size() - 1;
+        flat->node_levels[new_id] = level;
+        for (int l = 1; l <= level && l <= flat->max_level; ++l) {
+            const auto& src_links = src->nodes[old_id]->links[l];
+            int storage_idx = (int)flat->upper_link_storage.size();
+            size_t offset_idx = (size_t)new_id * (flat->max_level + 1) + l;
+            if (offset_idx < flat->upper_link_offsets.size()) flat->upper_link_offsets[offset_idx] = storage_idx;
+            flat->upper_link_storage.push_back((int)src_links.size());
+
+            temp_neighbors.clear();
+            const float* vec_u = flat->data.data() + (size_t)new_id * flat->dim;
+            for (int old_nb : src_links) {
+                if (old_nb < 0 || old_nb >= N) continue;
+                int new_nb = old_to_new[old_nb];
+                if (new_nb < 0 || new_nb >= N) continue;
+                const float* vec_v = flat->data.data() + (size_t)new_nb * flat->dim;
+                float d = l2sq_100d(vec_u, vec_v);
+                temp_neighbors.emplace_back(d, new_nb);
+            }
+            std::sort(temp_neighbors.begin(), temp_neighbors.end());
+            for (const auto &p : temp_neighbors) flat->upper_link_storage.push_back(p.second);
+        }
+    }
+
+    if (DEBUG_TIMING) {
+        std::cout << "[FlatHNSW-CSR] Converted " << N << " nodes with triangle pruning support." << std::endl;
+    }
+
+    return flat;
+}

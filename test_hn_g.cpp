@@ -28,6 +28,8 @@ extern "C" {
     int get_graph_actual_max_layer();
     int get_graph_nodes_at_level(int level);
     double get_graph_avg_degree_upper();
+    // 声明 set_ablation_flags 以避免未声明错误
+    void set_ablation_flags(int csr, int prefetch, int simd, int pruning, int heap);
 }
 
 // 新增：尝试从二进制缓存加载 base；格式：magic(8) + uint32_t d + uint64_t n_vec + floats...

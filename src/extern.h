@@ -143,31 +143,29 @@ double get_graph_avg_degree_upper() {
     return total_upper_nodes > 0 ? double(total_degree) / double(total_upper_nodes) : 0.0;
 }
 
-
-
-inline void set_post_optimization(bool enable) {
-    ENABLE_POST_OPTIMIZATION.store(enable, std::memory_order_relaxed);
-}
-
-inline void set_post_opt_m(int m) {
-    POST_OPT_M.store(m, std::memory_order_relaxed);
-}
-
-inline void set_pruning_alpha(float alpha) {
-    PRUNING_ALPHA.store(alpha, std::memory_order_relaxed);
-}
-
-// 便捷函数：设置优化配置组合
-inline void configure_for_low_ndc(int target_m = 32, float alpha = 1.0f) {
-    set_post_optimization(true);
-    set_post_opt_m(target_m);
-    set_pruning_alpha(alpha);
-}
-
-inline void configure_for_high_recall(int target_m = 55, float alpha = 1.2f) {
-    set_post_optimization(false);
-    set_post_opt_m(target_m);
-    set_pruning_alpha(alpha);
-}
+// 注释掉未定义的优化相关全局变量的接口实现
+// inline void set_post_optimization(bool enable) {
+//     ENABLE_POST_OPTIMIZATION.store(enable, std::memory_order_relaxed);
+// }
+// 
+// inline void set_post_opt_m(int m) {
+//     POST_OPT_M.store(m, std::memory_order_relaxed);
+// }
+// 
+// inline void set_pruning_alpha(float alpha) {
+//     PRUNING_ALPHA.store(alpha, std::memory_order_relaxed);
+// }
+// 
+// inline void configure_for_low_ndc(int target_m = 32, float alpha = 1.0f) {
+//     set_post_optimization(true);
+//     set_post_opt_m(target_m);
+//     set_pruning_alpha(alpha);
+// }
+// 
+// inline void configure_for_high_recall(int target_m = 55, float alpha = 1.2f) {
+//     set_post_optimization(false);
+//     set_post_opt_m(target_m);
+//     set_pruning_alpha(alpha);
+// }
 
 } // extern "C"

@@ -1,0 +1,207 @@
+========== HNSW Search Test ==========
+
+Timestamp: Fri Dec  5 23:04:04 2025
+
+Command line arguments:
+  argv[0]: ./hng1
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+  argv[7]: --k
+  argv[8]: 10
+  argv[9]: --m
+========== HNSW Search Test ==========
+
+  argv[10]: 59
+  argv[11]: --max_layer
+Timestamp: Fri Dec  5 23:04:04 2025
+
+  argv[12]: 5
+Command line arguments:
+  argv[13]: --efc
+  argv[0]: ./hng1
+  argv[14]: 763
+  argv[1]: --base
+  argv[15]: --efs
+========== HNSW Search Test ==========
+
+  argv[16]: 115
+  argv[2]: data_o/glove/base.txt
+  argv[17]: --threads
+  argv[3]: --query
+Timestamp: Fri Dec  5 23:04:04 2025
+
+  argv[18]: 32
+  argv[4]: data_o/glove/query.txt
+Command line arguments:
+  argv[19]: --ablate_csr
+  argv[5]: --truth
+  argv[0]: ./hng1
+  argv[20]: 0
+  argv[6]: data_o/glove/truth.txt
+  argv[1]: --base
+  argv[21]: --ablate_prefetch
+  argv[7]: --k
+  argv[2]: data_o/glove/base.txt
+  argv[22]: 0
+  argv[8]: 10
+  argv[3]: --query
+  argv[23]: --ablate_simd
+  argv[9]: --m
+  argv[4]: data_o/glove/query.txt
+  argv[24]: 0
+  argv[10]: 59
+  argv[5]: --truth
+  argv[25]: --ablate_pruning
+  argv[11]: --max_layer
+  argv[6]: data_o/glove/truth.txt
+  argv[26]: 0
+  argv[12]: 5
+  argv[7]: --k
+  argv[27]: --ablate_heap
+  argv[13]: --efc
+  argv[8]: 10
+  argv[28]: 0
+  argv[14]: 763
+  argv[9]: --m
+  argv[29]: --ablate_flat_index
+  argv[15]: --efs
+  argv[10]: 59
+  argv[30]: 0
+  argv[16]: 45
+  argv[11]: --max_layer
+  argv[31]: --ablate_reorder
+  argv[17]: --threads
+  argv[12]: 5
+  argv[32]: 0
+  argv[18]: 32
+  argv[13]: --efc
+
+Configuration:
+  argv[19]: --ablate_csr
+  argv[14]: 763
+  Base file: data_o/glove/base.txt
+  argv[20]: 0
+  argv[15]: --efs
+  Query file: data_o/glove/query.txt
+  argv[21]: --ablate_prefetch
+  argv[16]: 135
+  Truth file: data_o/glove/truth.txt
+  argv[22]: 0
+  argv[17]: --threads
+  K: 10
+  argv[23]: --ablate_simd
+  argv[18]: 32
+  M: 59
+  argv[24]: 0
+  argv[19]: --ablate_csr
+  Max layer: 5
+  argv[25]: --ablate_pruning
+  argv[20]: 0
+  EFC: 763
+  argv[26]: 0
+  argv[21]: --ablate_prefetch
+  EFS: 115
+  argv[27]: --ablate_heap
+  argv[22]: 0
+  Threads: 32
+  argv[28]: 0
+  argv[23]: --ablate_simd
+  Debug: -1
+  argv[29]: --ablate_flat_index
+  argv[24]: 0
+
+  argv[30]: 0
+  argv[25]: --ablate_pruning
+HNSW parameters set.
+
+  argv[31]: --ablate_reorder
+  argv[26]: 0
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+  argv[32]: 0
+  argv[27]: --ablate_heap
+Loading base vectors...
+
+Configuration:
+  argv[28]: 0
+  Base file: data_o/glove/base.txt
+  argv[29]: --ablate_flat_index
+  Query file: data_o/glove/query.txt
+  argv[30]: 0
+  Truth file: data_o/glove/truth.txt
+  argv[31]: --ablate_reorder
+  K: 10
+  argv[32]: 0
+  M: 59
+
+Configuration:
+  Max layer: 5
+  Base file: data_o/glove/base.txt
+  EFC: 763
+  Query file: data_o/glove/query.txt
+  EFS: 45
+  Truth file: data_o/glove/truth.txt
+  Threads: 32
+  K: 10
+  Debug: -1
+  M: 59
+
+  Max layer: 5
+HNSW parameters set.
+
+  EFC: 763
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+  EFS: 135
+Loading base vectors...
+  Threads: 32
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 14409.215705 ms
+
+✓ Base loaded in 14406.109702 ms
+
+Loading query vectors...
+Loading query vectors...
+✓ Base loaded in 14405.324281 ms
+
+Loading query vectors...
+✓ Queries loaded in 246.646874 ms
+
+Loading ground truth...
+✓ Queries loaded in 247.734196 ms
+
+Loading ground truth...
+✓ Queries loaded in 249.324959 ms
+
+Loading ground truth...
+✓ Truth loaded in 172.688232 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+✓ Truth loaded in 173.612526 ms
+
+✓ Truth loaded in 171.330639 ms
+
+Building HNSW index...
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+Building HNSW index...

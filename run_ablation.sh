@@ -13,9 +13,9 @@ BASE_FILE=${BASE_FILE:-data_o/glove/base.txt}
 QUERY_FILE=${QUERY_FILE:-data_o/glove/query.txt}
 TRUTH_FILE=${TRUTH_FILE:-data_o/glove/truth.txt}
 K=${K:-10}
-M=${M:-59}
-MAX_LAYER=${MAX_LAYER:-5}
-EFC=${EFC:-763}
+M=${M:-80}
+MAX_LAYER=${MAX_LAYER:-11}
+EFC=${EFC:-1301}
 EFS=${EFS:-432}
 THREADS=${THREADS:-32}
 
@@ -23,12 +23,12 @@ THREADS=${THREADS:-32}
 REPEATS=${REPEATS:-1}
 
 # Parallel jobs control: set via env var PARALLEL_JOBS (default 8). If 0 or 1 -> no parallelism.
-PARALLEL_JOBS=${PARALLEL_JOBS:-0}
+PARALLEL_JOBS=${PARALLEL_JOBS:-1}
 # Plotting options (set GENERATE_PLOTS=0 to skip)
 PYTHON=${PYTHON:-python3}
 # Default to the script in the current working directory for compatibility on WSL / Unix
 PLOT_SCRIPT=${PLOT_SCRIPT:-"$WORKDIR/plot_result.py"}
-GENERATE_PLOTS=${GENERATE_PLOTS:-1}
+GENERATE_PLOTS=${GENERATE_PLOTS:-0}
 # Excludes for the three ablation plots (default exclude no_csr and nothing)
 PLOT_EXCLUDES=${PLOT_EXCLUDES:-"no_csr,nothing"}
 
@@ -42,9 +42,9 @@ HYPER_SETS=${HYPER_SETS:-$'
 # New: Allow specifying an EFS range via min/max/step (integers).
 # If provided, we generate HYPER_EFS_LIST from this range and prefer it to any existing HYPER_EFS_LIST.
 # Example: HYPER_EFS_MIN=425 HYPER_EFS_MAX=1000 HYPER_EFS_STEP=25
-HYPER_EFS_MIN=${HYPER_EFS_MIN:-880}
-HYPER_EFS_MAX=${HYPER_EFS_MAX:-900}
-HYPER_EFS_STEP=${HYPER_EFS_STEP:-10}
+HYPER_EFS_MIN=${HYPER_EFS_MIN:-300}
+HYPER_EFS_MAX=${HYPER_EFS_MAX:-1500}
+HYPER_EFS_STEP=${HYPER_EFS_STEP:-20}
 
 if [[ -n "${HYPER_EFS_MIN}" && -n "${HYPER_EFS_MAX}" && -n "${HYPER_EFS_STEP}" ]]; then
   # Validate ints
@@ -112,6 +112,7 @@ variants=(
   "dynamic_with_opts,0,0,0,0,0,1,0"
   "nothing,1,1,1,1,1,1,1"
 )
+
 
 # function to parse metrics from a log file
 parse_metrics() {
