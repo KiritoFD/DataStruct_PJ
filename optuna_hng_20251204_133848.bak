@@ -1,4 +1,3 @@
-timestamp,study_name,trial_id,m,max_layer,efc,efs,K,avg_recall,avg_time_ms,build_time_ms,reward_score,status
 2025-12-04T10:28:12.443931,efs_search,-1,51,7,648,2000,10,0.99876,5.976936,3736.375655,5.976936,COMPLETE
 2025-12-04T10:28:51.032127,efs_search,-1,51,7,648,1040,10,0.99582,3.229711,3834.179433,3.229711,COMPLETE
 2025-12-04T10:29:14.988796,efs_search,-1,51,7,648,560,10,0.98728,1.775939,3748.467309,1000027.2,COMPLETE

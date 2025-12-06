@@ -33,7 +33,7 @@ except Exception:
 #   "no_csr"          -> 子串匹配
 #   "=full"           -> 精确匹配 "full"
 #   "re:variant=.*42" -> 正则匹配
-# DEFAULT_EXCLUDE_PATTERNS = ["no_csr", "nothing"]
+DEFAULT_EXCLUDE_PATTERNS = ["no_csr", "nothing","no_prefetch"]
 # --- end defaults ---
 
 # helper: compile list of pattern strings into usable patterns
@@ -154,7 +154,7 @@ def make_group_label(row, group_by_cols):
 
 
 def main():
-    default_csv = "./results6.csv"
+    default_csv = "./results_1206.csv"
     parser = argparse.ArgumentParser()
     parser.add_argument('csv', nargs='?', default=default_csv, help='CSV file path (default provided results path)')
     parser.add_argument('-o', '--output', help='Output image path', default=None)

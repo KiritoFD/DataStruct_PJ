@@ -6,7 +6,7 @@ set -euo pipefail
 # Usage: ./run_ablation.sh [--base base_file] [--query query_file] [--truth truth_file] [--k K] [--variants VARIANT1,VARIANT2,...]
 
 WORKDIR=$(pwd)
-BINARY="hng1"
+BINARY="hng2"
 
 # Default dataset paths
 BASE_FILE=${BASE_FILE:-data_o/glove/base.txt}
@@ -23,7 +23,7 @@ THREADS=${THREADS:-32}
 REPEATS=${REPEATS:-1}
 
 # Parallel jobs control: set via env var PARALLEL_JOBS (default 8). If 0 or 1 -> no parallelism.
-PARALLEL_JOBS=${PARALLEL_JOBS:-1}
+PARALLEL_JOBS=${PARALLEL_JOBS:-0}
 # Plotting options (set GENERATE_PLOTS=0 to skip)
 PYTHON=${PYTHON:-python3}
 # Default to the script in the current working directory for compatibility on WSL / Unix
@@ -102,7 +102,6 @@ echo "variant,csr,prefetch,simd,pruning,heap,flat_index,reorder,M,ML,EFC,EFS,bui
 # 注意：flat_index=1 时强制使用动态结构，此时 csr 和 reorder 不适用于查询
 variants=(
   "full,0,0,0,0,0,0,0"
-  "no_csr,1,0,0,0,0,0,0"
   "no_prefetch,0,1,0,0,0,0,0"
   "no_simd,0,0,1,0,0,0,0"
   "no_pruning,0,0,0,1,0,0,0"
@@ -110,7 +109,6 @@ variants=(
   "dynamic_struct,0,0,0,0,0,1,0"
   "no_reorder,0,0,0,0,0,0,1"
   "dynamic_with_opts,0,0,0,0,0,1,0"
-  "nothing,1,1,1,1,1,1,1"
 )
 
 

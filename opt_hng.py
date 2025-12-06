@@ -61,7 +61,6 @@ def load_cache_data():
     global CACHE, GRAPH_CACHE
     if not os.path.exists(RESULT_CSV):
         return {}
-    
     print(f"Loading history from {RESULT_CSV}...")
     trial_records = {}
     

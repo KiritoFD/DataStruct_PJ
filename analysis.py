@@ -10,7 +10,7 @@ def clean_df(df):
     # normalize column names
     df.columns = [c.strip() for c in df.columns]
     # coerce numeric columns, allow "NA"
-    for col in ["NUM_CENTROIDS", "KMEANS_ITER", "NPROBE", "ELAPSED_s", "RECALL", "AVG_QUERY_TIME_ms", "INDEX_BUILD_TIME_s"]:
+    for col in ["m", "max_layer", "efc", "efs", "K", "avg_recall", "avg_time_ms", "build_time_ms", "reward_score"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
@@ -242,8 +242,8 @@ def plot_high_recall_query_time_vs_hyperparams(high_recall, outdir):
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze grid search results")
-    parser.add_argument("--csv", type=str, default="results/summary.csv", help="Path to summary CSV")
-    parser.add_argument("--outdir", type=str, default="results/plots", help="Output directory for plots")
+    parser.add_argument("--csv", type=str, default="optu_hng.csv", help="Path to summary CSV")
+    parser.add_argument("--outdir", type=str, default="plot", help="Output directory for plots")
     parser.add_argument("--topk", type=int, default=20, help="Top-K rows to save by recall")
     args = parser.parse_args()
 
@@ -253,21 +253,26 @@ def main():
 
     ensure_dir(args.outdir)
 
-    # Try reading as comma-separated first, then tab-separated if STATUS not found
-    df = pd.read_csv(args.csv)
+    # Read as tab-separated
+    df = pd.read_csv(args.csv, sep='\t')
     df = clean_df(df)
-    if "STATUS" not in df.columns:
-        # Try reading as tab-separated
-        df = pd.read_csv(args.csv, sep='\t')
-        df = clean_df(df)
-        if "STATUS" not in df.columns:
-            print("ERROR: 'STATUS' column not found in CSV. Columns are:", list(df.columns))
-            return
-
-    # drop failed runs for numeric analyses
-    good = df[df["STATUS"].str.startswith("OK", na=False)].copy()
+    
+    # Rename columns to match expected names
+    column_mapping = {
+        'avg_recall': 'RECALL',
+        'avg_time_ms': 'AVG_QUERY_TIME_ms',
+        'build_time_ms': 'INDEX_BUILD_TIME_s',
+        'm': 'NUM_CENTROIDS',
+        'max_layer': 'KMEANS_ITER',
+        'efc': 'NPROBE',
+        'efs': 'ELAPSED_s'
+    }
+    df.rename(columns=column_mapping, inplace=True)
+    
+    # Use all rows (no STATUS filtering)
+    good = df.copy()
     if good.empty:
-        print("No successful runs to analyze.")
+        print("No data to analyze.")
         return
 
     # PRIORITY 1: Recall-focused analyses
@@ -279,8 +284,8 @@ def main():
     recall_stats = good.groupby(["NUM_CENTROIDS", "KMEANS_ITER", "NPROBE"]).agg(
         RECALL_mean=("RECALL","mean"),
         RECALL_std=("RECALL","std"),
-        ELAPSED_s_mean=("ELAPSED_s", "mean"),  # 新增
-        AVG_QUERY_TIME_MS_mean=("AVG_QUERY_TIME_ms", "mean"),  # 新增
+        ELAPSED_s_mean=("ELAPSED_s", "mean"),
+        AVG_QUERY_TIME_MS_mean=("AVG_QUERY_TIME_ms", "mean"),
         runs=("RECALL","count")
     ).reset_index().sort_values("RECALL_mean", ascending=False)
     recall_stats.to_csv(os.path.join(args.outdir, "recall_aggregated.csv"), index=False)
@@ -351,13 +356,12 @@ def main():
         f.write("Recall-first Analysis summary\n")
         f.write("=============================\n\n")
         f.write(f"Total runs: {len(df)}\n")
-        f.write(f"Successful runs: {len(good)}\n\n")
+        f.write(f"Analyzed runs: {len(good)}\n\n")
         best = good.loc[good["RECALL"].idxmax()]
         f.write("Best recall run (global):\n")
         f.write(best.to_string() + "\n")
         f.write(f"\nElapsed time (s): {best['ELAPSED_s']}, AVG_QUERY_TIME_ms: {best['AVG_QUERY_TIME_ms']}\n\n")
         f.write("Top configurations by mean recall (recall_aggregated.csv)\n")
-        # 只显示部分列，突出召回率和平均时间
         top10 = recall_stats.head(10)[["NUM_CENTROIDS", "KMEANS_ITER", "NPROBE", "RECALL_mean", "ELAPSED_s_mean", "AVG_QUERY_TIME_MS_mean", "runs"]]
         f.write(top10.to_string(index=False, float_format="%.4f") + "\n\n")
         f.write("Pareto front (recall then time) saved to: pareto_front.csv\n")

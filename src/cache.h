@@ -14,7 +14,68 @@ struct FlatHNSW;
 // Note: AlignedFloatArray is defined in Sol.cpp before this header is included
 
 static const uint32_t INDEX_VERSION = 2u;  // 更新版本号
-
+static void generate_dfs_reordering(SimpleHNSW* src, std::vector<int>& old_to_new, std::vector<int>& new_to_old) {
+    int N = src->size();
+    // 初始化映射表：old_to_new 初始化为 -1 表示未访问
+    old_to_new.assign(N, -1);
+    new_to_old.resize(N);
+    
+    int new_id_counter = 0;
+    std::vector<int> stack;
+    // 预分配内存以避免频繁扩容，N 为节点总数
+    stack.reserve(N);
+    
+    // 优先从入口点开始遍历，保证搜索起点的局部性
+    if (src->enter_point != -1 && src->enter_point < N) {
+        stack.push_back(src->enter_point);
+    }
+    
+    // 用于处理非连通图或初始点的扫描指针
+    int scan_idx = 0;
+    
+    while (new_id_counter < N) {
+        // 如果栈空了，说明当前连通分量遍历完毕，或者刚开始
+        if (stack.empty()) {
+            // 寻找下一个未访问的节点
+            while (scan_idx < N && old_to_new[scan_idx] != -1) {
+                scan_idx++;
+            }
+            if (scan_idx < N) {
+                stack.push_back(scan_idx);
+            } else {
+                // 所有节点都处理完毕
+                break;
+            }
+        }
+        
+        // 弹出栈顶元素
+        int u = stack.back();
+        stack.pop_back();
+        
+        // 如果已访问过，跳过
+        if (old_to_new[u] != -1) continue;
+        
+        // 建立映射关系：旧ID -> 新ID (连续递增)
+        old_to_new[u] = new_id_counter;
+        new_to_old[new_id_counter] = u;
+        new_id_counter++;
+        
+        // 将邻居入栈
+        // 使用 Layer 0 的连接，因为这层最密集，对缓存影响最大
+        if (u >= 0 && u < (int)src->nodes.size()) {
+            const auto& links = src->nodes[u]->links[0];
+            // 倒序遍历邻居并入栈，这样出栈顺序（即访问顺序）就是正序的
+            // 这有助于保持与原始构建顺序或启发式选边顺序的一致性
+            for (auto it = links.rbegin(); it != links.rend(); ++it) {
+                int v = *it;
+                // 只将合法且未访问的邻居入栈
+                if (v >= 0 && v < N && old_to_new[v] == -1) {
+                    stack.push_back(v);
+                }
+            }
+        }
+    }
+}
 // 保存 FlatHNSW 到文件
 static bool save_flat_index(FlatHNSW* flat, const std::string& path) {
     std::ofstream ofs(path, std::ios::binary);
@@ -149,7 +210,169 @@ static FlatHNSW* load_flat_index(const std::string& path) {
     
     return flat;
 }
+static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
+    FlatHNSW* flat = new FlatHNSW(src->dim);
 
+    int N = src->size();
+    int M = src->M;
+    flat->num_nodes = N;
+    flat->max_m = M * 2;
+    flat->max_m_upper = M;
+
+    if (DEBUG_TIMING) {
+        std::cout << "[FlatConvert] Starting conversion for " << N << " nodes, dim=" << src->dim << std::endl;
+        std::cout.flush();
+    }
+
+    // 判断是否启用重排优化
+    bool do_reorder = !ABLATE_REORDER.load(std::memory_order_relaxed);
+
+    std::vector<int> old_to_new, new_to_old;
+
+    if (do_reorder) {
+        // 1. 生成 ID 映射（使用 DFS 重排）
+        generate_dfs_reordering(src, old_to_new, new_to_old);
+
+        // 更新入口点
+        flat->enter_point = (src->enter_point == -1) ? -1 : old_to_new[src->enter_point];
+
+        // 计算 max_level
+        flat->max_level = 0;
+        for (int i = 0; i < N; ++i) {
+            int level = (int)src->nodes[i]->links.size() - 1;
+            if (level > flat->max_level) flat->max_level = level;
+        }
+
+        if (DEBUG_TIMING) {
+            std::cout << "[FlatConvert] Reorder enabled, enter_point=" << flat->enter_point
+                      << ", max_level=" << flat->max_level << std::endl;
+            std::cout.flush();
+        }
+
+        flat->label_lookup = new_to_old;
+    } else {
+        flat->enter_point = src->enter_point;
+        flat->max_level = 0;
+        for (int i = 0; i < N; ++i) {
+            int level = (int)src->nodes[i]->links.size() - 1;
+            if (level > flat->max_level) flat->max_level = level;
+        }
+
+        if (DEBUG_TIMING) {
+            std::cout << "[FlatConvert] Reorder disabled, enter_point=" << flat->enter_point
+                      << ", max_level=" << flat->max_level << std::endl;
+            std::cout.flush();
+        }
+
+        old_to_new.resize(N);
+        new_to_old.resize(N);
+        for (int i = 0; i < N; ++i) { old_to_new[i] = i; new_to_old[i] = i; }
+        // label_lookup left empty => identity
+    }
+
+    // 2. 重排/复制向量数据
+    flat->data.resize((size_t)N * flat->dim);
+    if (flat->data.data() == nullptr) {
+        std::cerr << "[FlatConvert] ERROR: Failed to allocate data array!" << std::endl;
+        delete flat;
+        return nullptr;
+    }
+
+    for (int new_id = 0; new_id < N; ++new_id) {
+        int old_id = new_to_old[new_id];
+        const float* src_vec = src->getVec(old_id);
+        float* dst_vec = flat->data.data() + (size_t)new_id * flat->dim;
+        std::memcpy(dst_vec, src_vec, flat->dim * sizeof(float));
+    }
+
+    // 预计算三角不等式 pivot 距离（如果开启）
+    if (ENABLE_TRIANGLE_PRUNING.load(std::memory_order_relaxed) && flat->enter_point >= 0) {
+        if (DEBUG_TIMING) std::cout << "[FlatConvert] Precomputing pivot distances..." << std::endl;
+        flat->pivot_dists.resize(N);
+        int pivot_id = flat->enter_point;
+        const float* pivot_vec = flat->data.data() + (size_t)pivot_id * flat->dim;
+        #if defined(_OPENMP)
+        #pragma omp parallel for schedule(static, 2048)
+        #endif
+        for (int i = 0; i < N; ++i) {
+            const float* vec_i = flat->data.data() + (size_t)i * flat->dim;
+            float sq_d = l2sq_100d(pivot_vec, vec_i);
+            flat->pivot_dists.ptr[i] = std::sqrt(sq_d);
+        }
+        if (DEBUG_TIMING) std::cout << "[FlatConvert] Pivot distances computed." << std::endl;
+    }
+
+    // 3. 构建 L0 CSR
+    flat->l0_offsets.resize(N + 1);
+    uint64_t total_l0_links = 0;
+    for (int i = 0; i < N; ++i) total_l0_links += src->nodes[i]->links[0].size();
+    flat->l0_links.resize(total_l0_links);
+    uint64_t current_offset = 0;
+
+    std::vector<std::pair<float,int>> temp_neighbors;
+    temp_neighbors.reserve(M * 2);
+
+    for (int new_id = 0; new_id < N; ++new_id) {
+        flat->l0_offsets[new_id] = current_offset;
+        int old_id = new_to_old[new_id];
+        const auto& src_links = src->nodes[old_id]->links[0];
+        temp_neighbors.clear();
+        const float* vec_u = flat->data.data() + (size_t)new_id * flat->dim;
+
+        for (int old_nb : src_links) {
+            if (old_nb < 0 || old_nb >= N) continue;
+            int new_nb = old_to_new[old_nb];
+            if (new_nb < 0 || new_nb >= N) continue;
+            const float* vec_v = flat->data.data() + (size_t)new_nb * flat->dim;
+            float d = l2sq_100d(vec_u, vec_v);
+            temp_neighbors.emplace_back(d, new_nb);
+        }
+        std::sort(temp_neighbors.begin(), temp_neighbors.end());
+        for (const auto &p : temp_neighbors) {
+            flat->l0_links[current_offset++] = p.second;
+        }
+    }
+    flat->l0_offsets[N] = current_offset;
+
+    // 4. 构建上层结构
+    flat->node_levels.resize(N);
+    if (flat->max_level < 0) flat->max_level = 0;
+    if (flat->max_level > 100) flat->max_level = 100;
+    flat->upper_link_offsets.assign((size_t)N * (flat->max_level + 1), -1);
+    flat->upper_link_storage.reserve(N * M);
+
+    for (int new_id = 0; new_id < N; ++new_id) {
+        int old_id = new_to_old[new_id];
+        int level = (int)src->nodes[old_id]->links.size() - 1;
+        flat->node_levels[new_id] = level;
+        for (int l = 1; l <= level && l <= flat->max_level; ++l) {
+            const auto& src_links = src->nodes[old_id]->links[l];
+            int storage_idx = (int)flat->upper_link_storage.size();
+            size_t offset_idx = (size_t)new_id * (flat->max_level + 1) + l;
+            if (offset_idx < flat->upper_link_offsets.size()) flat->upper_link_offsets[offset_idx] = storage_idx;
+            flat->upper_link_storage.push_back((int)src_links.size());
+
+            temp_neighbors.clear();
+            const float* vec_u = flat->data.data() + (size_t)new_id * flat->dim;
+            for (int old_nb : src_links) {
+                if (old_nb < 0 || old_nb >= N) continue;
+                int new_nb = old_to_new[old_nb];
+                if (new_nb < 0 || new_nb >= N) continue;
+                const float* vec_v = flat->data.data() + (size_t)new_nb * flat->dim;
+                float d = l2sq_100d(vec_u, vec_v);
+                temp_neighbors.emplace_back(d, new_nb);
+            }
+            std::sort(temp_neighbors.begin(), temp_neighbors.end());
+            for (const auto &p : temp_neighbors) flat->upper_link_storage.push_back(p.second);
+        }
+    }
+
+    if (DEBUG_TIMING) {
+        std::cout << "[FlatHNSW-CSR] Converted " << N << " nodes with triangle pruning support." << std::endl;
+    }
+
+    return flat;
+}
 // 生成索引缓存文件名（基于参数的哈希）
 static std::string get_index_cache_path(int n, int d, int M, int max_layer, int efc) {
     // 简单哈希：使用参数组合生成唯一文件名
