@@ -1,0 +1,116 @@
+========== HNSW Search Test ==========
+
+Timestamp: Sun Dec  7 23:15:59 2025
+
+Command line arguments:
+  argv[0]: ./hng3
+  argv[1]: --m
+  argv[2]: 43
+  argv[3]: --max_layer
+  argv[4]: 12
+  argv[5]: --efc
+  argv[6]: 1386
+  argv[7]: --efs
+  argv[8]: 560
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 43
+  Max layer: 12
+  EFC: 1386
+  EFS: 560
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 2557.447953 ms
+
+Loading query vectors...
+✓ Queries loaded in 71.891573 ms
+
+Loading ground truth...
+✓ Truth loaded in 72.421331 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=4471.276868 ms
+  build_time(internal)=4466.129658 ms
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.992120
+
+Average query time: 2.492711 ms
+
+Total query time: 24927.114756 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 305364753
+
+Average distance ops per query: 30536.475300
+
+Last query distance ops: 27240
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2701.760857 ms
+
+Index build time: 4466.129658 ms
+
+Query execution time: 24927.114756 ms
+
+Total elapsed time: 32100.152481 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 401.169574
+
+Distance ops per second: 12250304.778113
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251207_231559_675.log
+

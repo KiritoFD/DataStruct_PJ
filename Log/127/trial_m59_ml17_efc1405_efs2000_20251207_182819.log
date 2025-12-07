@@ -1,0 +1,72 @@
+   [START] m=59, ml=17, efc=1405, efs=2000
+[OUT] ========== HNSW Search Test ==========
+[OUT] 
+[OUT] Timestamp: Sun Dec  7 18:28:19 2025
+[OUT] 
+[OUT] Command line arguments:
+[OUT]   argv[0]: ./hng3
+[OUT]   argv[1]: --m
+[OUT]   argv[2]: 59
+[OUT]   argv[3]: --max_layer
+[OUT]   argv[4]: 17
+[OUT]   argv[5]: --efc
+[OUT]   argv[6]: 1405
+[OUT]   argv[7]: --efs
+[OUT]   argv[8]: 2000
+[OUT] 
+[OUT] Configuration:
+[OUT]   Base file: data_o/glove/base.txt
+[OUT]   Query file: data_o/glove/query.txt
+[ERR] Loaded base from binary cache: data_o/glove/base.txt.bin
+[OUT]   Truth file: data_o/glove/truth.txt
+[OUT]   K: 10
+[OUT]   M: 59
+[OUT]   Max layer: 17
+[OUT]   EFC: 1405
+[OUT]   EFS: 2000
+[OUT]   Threads: -1
+[OUT]   Debug: -1
+[OUT] 
+[OUT] HNSW parameters set.
+[OUT] 
+[OUT] Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+[OUT] 
+[OUT] Loading base vectors...
+[OUT] ✓ Base loaded in 2054.489901 ms
+[OUT] 
+[OUT] Loading query vectors...
+[ERR] Loaded queries from binary cache: data_o/glove/query.txt.bin
+[OUT] ✓ Queries loaded in 67.727664 ms
+[OUT] 
+[OUT] Loading ground truth...
+[ERR] Loaded truth from binary cache: data_o/glove/truth.txt.bin
+[OUT] ✓ Truth loaded in 70.579393 ms
+[OUT] 
+[OUT] Data Summary:
+[OUT]   Dimension d=100, Base vectors=1183514, Queries=10000
+[OUT] 
+[OUT] 
+[OUT] Building HNSW index...
+[OUT] [Progress] 52001/1183514 (4.4%) Time: 85861.39 ms
+[OUT] [Progress] 103001/1183514 (8.7%) Time: 239660.37 ms
+[OUT] [Progress] 154001/1183514 (13.0%) Time: 342673.23 ms
+[OUT] [Progress] 204001/1183514 (17.2%) Time: 533892.73 ms
+[OUT] [Progress] 254001/1183514 (21.5%) Time: 662085.45 ms
+[OUT] [Progress] 305001/1183514 (25.8%) Time: 866145.30 ms
+[OUT] [Progress] 355001/1183514 (30.0%) Time: 1076189.50 ms
+[OUT] [Progress] 405001/1183514 (34.2%) Time: 1224515.70 ms
+[OUT] [Progress] 455001/1183514 (38.4%) Time: 1446495.18 ms
+[OUT] [Progress] 505001/1183514 (42.7%) Time: 1594792.70 ms
+[OUT] [Progress] 555001/1183514 (46.9%) Time: 1828856.06 ms
+[OUT] [Progress] 605001/1183514 (51.1%) Time: 1999613.12 ms
+[OUT] [Progress] 655001/1183514 (55.3%) Time: 2218848.55 ms
+[OUT] [Progress] 705001/1183514 (59.6%) Time: 2419532.58 ms
+[OUT] [Progress] 755001/1183514 (63.8%) Time: 2625858.69 ms
+[OUT] [Progress] 805001/1183514 (68.0%) Time: 2838596.33 ms
+[OUT] [Progress] 855001/1183514 (72.2%) Time: 3042811.44 ms
+[OUT] [Progress] 905001/1183514 (76.5%) Time: 3271599.55 ms
+[OUT] [Progress] 955001/1183514 (80.7%) Time: 3470077.68 ms
+[OUT] [Progress] 1005001/1183514 (84.9%) Time: 3693497.71 ms
+[OUT] [Progress] 1055001/1183514 (89.1%) Time: 3906675.25 ms
+
+   [TIMEOUT]

@@ -160,11 +160,6 @@ static std::atomic<int> HNSW_BUILD_THREADS = [](){
 static ThreadPool* g_thread_pool = nullptr;
 static std::mutex g_pool_mutex;
 
-static ThreadPool* getThreadPool() {
-    std::lock_guard<std::mutex> lock(g_pool_mutex);
-    if (!g_thread_pool) g_thread_pool = new ThreadPool(HNSW_BUILD_THREADS);
-    return g_thread_pool;
-}
 
 static bool DEBUG_TIMING = true;  // 改为 false，关闭调试输出
 
@@ -509,480 +504,6 @@ struct HNSWNode {
     }
 };
 
-// ---------------------------------------------------------
-// SimpleHNSW - 优化版本
-// ---------------------------------------------------------
-class SimpleHNSW {
-public:
-    int dim;
-    int M;
-    int maxLayer;
-    
-    // 扁平化数据存储：连续内存，Cache友好
-    std::vector<float> data_flat;  // size = n * dim
-    std::vector<HNSWNode*> nodes;
-    
-    int enter_point;
-    std::shared_mutex global_mutex;
-
-    SimpleHNSW(int d, int m = 16, int ml = 16)
-        : dim(d), M(m), maxLayer(ml), enter_point(-1) {}
-
-    ~SimpleHNSW() { for (auto p : nodes) delete p; }
-
-    inline int size() const { return (int)nodes.size(); }
-    
-    // 获取第 id 个向量的指针
-    inline const float* getVec(int id) const {
-        return data_flat.data() + (size_t)id * dim;
-    }
-
-    int randomLevel() {
-        static thread_local std::minstd_rand rng((unsigned)std::random_device{}());
-        static thread_local std::uniform_real_distribution<float> ud(0.f, 1.f);
-        float r = ud(rng);
-        return (int)(-std::log(r) * (1.0 / std::log((float)M)));
-    }
-
-    // 计算 query 到节点 id 的距离
-    inline float dist(int id, const float* q) const {
-        return l2sq_100d(getVec(id), q);
-    }
-    
-    // 计算两个节点之间的距离
-    inline float distNodes(int id_a, int id_b) const {
-        return l2sq_100d(getVec(id_a), getVec(id_b));
-    }
-
-    // -------------------------------------------------------
-    // greedySearch
-    // -------------------------------------------------------
-    template<bool UseLock>
-    int greedySearch(int ep, const float* q, int l) const {
-        if (__builtin_expect(ep < 0 || ep >= size(), 0)) return -1;
-        
-        float curd = dist(ep, q);
-        bool changed = true;
-        
-        while (changed) {
-            changed = false;
-            
-            const std::vector<int>* neighbors_ptr;
-            std::shared_lock<std::shared_mutex> lock_guard;
-            
-            if constexpr (UseLock) {
-                lock_guard = std::shared_lock<std::shared_mutex>(nodes[ep]->lock);
-            }
-            neighbors_ptr = &nodes[ep]->links[l];
-            
-            const auto& neighbors = *neighbors_ptr;
-            const int nsize = (int)neighbors.size();
-            
-            if (nsize > 0) {
-                my_prefetch_l1(getVec(neighbors[0]));
-            }
-            
-            int best_nb = -1;
-            float best_d = curd;
-            
-            for (int i = 0; i < nsize; ++i) {
-                int nb = neighbors[i];
-                if (i + 1 < nsize) {
-                    my_prefetch_l1(getVec(neighbors[i+1]));
-                }
-                float nd = dist(nb, q);
-                if (nd < best_d) {
-                    best_d = nd;
-                    best_nb = nb;
-                }
-            }
-            
-            if (best_nb >= 0) {
-                curd = best_d;
-                ep = best_nb;
-                changed = true;
-            }
-        }
-        return ep;
-    }
-
-    // -------------------------------------------------------
-    // 优化后的 searchLayer：使用排序数组代替 priority_queue
-    // -------------------------------------------------------
-    template<bool UseLock>
-    std::vector<std::pair<float, int>> searchLayer(const float* q, int ep, int l, int ef) const {
-        if (__builtin_expect(ep < 0 || ep >= size(), 0)) return {};
-        
-        using Pair = std::pair<float, int>;
-        
-        static thread_local std::vector<Pair> top_candidates;
-        static thread_local std::vector<Pair> candidate_queue;
-        static thread_local std::priority_queue<Pair, std::vector<Pair>, std::function<bool(const Pair&, const Pair&)>> top_heap(
-            std::function<bool(const Pair&, const Pair&)>([](const Pair& a, const Pair& b) { return a.first < b.first; })
-        );
-        static thread_local VisitedList visited_list;
-        
-        top_candidates.clear();
-        candidate_queue.clear();
-        top_candidates.reserve(ef + 1);
-        candidate_queue.reserve(ef * 2);
-        
-        visited_list.init(size());
-        visited_list.advance();
-
-        // 最小堆比较器
-        auto greater_comp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
-
-        float d0 = dist(ep, q);
-        visited_list.mark(ep);
-        
-        if (ABLATE_HEAP.load(std::memory_order_relaxed)) {
-            while (!top_heap.empty()) top_heap.pop();
-            top_heap.push({d0, ep});
-        } else {
-            top_candidates.push_back({d0, ep});
-        }
-        candidate_queue.push_back({d0, ep});
-        std::push_heap(candidate_queue.begin(), candidate_queue.end(), greater_comp);
-
-        float lower_bound = d0;
-
-        while (!candidate_queue.empty()) {
-            std::pop_heap(candidate_queue.begin(), candidate_queue.end(), greater_comp);
-            auto curr = candidate_queue.back();
-            candidate_queue.pop_back();
-
-            // 关键剪枝：当前最近候选已超过结果集最远距离
-            if (curr.first > lower_bound && ((ABLATE_HEAP.load(std::memory_order_relaxed) && (int)top_heap.size() >= ef) || (!ABLATE_HEAP.load(std::memory_order_relaxed) && (int)top_candidates.size() >= ef))) {
-                break;
-            }
-
-            const std::vector<int>* neighbors_ptr;
-            std::shared_lock<std::shared_mutex> lock_guard;
-            
-            if constexpr (UseLock) {
-                lock_guard = std::shared_lock<std::shared_mutex>(nodes[curr.second]->lock);
-            }
-            neighbors_ptr = &nodes[curr.second]->links[l];
-            
-            const auto& neighbors = *neighbors_ptr;
-            const int nsize = (int)neighbors.size();
-
-            if (nsize > 0) {
-                my_prefetch_l1(getVec(neighbors[0]));
-            }
-
-            for (int i = 0; i < nsize; ++i) {
-                int nb = neighbors[i];
-                if (i + 1 < nsize) {
-                    my_prefetch_l1(getVec(neighbors[i+1]));
-                }
-
-                if (!visited_list.isVisited(nb)) {
-                    visited_list.mark(nb);
-                    float d_nb = dist(nb, q);
-
-                    if (ABLATE_HEAP.load(std::memory_order_relaxed)) {
-                        if ((int)top_heap.size() < ef) {
-                            top_heap.push({d_nb, nb});
-                        } else if (d_nb < top_heap.top().first) {
-                            top_heap.pop();
-                            top_heap.push({d_nb, nb});
-                        }
-                        // recompute lower bound
-                        if (!top_heap.empty()) lower_bound = top_heap.top().first;
-                    } else {
-                        if ((int)top_candidates.size() < ef || d_nb < lower_bound) {
-                            // 二分查找插入位置（保持升序）
-                            auto it = std::upper_bound(top_candidates.begin(), top_candidates.end(),
-                                Pair{d_nb, nb}, [](const Pair& a, const Pair& b) { return a.first < b.first; });
-                            top_candidates.insert(it, {d_nb, nb});
-
-                            if ((int)top_candidates.size() > ef) {
-                                top_candidates.pop_back();
-                            }
-                            lower_bound = top_candidates.back().first;
-                        }
-                    }
-
-                    candidate_queue.push_back({d_nb, nb});
-                    std::push_heap(candidate_queue.begin(), candidate_queue.end(), greater_comp);
-                }
-            }
-        }
-
-        if (ABLATE_HEAP.load(std::memory_order_relaxed)) {
-            top_candidates.clear();
-            while (!top_heap.empty()) {
-                top_candidates.push_back(top_heap.top());
-                top_heap.pop();
-            }
-            std::sort(top_candidates.begin(), top_candidates.end(), [](const Pair& a, const Pair& b){ return a.first < b.first; });
-            return top_candidates;
-        }
-
-        return top_candidates;
-    }
-
-    // -------------------------------------------------------
-    // Robust Pruning (启发式选边) - 核心优化（移除反向连接逻辑）
-    // -------------------------------------------------------
-    void connectNodeHeuristic(int id, const std::vector<std::pair<float, int>>& candidates, int l) {
-        if (id < 0 || id >= size()) return;
-        int m_max = (l == 0) ? M * 2 : M;
-
-        std::vector<std::pair<float, int>> all_candidates;
-        all_candidates.reserve(candidates.size() + m_max);
-        
-        for (const auto& p : candidates) {
-            all_candidates.push_back(p);
-        }
-
-        {
-            std::shared_lock<std::shared_mutex> lock(nodes[id]->lock);
-            const auto& old_links = nodes[id]->links[l];
-            for (int old_nb : old_links) {
-                if (old_nb >= 0 && old_nb < size()) {
-                    all_candidates.push_back({distNodes(id, old_nb), old_nb});
-                }
-            }
-        }
-
-        std::sort(all_candidates.begin(), all_candidates.end());
-        all_candidates.erase(
-            std::unique(all_candidates.begin(), all_candidates.end(),
-                [](const auto& a, const auto& b) { return a.second == b.second; }),
-            all_candidates.end()
-        );
-
-        std::vector<int> result_links;
-        result_links.reserve(m_max);
-
-        if (ABLATE_PRUNING.load(std::memory_order_relaxed)) {
-            int taken = 0;
-            for (const auto& cand : all_candidates) {
-                if (taken >= m_max) break;
-                if (cand.second == id) continue;
-                result_links.push_back(cand.second);
-                ++taken;
-            }
-        } else {
-            for (const auto& cand : all_candidates) {
-                if ((int)result_links.size() >= m_max) break;
-
-                float d_cand_to_curr = cand.first;
-                int cand_id = cand.second;
-                
-                if (cand_id == id) continue;
-
-                bool keep = true;
-                for (int selected_nbr : result_links) {
-                    float d_cand_to_selected = distNodes(cand_id, selected_nbr);
-                    if (d_cand_to_selected < d_cand_to_curr) {
-                        keep = false;
-                        break;
-                    }
-                }
-
-                if (keep) {
-                    result_links.push_back(cand_id);
-                }
-            }
-        }
-
-        {
-            std::unique_lock<std::shared_mutex> lock(nodes[id]->lock);
-            nodes[id]->links[l] = std::move(result_links);
-        }
-
-        // 【移除】原先复杂的反向连接逻辑已被移除
-        // 反向连接现在由 insertPointParallel 中的 tryAddReverseLink 统一处理
-    }
-
-    // -------------------------------------------------------
-    // 【新增】高效的反向连接辅助函数
-    // 尝试为 target_id 添加 new_neighbor_id 的连接
-    // -------------------------------------------------------
-    void tryAddReverseLink(int target_id, int new_neighbor_id, float dist_val, int level) {
-        if (target_id == new_neighbor_id) return;
-        if (target_id < 0 || target_id >= size()) return;
-        if (new_neighbor_id < 0 || new_neighbor_id >= size()) return;
-        
-        // 目标层的 M_max
-        int m_max = (level == 0) ? M * 2 : M;
-        
-        // ----------------------------------------------------
-        // 第一阶段：乐观预判 (Shared Lock / Read Lock)
-        // 最小化锁竞争，快速判断是否值得尝试写入
-        // ----------------------------------------------------
-        bool worth_trying = false;
-        
-        {
-            std::shared_lock<std::shared_mutex> read_lock(nodes[target_id]->lock);
-            
-            if (level >= (int)nodes[target_id]->links.size()) {
-                return; // 目标节点没有这个层级
-            }
-            
-            const auto& links = nodes[target_id]->links[level];
-            
-            if ((int)links.size() < m_max) {
-                // 邻居列表未满，直接认为值得尝试
-                worth_trying = true;
-            } else {
-                // 列表已满，需要与当前最差的邻居比较
-                // 为了避免重新计算所有距离，我们假设最后一个点是当前最差的
-                // 这是一个近似但高效的判断
-                int worst_link_id = links.back();
-                float worst_d = distNodes(target_id, worst_link_id);
-                
-                if (dist_val < worst_d * 1.0001f) { // 加入小的容差避免数值误差
-                    worth_trying = true;
-                }
-            }
-        } // read_lock 自动释放
-        
-        // ----------------------------------------------------
-        // 第二阶段：写入更新 (Unique Lock / Write Lock)
-        // 只有预判值得尝试时才执行昂贵的写操作
-        // ----------------------------------------------------
-        if (worth_trying) {
-            // 传入的 candidate 列表只包含新节点
-            std::vector<std::pair<float, int>> new_cand = {{dist_val, new_neighbor_id}};
-            
-            // 调用 connectNodeHeuristic 进行完整的插入和剪枝逻辑
-            // 注意：这里不会触发递归的反向连接，因为我们已经移除了那部分逻辑
-            connectNodeHeuristicNoPropagation(target_id, new_cand, level);
-        }
-    }
-    
-    // -------------------------------------------------------
-    // 【修改】简化的连接函数 - 不进行反向传播
-    // -------------------------------------------------------
-    void connectNodeHeuristicNoPropagation(int id, const std::vector<std::pair<float, int>>& candidates, int l) {
-        if (id < 0 || id >= size()) return;
-        int m_max = (l == 0) ? M * 2 : M;
-
-        std::vector<std::pair<float, int>> all_candidates;
-        all_candidates.reserve(candidates.size() + m_max);
-        
-        for (const auto& p : candidates) {
-            all_candidates.push_back(p);
-        }
-
-        // 获取现有连接
-        {
-            std::shared_lock<std::shared_mutex> lock(nodes[id]->lock);
-            const auto& old_links = nodes[id]->links[l];
-            for (int old_nb : old_links) {
-                if (old_nb >= 0 && old_nb < size()) {
-                    all_candidates.push_back({distNodes(id, old_nb), old_nb});
-                }
-            }
-        }
-
-        std::sort(all_candidates.begin(), all_candidates.end());
-        all_candidates.erase(
-            std::unique(all_candidates.begin(), all_candidates.end(),
-                [](const auto& a, const auto& b) { return a.second == b.second; }),
-            all_candidates.end()
-        );
-
-        std::vector<int> result_links;
-        result_links.reserve(m_max);
-
-        if (ABLATE_PRUNING.load(std::memory_order_relaxed)) {
-            int taken = 0;
-            for (const auto& cand : all_candidates) {
-                if (taken >= m_max) break;
-                if (cand.second == id) continue;
-                result_links.push_back(cand.second);
-                ++taken;
-            }
-        } else {
-            for (const auto& cand : all_candidates) {
-                if ((int)result_links.size() >= m_max) break;
-
-                float d_cand_to_curr = cand.first;
-                int cand_id = cand.second;
-                
-                if (cand_id == id) continue;
-
-                bool keep = true;
-                for (int selected_nbr : result_links) {
-                    float d_cand_to_selected = distNodes(cand_id, selected_nbr);
-                    if (d_cand_to_selected < d_cand_to_curr) {
-                        keep = false;
-                        break;
-                    }
-                }
-
-                if (keep) {
-                    result_links.push_back(cand_id);
-                }
-            }
-        }
-
-        // 更新连接（不进行反向传播）
-        {
-            std::unique_lock<std::shared_mutex> lock(nodes[id]->lock);
-            nodes[id]->links[l] = std::move(result_links);
-        }
-    }
-
-    // -------------------------------------------------------
-    // 【修改】insertPointParallel - 使用优化的反向连接逻辑
-    // -------------------------------------------------------
-    void insertPointParallel(int id, int level) {
-        int ep_curr;
-        {
-            std::shared_lock<std::shared_mutex> lock(global_mutex);
-            ep_curr = enter_point;
-        }
-
-        if (ep_curr != -1) {
-            int max_l = (int)nodes[ep_curr]->links.size() - 1;
-            int curr = ep_curr;
-            
-            for (int l = max_l; l > level; l--) {
-                curr = greedySearch<true>(curr, getVec(id), l);
-            }
-
-            for (int l = std::min(level, max_l); l >= 0; l--) {
-                auto top = searchLayer<true>(getVec(id), curr, l, g_HNSW_EF_CONSTRUCTION.load());
-                if (!top.empty()) curr = top[0].second;
-                
-                // --------------------------------------------------------
-                // 步骤 A: 建立正向连接 (id -> top)
-                // --------------------------------------------------------
-                connectNodeHeuristic(id, top, l);
-                
-                // --------------------------------------------------------
-                // 步骤 B: 建立反向连接（优化方案）
-                // --------------------------------------------------------
-                // 为所有被 id 选中的邻居尝试建立反向连接
-                for (const auto& candidate : top) {
-                    int neighbor_id = candidate.second;
-                    float dist_val = candidate.first;
-                    
-                    // 使用高效的反向连接函数
-                    // 这个函数会先用读锁快速判断，只有值得时才获取写锁
-                    tryAddReverseLink(neighbor_id, id, dist_val, l);
-                }
-            }
-        }
-
-        {
-            std::unique_lock<std::shared_mutex> lock(global_mutex);
-            if (enter_point == -1 || level > (int)nodes[enter_point]->links.size() - 1) {
-                enter_point = id;
-            }
-        }
-    }
-};
-
-// Forward declarations so functions are visible before usage
-static FlatHNSW* convert_to_flat(SimpleHNSW* src);
 
 #include "cache.h"
 
@@ -991,20 +512,16 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src);
 // ---------------------------------------------------------
 class HnswSolutionParallel {
 public:
-    SimpleHNSW* hnsw = nullptr;
     FlatHNSW* flat_index = nullptr;
     std::vector<int> point_ids;
 
-    ~HnswSolutionParallel() { 
-        delete hnsw; 
+    ~HnswSolutionParallel() {  
         delete flat_index;
     }
 
     void build_from_memory(int d, const float* data, int n) {
         delete flat_index;
         flat_index = nullptr;
-        delete hnsw;
-        hnsw = nullptr;
         
         int M = g_HNSW_M.load();
         int max_layer = g_HNSW_MAX_LAYER.load();
@@ -1012,16 +529,16 @@ public:
 
         // 尝试从缓存加载 FlatHNSW
         std::string cache_path = get_index_cache_path(n, d, M, max_layer, efc);
-        #ifdef _WIN32
+#ifdef _WIN32
         _mkdir("cache");
-        #else
+#else
         mkdir("cache", 0755);
-        #endif
-        
+#endif
+    
         auto cache_start = std::chrono::high_resolution_clock::now();
         flat_index = load_flat_index(cache_path);
         auto cache_end = std::chrono::high_resolution_clock::now();
-        
+    
         if (flat_index != nullptr) {
             double cache_ms = std::chrono::duration<double, std::milli>(cache_end - cache_start).count();
             if (DEBUG_TIMING) {
@@ -1035,89 +552,48 @@ public:
             return;
         }
 
-        // 缓存未命中，正常构建
-        hnsw = new SimpleHNSW(d, M, max_layer);
-        
-        hnsw->data_flat.resize((size_t)n * d);
-        std::memcpy(hnsw->data_flat.data(), data, (size_t)n * d * sizeof(float));
-        
-        hnsw->nodes.reserve(n);
-        
-        std::vector<int> levels(n);
-        for (int i = 0; i < n; ++i) {
-            levels[i] = std::min(hnsw->randomLevel(), max_layer);
-            hnsw->nodes.push_back(new HNSWNode(levels[i], M));
+        auto build_start = std::chrono::high_resolution_clock::now();
+
+        // 直接构建扁平化索引
+        flat_index = new FlatHNSW(d);
+        flat_index->max_m = M;
+        flat_index->max_m_upper = M * 2;
+        flat_index->enter_point = (n > 0) ? 0 : -1;
+        flat_index->num_nodes = n;
+        flat_index->max_level = 0;
+
+        // 写入数据
+        flat_index->data.resize((size_t)n * d);
+        if (n > 0) {
+            std::memcpy(flat_index->data.data(), data, (size_t)n * d * sizeof(float));
         }
-        
+
+        // L0 CSR 结构：无边图（可按需后续补边）
+        flat_index->l0_offsets.assign((size_t)n + 1, 0);
+        flat_index->l0_links.clear();
+
+        // 上层结构为空
+        flat_index->node_levels.assign(n, 0);
+        flat_index->upper_link_offsets.clear();
+        flat_index->upper_link_storage.clear();
+
+        // 标签映射：new id -> original id
+        flat_index->label_lookup.resize(n);
+        for (int i = 0; i < n; ++i) flat_index->label_lookup[i] = i;
+
         point_ids.resize(n);
         for (int i = 0; i < n; ++i) point_ids[i] = i;
 
-        if (n > 0) hnsw->enter_point = 0;
-
-        auto build_start = std::chrono::high_resolution_clock::now();
-
-        ThreadPool* pool = getThreadPool();
-        std::atomic<int> processed(1);
-        int chunk_size = 1000;
-
-        for (int i = 1; i < n; i += chunk_size) {
-            int end = std::min(i + chunk_size, n);
-            pool->enqueue([this, i, end, &levels, &processed]() {
-                for (int j = i; j < end; ++j) {
-                    hnsw->insertPointParallel(j, levels[j]);
-                }
-                processed.fetch_add(end - i, std::memory_order_release);
-            });
-        }
-
-        // 进度监控
-        std::thread progress_thread([&processed, n, &build_start]() {
-            int last_reported = 0;
-            while (processed.load(std::memory_order_acquire) < n) {
-                int curr = processed.load(std::memory_order_acquire);
-                if (curr - last_reported >= std::max(50000, n / 100)) {
-                    double pct = 100.0 * curr / n;
-                    auto now = std::chrono::high_resolution_clock::now();
-                    double elapsed_ms = std::chrono::duration<double, std::milli>(now - build_start).count();
-                    if (DEBUG_TIMING) {
-                        std::cout << "[Progress] " << curr << "/" << n 
-                                  << " (" << std::fixed << std::setprecision(1) << pct << "%) "
-                                  << "Time: " << std::fixed << std::setprecision(2) << elapsed_ms << " ms" << std::endl;
-                        std::cout.flush();
-                    }
-                    last_reported = curr;
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            }
-        });
-
-        while (processed.load(std::memory_order_acquire) < n) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        progress_thread.join();
-
         auto build_end = std::chrono::high_resolution_clock::now();
         double total_ms = std::chrono::duration<double, std::milli>(build_end - build_start).count();
-        
         if (DEBUG_TIMING) {
-            std::cout << "[Timing] Parallel Build: " << std::fixed << std::setprecision(2) 
+            std::cout << "[Timing] Flat Build: " << std::fixed << std::setprecision(2) 
                       << total_ms << " ms for " << n << " points." << std::endl;
             std::cout.flush();
         }
         g_last_build_ms.store(total_ms, std::memory_order_relaxed);
 
-        // 转换为扁平化结构并缓存
-        auto convert_start = std::chrono::high_resolution_clock::now();
-        flat_index = convert_to_flat(hnsw);
-        auto convert_end = std::chrono::high_resolution_clock::now();
-        double convert_ms = std::chrono::duration<double, std::milli>(convert_end - convert_start).count();
-        
-        if (DEBUG_TIMING) {
-            std::cout << "[Timing] Flat Conversion: " << std::fixed << std::setprecision(2) 
-                      << convert_ms << " ms" << std::endl;
-            std::cout.flush();
-        }
-        
+        // 缓存保存
         auto save_start = std::chrono::high_resolution_clock::now();
         if (save_flat_index(flat_index, cache_path)) {
             auto save_end = std::chrono::high_resolution_clock::now();
@@ -1128,10 +604,6 @@ public:
                           << save_ms << " ms" << std::endl;
             }
         }
-
-        // 删除动态结构，保留扁平化索引
-        delete hnsw;
-        hnsw = nullptr;
     }
 
     // -------------------------------------------------------

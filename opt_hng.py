@@ -13,16 +13,16 @@ from datetime import datetime
 import sys
 
 # ==================== 配置区 ====================
-BIN_PATH = "./hng1"
-MIN_RECALL = 0.98         # 约束条件下界
-TARGET_RECALL = 0.98        # EFS 二分搜索目标召回率
+BIN_PATH = "./hng3"
+MIN_RECALL = 0.988         # 约束条件下界
+TARGET_RECALL = 0.9899        # EFS 二分搜索目标召回率
 FIXED_K = 10
 BATCH_SIZE = 20
 NUM_RUNS = 1
 
 # --- 初始点 (只有前三个参数) ---
 INITIAL_M = 59
-INITIAL_MAX_LAYER = 5
+INITIAL_MAX_LAYER = 7
 INITIAL_EFC = 763
 
 # --- 参数搜索范围 ---
@@ -32,7 +32,7 @@ EFC_RANGE = (400, 2000)
 EFS_RANGE = (80, 2000)  # EFS 二分搜索范围
 
 LOG_DIR = "Log"
-RESULT_CSV = "optu_hng.csv"
+RESULT_CSV = "op_hng.csv"
 
 # --- 差异化惩罚常量 ---
 # 不可行解的惩罚：使其分数远大于任何可行解的时间
@@ -153,7 +153,7 @@ def run_test(m: int, max_layer: int, efc: int, efs: int, silent: bool = False) -
             
             start_wait = time.time()
             while proc.poll() is None:
-                if time.time() - start_wait > 2000:
+                if time.time() - start_wait > 4000:
                     log_write(f"\n   [TIMEOUT]\n")
                     proc.kill()
                     lf.close()

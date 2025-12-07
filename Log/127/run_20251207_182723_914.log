@@ -1,0 +1,116 @@
+========== HNSW Search Test ==========
+
+Timestamp: Sun Dec  7 18:27:23 2025
+
+Command line arguments:
+  argv[0]: ./hng3
+  argv[1]: --m
+  argv[2]: 51
+  argv[3]: --max_layer
+  argv[4]: 9
+  argv[5]: --efc
+  argv[6]: 1153
+  argv[7]: --efs
+  argv[8]: 446
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 51
+  Max layer: 9
+  EFC: 1153
+  EFS: 446
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 2080.572017 ms
+
+Loading query vectors...
+✓ Queries loaded in 73.765991 ms
+
+Loading ground truth...
+✓ Truth loaded in 71.085699 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=4601.254625 ms
+  build_time(internal)=4595.550310 ms
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.989960
+
+Average query time: 2.217684 ms
+
+Total query time: 22176.838909 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 281007079
+
+Average distance ops per query: 28100.707900
+
+Last query distance ops: 26316
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2225.423707 ms
+
+Index build time: 4595.550310 ms
+
+Query execution time: 22176.838909 ms
+
+Total elapsed time: 29003.517241 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 450.920893
+
+Distance ops per second: 12671196.294164
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251207_182723_914.log
+
