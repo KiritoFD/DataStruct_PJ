@@ -1,0 +1,116 @@
+========== HNSW Search Test ==========
+
+Timestamp: Sun Dec  7 15:17:58 2025
+
+Command line arguments:
+  argv[0]: ./hng3
+  argv[1]: --m
+  argv[2]: 59
+  argv[3]: --max_layer
+  argv[4]: 7
+  argv[5]: --efc
+  argv[6]: 763
+  argv[7]: --efs
+  argv[8]: 286
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 59
+  Max layer: 7
+  EFC: 763
+  EFS: 286
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+Loading base vectors...
+✓ Base loaded in 2275.897523 ms
+
+Loading query vectors...
+✓ Queries loaded in 66.111530 ms
+
+Loading ground truth...
+✓ Truth loaded in 68.397362 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=4343.180221 ms
+  build_time(internal)=4338.555485 ms
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.980020
+
+Average query time: 1.210162 ms
+
+Total query time: 12101.620016 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 195847693
+
+Average distance ops per query: 19584.769300
+
+Last query distance ops: 20297
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2410.406415 ms
+
+Index build time: 4338.555485 ms
+
+Query execution time: 12101.620016 ms
+
+Total elapsed time: 18855.206652 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 826.335647
+
+Distance ops per second: 16183593.001686
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251207_151758_927.log
+

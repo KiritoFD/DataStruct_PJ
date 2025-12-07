@@ -127,8 +127,8 @@ static std::atomic<bool> ABLATE_PRUNING(false);
 static std::atomic<bool> ABLATE_HEAP(false);
 static std::atomic<bool> ABLATE_REORDER(false);
 
-// 【新增】三角不等式剪枝开关 (默认开启)
-static std::atomic<bool> ENABLE_TRIANGLE_PRUNING(true);
+// 【移除】三角不等式剪枝开关 - 已被证明是负优化
+// 【移除】范数剪枝相关 - 在高维空间效率极低
 
 // 新增：runtime toggle to enable/disable distance counting (avoid TLS increment when disabled)
 static std::atomic<bool> ENABLE_RUNTIME_DIST_COUNTING(true);
@@ -178,8 +178,8 @@ static inline void my_prefetch_l1(const void* ptr) {
 #endif
 }
 
-// 新增：统一的 prefetch 跳跃距离
-static constexpr int PREFETCH_AHEAD = 7;
+// 新增：统一的 prefetch 跳跃距离 - 针对100维向量优化
+static constexpr int PREFETCH_AHEAD = 4;
 
 // ---------------------------------------------------------
 // 扁平化 HNSW 索引 (Read-Only Optimized) - CSR 格式
@@ -208,9 +208,8 @@ public:
     // [新增] ID 映射表：New ID -> Old ID (原始 index)
     std::vector<int> label_lookup;
 
-    // 【新增】存储每个节点到 Pivot (Entry Point) 的 L2 距离（开方后）
-    // 用于三角不等式剪枝
-    AlignedFloatArray pivot_dists;
+    // 【移除】pivot_dists - 三角不等式剪枝是负优化
+    // 【移除】node_l2_norms - 范数剪枝在高维空间无效且增加缓存压力
 
     FlatHNSW(int d) : dim(d), max_m(0), max_m_upper(0), enter_point(-1), num_nodes(0), max_level(0) {}
 
@@ -252,48 +251,47 @@ public:
         return l2sq_100d(get_vec(id_a), get_vec(id_b));
     }
     
-    // 上层贪婪搜索 (无锁)
+    // -------------------------------------------------------------
+    // 【优化】极简版上层贪婪搜索 - 移除所有剪枝
+    // -------------------------------------------------------------
     int greedySearchUpper(int ep, const float* q, int level) const {
         if (ep < 0 || ep >= num_nodes) return -1;
         
-        float curd = dist(ep, q);
+        float best_d = dist(ep, q);
+        int best_node = ep;
         bool changed = true;
         
         while (changed) {
             changed = false;
             int count;
-            const int* links = get_upper_links(ep, level, count);
+            const int* links = get_upper_links(best_node, level, count);
             
+            // 预取第一个邻居
             if (count > 0) {
                 my_prefetch_l1(get_vec(links[0]));
             }
             
-            int best_nb = -1;
-            float best_d = curd;
-            
             for (int i = 0; i < count; ++i) {
                 int nb = links[i];
+                // 流水线预取
                 if (i + 1 < count) {
                     my_prefetch_l1(get_vec(links[i+1]));
                 }
-                float nd = dist(nb, q);
-                if (nd < best_d) {
-                    best_d = nd;
-                    best_nb = nb;
+                
+                float d = dist(nb, q);
+                if (d < best_d) {
+                    best_d = d;
+                    best_node = nb;
+                    changed = true;
                 }
             }
-            
-            if (best_nb >= 0) {
-                curd = best_d;
-                ep = best_nb;
-                changed = true;
-            }
         }
-        return ep;
+        return best_node;
     }
     
     // -------------------------------------------------------------
-    // 【优化】带三角不等式剪枝的 L0 搜索
+    // 【核心优化】极致性能的 L0 搜索
+    // 专注于：内存流水线、SIMD利用率、分支预测
     // -------------------------------------------------------------
     std::vector<std::pair<float, int>> searchL0(const float* q, int ep, int ef) const {
         if (ep < 0 || ep >= num_nodes) return {};
@@ -302,32 +300,19 @@ public:
         
         static thread_local std::vector<Pair> candidates;
         static thread_local std::vector<Pair> top_results;
-        static thread_local std::vector<int> expand_queue;
         static thread_local TagVisitedList visited;
         
         candidates.clear(); 
         top_results.clear();
-        expand_queue.clear();
         
         candidates.reserve(ef * 2);
         top_results.reserve(ef + 1);
-        expand_queue.reserve(64);
 
         visited.init(num_nodes);
         visited.advance();
         
         const uint16_t* visited_ptr = visited.data();
         uint16_t cur_tag = visited.currentTag();
-
-        // 【三角不等式】预计算 Query 到 Pivot 的距离
-        float d_q_pivot = 0.0f;
-        bool use_triangle = ENABLE_TRIANGLE_PRUNING.load(std::memory_order_relaxed) 
-                           && (enter_point >= 0) 
-                           && (pivot_dists.size() > 0);
-        if (use_triangle) {
-            float sq = dist(enter_point, q);
-            d_q_pivot = std::sqrt(sq);
-        }
 
         float d0 = dist(ep, q);
         visited.mark(ep);
@@ -339,129 +324,169 @@ public:
 
         auto min_comp = [](const Pair& a, const Pair& b) { return a.first > b.first; };
         auto max_comp = [](const Pair& a, const Pair& b) { return a.first < b.first; };
-        
-        // 内联处理候选点的 lambda
-        auto process_candidate = [&](float d, int nb) {
-            if ((int)top_results.size() < ef) {
-                top_results.push_back({d, nb});
-                std::push_heap(top_results.begin(), top_results.end(), max_comp);
-                if ((int)top_results.size() == ef) {
-                    worst_dist = top_results.front().first;
-                }
-                candidates.push_back({d, nb});
-                std::push_heap(candidates.begin(), candidates.end(), min_comp);
-            } else if (d < worst_dist) {
-                std::pop_heap(top_results.begin(), top_results.end(), max_comp);
-                top_results.back() = {d, nb};
-                std::push_heap(top_results.begin(), top_results.end(), max_comp);
-                worst_dist = top_results.front().first;
-                
-                candidates.push_back({d, nb});
-                std::push_heap(candidates.begin(), candidates.end(), min_comp);
-            }
-        };
 
         while (!candidates.empty()) {
             std::pop_heap(candidates.begin(), candidates.end(), min_comp);
             Pair curr = candidates.back();
             candidates.pop_back();
 
+            // 关键剪枝：候选点距离超过结果集最远距离
             if ((int)top_results.size() >= ef && curr.first > worst_dist) {
                 break;
             }
 
-            expand_queue.clear();
-            expand_queue.push_back(curr.second);
+            int count;
+            const int* links = get_l0_links(curr.second, count);
+            if (count == 0) continue;
 
-            for (size_t qi = 0; qi < expand_queue.size(); ++qi) {
-                int x = expand_queue[qi];
-                int count;
-                const int* links = get_l0_links(x, count);
+            // -------------------------------------------------------
+            // 流水线化的距离计算：预取 + 双路并行 + 最小分支
+            // -------------------------------------------------------
+            
+            // 1. 预热预取流水线
+            int prefetch_limit = std::min(count, PREFETCH_AHEAD);
+            for (int k = 0; k < prefetch_limit; ++k) {
+                my_prefetch_l1(get_vec(links[k]));
+            }
 
-                // 预取
-                if (count > 0) {
-                    int pf_idx = std::min(count - 1, PREFETCH_AHEAD);
-                    my_prefetch_l1(get_vec(links[pf_idx]));
+            int i = 0;
+            
+            // 2. 双路并行处理 - 最大化 SIMD 利用率
+            for (; i <= count - 2; i += 2) {
+                // 持续预取后续数据
+                if (i + PREFETCH_AHEAD < count) {
+                    my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD]));
+                }
+                if (i + PREFETCH_AHEAD + 1 < count) {
+                    my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD + 1]));
                 }
 
-                int i = 0;
+                int nb1 = links[i];
+                int nb2 = links[i + 1];
                 
-                // --- 2-way Batching Loop with Triangle Pruning ---
-                for (; i <= count - 2; i += 2) {
-                    if (i + PREFETCH_AHEAD < count) {
-                        my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD]));
-                    }
-                    if (i + PREFETCH_AHEAD + 1 < count) {
-                        my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD + 1]));
-                    }
+                // 快速 visited 检查
+                bool v1 = (visited_ptr[nb1] == cur_tag);
+                bool v2 = (visited_ptr[nb2] == cur_tag);
+                
+                if (v1 && v2) continue;
 
-                    int nb1 = links[i];
-                    int nb2 = links[i + 1];
+                // 核心优化：尽可能使用 2x SIMD 计算
+                if (!v1 && !v2) {
+                    // 最优路径：两个都未访问，批量计算
+                    visited.mark(nb1);
+                    visited.mark(nb2);
                     
-                    bool v1 = (visited_ptr[nb1] == cur_tag);
-                    bool v2 = (visited_ptr[nb2] == cur_tag);
+                    float d1, d2;
+                    l2sq_100d_2x(q, get_vec(nb1), get_vec(nb2), d1, d2);
                     
-                    if (v1 && v2) continue;
-                    
-                    if (!v1) visited.mark(nb1);
-                    if (!v2) visited.mark(nb2);
-
-                    // 【三角不等式剪枝】
-                    bool skip1 = false, skip2 = false;
-                    if (use_triangle && (int)top_results.size() >= ef) {
-                        float sqrt_worst = std::sqrt(worst_dist);
-                        if (!v1) {
-                            float d_n1_pivot = pivot_dists.ptr[nb1];
-                            float diff1 = d_q_pivot - d_n1_pivot;
-                            if (diff1 < 0) diff1 = -diff1;
-                            if (diff1 > sqrt_worst * 1.0001f) skip1 = true;
+                    // 处理结果1
+                    if ((int)top_results.size() < ef) {
+                        top_results.push_back({d1, nb1});
+                        std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                        if ((int)top_results.size() == ef) {
+                            worst_dist = top_results.front().first;
                         }
-                        if (!v2) {
-                            float d_n2_pivot = pivot_dists.ptr[nb2];
-                            float diff2 = d_q_pivot - d_n2_pivot;
-                            if (diff2 < 0) diff2 = -diff2;
-                            if (diff2 > sqrt_worst * 1.0001f) skip2 = true;
+                        candidates.push_back({d1, nb1});
+                        std::push_heap(candidates.begin(), candidates.end(), min_comp);
+                    } else if (d1 < worst_dist) {
+                        std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                        top_results.back() = {d1, nb1};
+                        std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                        worst_dist = top_results.front().first;
+                        
+                        candidates.push_back({d1, nb1});
+                        std::push_heap(candidates.begin(), candidates.end(), min_comp);
+                    }
+                    
+                    // 处理结果2
+                    if ((int)top_results.size() < ef) {
+                        top_results.push_back({d2, nb2});
+                        std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                        if ((int)top_results.size() == ef) {
+                            worst_dist = top_results.front().first;
+                        }
+                        candidates.push_back({d2, nb2});
+                        std::push_heap(candidates.begin(), candidates.end(), min_comp);
+                    } else if (d2 < worst_dist) {
+                        std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                        top_results.back() = {d2, nb2};
+                        std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                        worst_dist = top_results.front().first;
+                        
+                        candidates.push_back({d2, nb2});
+                        std::push_heap(candidates.begin(), candidates.end(), min_comp);
+                    }
+                } else {
+                    // Fallback：单独处理（混合访问状态）
+                    if (!v1) {
+                        visited.mark(nb1);
+                        float d1 = dist(nb1, q);
+                        
+                        if ((int)top_results.size() < ef || d1 < worst_dist) {
+                            if ((int)top_results.size() < ef) {
+                                top_results.push_back({d1, nb1});
+                                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                                if ((int)top_results.size() == ef) {
+                                    worst_dist = top_results.front().first;
+                                }
+                            } else {
+                                std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                                top_results.back() = {d1, nb1};
+                                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                                worst_dist = top_results.front().first;
+                            }
+                            candidates.push_back({d1, nb1});
+                            std::push_heap(candidates.begin(), candidates.end(), min_comp);
                         }
                     }
-                    
-                    // 根据剪枝结果决定是否计算距离
-                    if (skip1 && skip2) continue;
-                    
-                    float d1 = 0, d2 = 0;
-                    
-                    if (!v1 && !skip1 && !v2 && !skip2) {
-                        l2sq_100d_2x(q, get_vec(nb1), get_vec(nb2), d1, d2);
-                    } else if (!v1 && !skip1) {
-                        d1 = dist(nb1, q);
-                    } else if (!v2 && !skip2) {
-                        d2 = dist(nb2, q);
+                    if (!v2) {
+                        visited.mark(nb2);
+                        float d2 = dist(nb2, q);
+                        
+                        if ((int)top_results.size() < ef || d2 < worst_dist) {
+                            if ((int)top_results.size() < ef) {
+                                top_results.push_back({d2, nb2});
+                                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                                if ((int)top_results.size() == ef) {
+                                    worst_dist = top_results.front().first;
+                                }
+                            } else {
+                                std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                                top_results.back() = {d2, nb2};
+                                std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                                worst_dist = top_results.front().first;
+                            }
+                            candidates.push_back({d2, nb2});
+                            std::push_heap(candidates.begin(), candidates.end(), min_comp);
+                        }
                     }
-
-                    if (!v1 && !skip1) process_candidate(d1, nb1);
-                    if (!v2 && !skip2) process_candidate(d2, nb2);
                 }
+            }
+            
+            // 3. 处理剩余的单个邻居
+            for (; i < count; ++i) {
+                int nb = links[i];
+                if (visited_ptr[nb] == cur_tag) continue;
                 
-                // 处理剩余的 1 个
-                for (; i < count; ++i) {
-                    if (i + PREFETCH_AHEAD < count) {
-                        my_prefetch_l1(get_vec(links[i + PREFETCH_AHEAD]));
+                visited.mark(nb);
+                float d = dist(nb, q);
+                
+                if ((int)top_results.size() < ef) {
+                    top_results.push_back({d, nb});
+                    std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                    if ((int)top_results.size() == ef) {
+                        worst_dist = top_results.front().first;
                     }
+                    candidates.push_back({d, nb});
+                    std::push_heap(candidates.begin(), candidates.end(), min_comp);
+                } else if (d < worst_dist) {
+                    std::pop_heap(top_results.begin(), top_results.end(), max_comp);
+                    top_results.back() = {d, nb};
+                    std::push_heap(top_results.begin(), top_results.end(), max_comp);
+                    worst_dist = top_results.front().first;
                     
-                    int nb = links[i];
-                    if (visited_ptr[nb] == cur_tag) continue;
-                    visited.mark(nb);
-                    
-                    // 【三角不等式剪枝】
-                    if (use_triangle && (int)top_results.size() >= ef) {
-                        float d_n_pivot = pivot_dists.ptr[nb];
-                        float diff = d_q_pivot - d_n_pivot;
-                        if (diff < 0) diff = -diff;
-                        float sqrt_worst = std::sqrt(worst_dist);
-                        if (diff > sqrt_worst * 1.0001f) continue;
-                    }
-                    
-                    float d = dist(nb, q);
-                    process_candidate(d, nb);
+                    candidates.push_back({d, nb});
+                    std::push_heap(candidates.begin(), candidates.end(), min_comp);
                 }
             }
         }
@@ -700,7 +725,7 @@ public:
     }
 
     // -------------------------------------------------------
-    // Robust Pruning (启发式选边) - 核心优化
+    // Robust Pruning (启发式选边) - 核心优化（移除反向连接逻辑）
     // -------------------------------------------------------
     void connectNodeHeuristic(int id, const std::vector<std::pair<float, int>>& candidates, int l) {
         if (id < 0 || id >= size()) return;
@@ -770,73 +795,144 @@ public:
             nodes[id]->links[l] = std::move(result_links);
         }
 
-        for (const auto& p : all_candidates) {
-            int nb = p.second;
-            if (nb < 0 || nb >= size() || nb == id) continue;
+        // 【移除】原先复杂的反向连接逻辑已被移除
+        // 反向连接现在由 insertPointParallel 中的 tryAddReverseLink 统一处理
+    }
+
+    // -------------------------------------------------------
+    // 【新增】高效的反向连接辅助函数
+    // 尝试为 target_id 添加 new_neighbor_id 的连接
+    // -------------------------------------------------------
+    void tryAddReverseLink(int target_id, int new_neighbor_id, float dist_val, int level) {
+        if (target_id == new_neighbor_id) return;
+        if (target_id < 0 || target_id >= size()) return;
+        if (new_neighbor_id < 0 || new_neighbor_id >= size()) return;
+        
+        // 目标层的 M_max
+        int m_max = (level == 0) ? M * 2 : M;
+        
+        // ----------------------------------------------------
+        // 第一阶段：乐观预判 (Shared Lock / Read Lock)
+        // 最小化锁竞争，快速判断是否值得尝试写入
+        // ----------------------------------------------------
+        bool worth_trying = false;
+        
+        {
+            std::shared_lock<std::shared_mutex> read_lock(nodes[target_id]->lock);
             
-            bool in_result = false;
-            {
-                std::shared_lock<std::shared_mutex> lock(nodes[id]->lock);
-                for (int r : nodes[id]->links[l]) {
-                    if (r == nb) { in_result = true; break; }
-                }
+            if (level >= (int)nodes[target_id]->links.size()) {
+                return; // 目标节点没有这个层级
             }
-            if (!in_result) continue;
-
-            std::vector<std::pair<float, int>> nb_candidates;
-            {
-                std::shared_lock<std::shared_mutex> lock(nodes[nb]->lock);
-                const auto& nb_links = nodes[nb]->links[l];
-                nb_candidates.reserve(nb_links.size() + 1);
-                for (int x : nb_links) {
-                    if (x >= 0 && x < size()) {
-                        nb_candidates.push_back({distNodes(nb, x), x});
-                    }
-                }
-            }
-            nb_candidates.push_back({distNodes(nb, id), id});
-
-            std::sort(nb_candidates.begin(), nb_candidates.end());
-            nb_candidates.erase(
-                std::unique(nb_candidates.begin(), nb_candidates.end(),
-                    [](const auto& a, const auto& b) { return a.second == b.second; }),
-                nb_candidates.end()
-            );
-
-            std::vector<int> nb_result;
-            nb_result.reserve(m_max);
-
-            if (ABLATE_PRUNING.load(std::memory_order_relaxed)) {
-                int taken = 0;
-                for (const auto& c : nb_candidates) {
-                    if (taken >= m_max) break;
-                    if (c.second == nb) continue;
-                    nb_result.push_back(c.second);
-                    ++taken;
-                }
+            
+            const auto& links = nodes[target_id]->links[level];
+            
+            if ((int)links.size() < m_max) {
+                // 邻居列表未满，直接认为值得尝试
+                worth_trying = true;
             } else {
-                for (const auto& c : nb_candidates) {
-                    if ((int)nb_result.size() >= m_max) break;
-                    if (c.second == nb) continue;
-
-                    bool keep = true;
-                    for (int sel : nb_result) {
-                        if (distNodes(c.second, sel) < c.first) {
-                            keep = false;
-                            break;
-                        }
-                    }
-                    if (keep) nb_result.push_back(c.second);
+                // 列表已满，需要与当前最差的邻居比较
+                // 为了避免重新计算所有距离，我们假设最后一个点是当前最差的
+                // 这是一个近似但高效的判断
+                int worst_link_id = links.back();
+                float worst_d = distNodes(target_id, worst_link_id);
+                
+                if (dist_val < worst_d * 1.0001f) { // 加入小的容差避免数值误差
+                    worth_trying = true;
                 }
             }
+        } // read_lock 自动释放
+        
+        // ----------------------------------------------------
+        // 第二阶段：写入更新 (Unique Lock / Write Lock)
+        // 只有预判值得尝试时才执行昂贵的写操作
+        // ----------------------------------------------------
+        if (worth_trying) {
+            // 传入的 candidate 列表只包含新节点
+            std::vector<std::pair<float, int>> new_cand = {{dist_val, new_neighbor_id}};
+            
+            // 调用 connectNodeHeuristic 进行完整的插入和剪枝逻辑
+            // 注意：这里不会触发递归的反向连接，因为我们已经移除了那部分逻辑
+            connectNodeHeuristicNoPropagation(target_id, new_cand, level);
+        }
+    }
+    
+    // -------------------------------------------------------
+    // 【修改】简化的连接函数 - 不进行反向传播
+    // -------------------------------------------------------
+    void connectNodeHeuristicNoPropagation(int id, const std::vector<std::pair<float, int>>& candidates, int l) {
+        if (id < 0 || id >= size()) return;
+        int m_max = (l == 0) ? M * 2 : M;
 
-            {
-                std::unique_lock<std::shared_mutex> lock(nodes[nb]->lock);
-                nodes[nb]->links[l] = std::move(nb_result);
+        std::vector<std::pair<float, int>> all_candidates;
+        all_candidates.reserve(candidates.size() + m_max);
+        
+        for (const auto& p : candidates) {
+            all_candidates.push_back(p);
+        }
+
+        // 获取现有连接
+        {
+            std::shared_lock<std::shared_mutex> lock(nodes[id]->lock);
+            const auto& old_links = nodes[id]->links[l];
+            for (int old_nb : old_links) {
+                if (old_nb >= 0 && old_nb < size()) {
+                    all_candidates.push_back({distNodes(id, old_nb), old_nb});
+                }
             }
+        }
+
+        std::sort(all_candidates.begin(), all_candidates.end());
+        all_candidates.erase(
+            std::unique(all_candidates.begin(), all_candidates.end(),
+                [](const auto& a, const auto& b) { return a.second == b.second; }),
+            all_candidates.end()
+        );
+
+        std::vector<int> result_links;
+        result_links.reserve(m_max);
+
+        if (ABLATE_PRUNING.load(std::memory_order_relaxed)) {
+            int taken = 0;
+            for (const auto& cand : all_candidates) {
+                if (taken >= m_max) break;
+                if (cand.second == id) continue;
+                result_links.push_back(cand.second);
+                ++taken;
+            }
+        } else {
+            for (const auto& cand : all_candidates) {
+                if ((int)result_links.size() >= m_max) break;
+
+                float d_cand_to_curr = cand.first;
+                int cand_id = cand.second;
+                
+                if (cand_id == id) continue;
+
+                bool keep = true;
+                for (int selected_nbr : result_links) {
+                    float d_cand_to_selected = distNodes(cand_id, selected_nbr);
+                    if (d_cand_to_selected < d_cand_to_curr) {
+                        keep = false;
+                        break;
+                    }
+                }
+
+                if (keep) {
+                    result_links.push_back(cand_id);
+                }
+            }
+        }
+
+        // 更新连接（不进行反向传播）
+        {
+            std::unique_lock<std::shared_mutex> lock(nodes[id]->lock);
+            nodes[id]->links[l] = std::move(result_links);
         }
     }
 
+    // -------------------------------------------------------
+    // 【修改】insertPointParallel - 使用优化的反向连接逻辑
+    // -------------------------------------------------------
     void insertPointParallel(int id, int level) {
         int ep_curr;
         {
@@ -855,7 +951,24 @@ public:
             for (int l = std::min(level, max_l); l >= 0; l--) {
                 auto top = searchLayer<true>(getVec(id), curr, l, g_HNSW_EF_CONSTRUCTION.load());
                 if (!top.empty()) curr = top[0].second;
+                
+                // --------------------------------------------------------
+                // 步骤 A: 建立正向连接 (id -> top)
+                // --------------------------------------------------------
                 connectNodeHeuristic(id, top, l);
+                
+                // --------------------------------------------------------
+                // 步骤 B: 建立反向连接（优化方案）
+                // --------------------------------------------------------
+                // 为所有被 id 选中的邻居尝试建立反向连接
+                for (const auto& candidate : top) {
+                    int neighbor_id = candidate.second;
+                    float dist_val = candidate.first;
+                    
+                    // 使用高效的反向连接函数
+                    // 这个函数会先用读锁快速判断，只有值得时才获取写锁
+                    tryAddReverseLink(neighbor_id, id, dist_val, l);
+                }
             }
         }
 
@@ -962,7 +1075,7 @@ public:
             int last_reported = 0;
             while (processed.load(std::memory_order_acquire) < n) {
                 int curr = processed.load(std::memory_order_acquire);
-                if (curr - last_reported >= std::max(50000, n / 10)) {
+                if (curr - last_reported >= std::max(50000, n / 100)) {
                     double pct = 100.0 * curr / n;
                     auto now = std::chrono::high_resolution_clock::now();
                     double elapsed_ms = std::chrono::duration<double, std::milli>(now - build_start).count();
@@ -1045,19 +1158,15 @@ public:
         int cnt = std::min(k, (int)top.size());
         out.reserve(cnt);
         for (int i = 0; i < cnt; ++i) {
-            int internal_id = top[i].second;
-            float dist = top[i].first;
-            
-            // 转换 ID：如果使用了重排，需要映射回原始 ID
             int original_idx;
             if (!flat_index->label_lookup.empty()) {
-                original_idx = flat_index->label_lookup[internal_id];
+                original_idx = flat_index->label_lookup[top[i].second];
             } else {
-                original_idx = internal_id;
+                original_idx = top[i].second;
             }
             
             if (original_idx >= 0 && original_idx < (int)point_ids.size()) {
-                out.push_back({point_ids[original_idx], dist});
+                out.push_back({point_ids[original_idx], top[i].first});
             }
         }
 

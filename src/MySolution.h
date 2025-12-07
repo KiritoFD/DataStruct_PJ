@@ -4,9 +4,9 @@
 #include <cstring>
 
 // 默认参数常量
-constexpr int HNSW_DEFAULT_M = 80;
-constexpr int HNSW_DEFAULT_MAX_LAYER = 11;
-constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 1301;
+constexpr int HNSW_DEFAULT_M = 64;
+constexpr int HNSW_DEFAULT_MAX_LAYER = 5;
+constexpr int HNSW_DEFAULT_EF_CONSTRUCTION = 700;
 constexpr int HNSW_DEFAULT_EF_SEARCH = 318;
 
 

@@ -8,12 +8,15 @@
 #include <vector>
 #include <cstdint>
 
-// Forward declare FlatHNSW so cache helpers can be declared without needing full type here
+// Forward declare FlatHNSW and SimpleHNSW so cache helpers can be declared without needing full type here
 struct FlatHNSW;
+class SimpleHNSW;
 
 // Note: AlignedFloatArray is defined in Sol.cpp before this header is included
 
-static const uint32_t INDEX_VERSION = 2u;  // 更新版本号
+// 【修改】版本4：移除无效的剪枝数组（pivot_dists, node_l2_norms）
+static const uint32_t INDEX_VERSION = 4u;
+
 static void generate_dfs_reordering(SimpleHNSW* src, std::vector<int>& old_to_new, std::vector<int>& new_to_old) {
     int N = src->size();
     // 初始化映射表：old_to_new 初始化为 -1 表示未访问
@@ -83,7 +86,7 @@ static bool save_flat_index(FlatHNSW* flat, const std::string& path) {
     
     // 写入魔数和版本
     uint32_t magic = 0x48535746; // 'HSWF'
-    uint32_t version = 2;        // 版本2：增加 label_lookup
+    uint32_t version = INDEX_VERSION;
     ofs.write((char*)&magic, sizeof(magic));
     ofs.write((char*)&version, sizeof(version));
     
@@ -124,12 +127,14 @@ static bool save_flat_index(FlatHNSW* flat, const std::string& path) {
     ofs.write((char*)&upper_storage_size, sizeof(upper_storage_size));
     ofs.write((char*)flat->upper_link_storage.data(), upper_storage_size * sizeof(int));
     
-    // [新增] 写入 label_lookup
+    // 写入 label_lookup
     uint64_t label_lookup_size = flat->label_lookup.size();
     ofs.write((char*)&label_lookup_size, sizeof(label_lookup_size));
     if (label_lookup_size > 0) {
         ofs.write((char*)flat->label_lookup.data(), label_lookup_size * sizeof(int));
     }
+    
+    // 【移除】不再保存 node_l2_norms 和 pivot_dists（版本4）
     
     return ofs.good();
 }
@@ -145,7 +150,7 @@ static FlatHNSW* load_flat_index(const std::string& path) {
     ifs.read((char*)&version, sizeof(version));
     
     if (magic != 0x48535746) return nullptr;
-    if (version != 1 && version != 2) return nullptr;  // 支持版本1和2
+    if (version < 1 || version > INDEX_VERSION) return nullptr;  // 支持版本1-4
     
     int dim;
     ifs.read((char*)&dim, sizeof(dim));
@@ -193,7 +198,7 @@ static FlatHNSW* load_flat_index(const std::string& path) {
     flat->upper_link_storage.resize(upper_storage_size);
     ifs.read((char*)flat->upper_link_storage.data(), upper_storage_size * sizeof(int));
     
-    // [新增] 读取 label_lookup（仅版本2）
+    // 读取 label_lookup（版本2+）
     if (version >= 2) {
         uint64_t label_lookup_size;
         ifs.read((char*)&label_lookup_size, sizeof(label_lookup_size));
@@ -203,6 +208,18 @@ static FlatHNSW* load_flat_index(const std::string& path) {
         }
     }
     
+    // 【兼容性处理】版本3的文件包含 L2 范数数据，需要跳过
+    if (version == 3) {
+        uint64_t norms_size;
+        ifs.read((char*)&norms_size, sizeof(norms_size));
+        if (norms_size > 0) {
+            // 跳过这部分数据
+            ifs.seekg(norms_size * sizeof(float), std::ios::cur);
+        }
+    }
+    
+    // 版本4及以后不存储剪枝数组
+    
     if (!ifs.good()) {
         delete flat;
         return nullptr;
@@ -210,6 +227,7 @@ static FlatHNSW* load_flat_index(const std::string& path) {
     
     return flat;
 }
+
 static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
     FlatHNSW* flat = new FlatHNSW(src->dim);
 
@@ -267,7 +285,6 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
         old_to_new.resize(N);
         new_to_old.resize(N);
         for (int i = 0; i < N; ++i) { old_to_new[i] = i; new_to_old[i] = i; }
-        // label_lookup left empty => identity
     }
 
     // 2. 重排/复制向量数据
@@ -284,23 +301,9 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
         float* dst_vec = flat->data.data() + (size_t)new_id * flat->dim;
         std::memcpy(dst_vec, src_vec, flat->dim * sizeof(float));
     }
-
-    // 预计算三角不等式 pivot 距离（如果开启）
-    if (ENABLE_TRIANGLE_PRUNING.load(std::memory_order_relaxed) && flat->enter_point >= 0) {
-        if (DEBUG_TIMING) std::cout << "[FlatConvert] Precomputing pivot distances..." << std::endl;
-        flat->pivot_dists.resize(N);
-        int pivot_id = flat->enter_point;
-        const float* pivot_vec = flat->data.data() + (size_t)pivot_id * flat->dim;
-        #if defined(_OPENMP)
-        #pragma omp parallel for schedule(static, 2048)
-        #endif
-        for (int i = 0; i < N; ++i) {
-            const float* vec_i = flat->data.data() + (size_t)i * flat->dim;
-            float sq_d = l2sq_100d(pivot_vec, vec_i);
-            flat->pivot_dists.ptr[i] = std::sqrt(sq_d);
-        }
-        if (DEBUG_TIMING) std::cout << "[FlatConvert] Pivot distances computed." << std::endl;
-    }
+    
+    // 【移除】不再预计算 L2 范数和 pivot 距离
+    // 这些剪枝策略在高维空间反而降低性能
 
     // 3. 构建 L0 CSR
     flat->l0_offsets.resize(N + 1);
@@ -368,11 +371,12 @@ static FlatHNSW* convert_to_flat(SimpleHNSW* src) {
     }
 
     if (DEBUG_TIMING) {
-        std::cout << "[FlatHNSW-CSR] Converted " << N << " nodes with triangle pruning support." << std::endl;
+        std::cout << "[FlatHNSW-CSR] Converted " << N << " nodes (optimized for cache, no pruning overhead)." << std::endl;
     }
 
     return flat;
 }
+
 // 生成索引缓存文件名（基于参数的哈希）
 static std::string get_index_cache_path(int n, int d, int M, int max_layer, int efc) {
     // 简单哈希：使用参数组合生成唯一文件名
