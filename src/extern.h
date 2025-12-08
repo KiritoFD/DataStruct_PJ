@@ -164,4 +164,10 @@ double get_graph_avg_degree_upper() {
 //     set_pruning_alpha(alpha);
 // }
 
+void set_hamming_threshold(int value) {
+    if (value > 0) {
+        HAMMING_THRESHOLD.store(value, std::memory_order_relaxed);
+    }
+}
+
 } // extern "C"

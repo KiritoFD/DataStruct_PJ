@@ -1,0 +1,2 @@
+M,MaxLayer,EFC,EFS,Recall,AvgQueryTime_ms,DistOpsPerQuery,BuildTime_ms,QPS
+32,7,1000,256,0.958750,1.077149,9511.336100,4056.243599,928.376839

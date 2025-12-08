@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 创建结果目录
-RESULTS_DIR="grid_results"
+RESULTS_DIR="grid_resu"
 mkdir -p "$RESULTS_DIR"
 
 # 生成时间戳
@@ -12,18 +12,36 @@ CSV_FILE="$RESULTS_DIR/grid_search_${TIMESTAMP}.csv"
 echo "M,MaxLayer,EFC,EFS,Recall,AvgQueryTime_ms,DistOpsPerQuery,BuildTime_ms,QPS" > "$CSV_FILE"
 
 # 定义参数网格
-M_VALUES=(32 40 64 80)
+M_VALUES=( 32 40 57 64 80)
 MAX_LAYER=7
-EFC_VALUES=(600 1000 1300)
-# 之前是一个固定值，改为组合
-EFS_VALUES=(100 250 500 600 800 1000)
+EFC_VALUES=(1000 1300)
+# 之前是一个固定值，改为：下界、上界、步长
+EFS_LOWER=256
+EFS_UPPER=512
+EFS_STEP=16
+HAMMING_THRESHOLD=(38 42 44 46 48 50 64)  # optional override (<=0 disables the flag)
+
+# 生成 EFS_VALUES 基于下界/上界/步长（包含校验）
+EFS_VALUES=()
+if [ "$EFS_STEP" -le 0 ]; then
+    echo "Error: EFS_STEP must be > 0"
+    exit 1
+fi
+if [ "$EFS_LOWER" -gt "$EFS_UPPER" ]; then
+    echo "Error: EFS_LOWER must be <= EFS_UPPER"
+    exit 1
+fi
+
+for (( val=EFS_LOWER; val<=EFS_UPPER; val+=EFS_STEP )); do
+    EFS_VALUES+=( "$val" )
+done
 
 # 进度计数
 TOTAL_RUNS=$((${#M_VALUES[@]} * ${#EFC_VALUES[@]} * ${#EFS_VALUES[@]}))
 CURRENT_RUN=0
 
 echo "=========================================="
-echo "Starting Grid Search with $TOTAL_RUNS configurations"
+echo "Starting Grid Search with $TOTAL_RUNS configurations (hamming_threshold=$HAMMING_THRESHOLD)"
 echo "Results will be saved to: $CSV_FILE"
 echo "=========================================="
 echo ""
@@ -38,8 +56,13 @@ for M in "${M_VALUES[@]}"; do
             echo "Run $CURRENT_RUN/$TOTAL_RUNS: M=$M, MaxLayer=$MAX_LAYER, EFC=$EFC, EFS=$EFS"
             echo "----------------------------------------"
             
+            EXTRA_FLAGS=""
+            if [ "$HAMMING_THRESHOLD" -gt 0 ]; then
+                EXTRA_FLAGS="$EXTRA_FLAGS --hamming_threshold $HAMMING_THRESHOLD"
+            fi
+
             # 运行程序并捕获输出
-            OUTPUT=$(./hng2 --m $M --max_layer $MAX_LAYER --efc $EFC --efs $EFS 2>&1)
+            OUTPUT=$(./hng3 --m $M --max_layer $MAX_LAYER --efc $EFC --efs $EFS $EXTRA_FLAGS 2>&1)
             
             # 提取关键指标
             RECALL=$(echo "$OUTPUT" | grep "Average recall@10:" | awk '{print $3}')

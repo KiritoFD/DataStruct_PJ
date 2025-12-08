@@ -20,6 +20,7 @@ extern "C" {
     void reset_dist_counters();
     void set_hnsw_params(int M, int max_layer, int ef_construction, int ef_search, int build_threads);
     void set_hnsw_debug(int dbg);
+    void set_hamming_threshold(int value);
     
     // 图质量统计
     int get_graph_max_level();
@@ -255,6 +256,7 @@ struct CmdOptsG {
     int ablate_simd = -1;
     int ablate_pruning = -1;
     int ablate_heap = -1;
+    int hamming_threshold = -1;
 };
 static CmdOptsG parse_args_g(int argc, char** argv) {
     CmdOptsG o;
@@ -275,6 +277,7 @@ static CmdOptsG parse_args_g(int argc, char** argv) {
         else if (a == "--ablate_simd" && i+1 < argc) o.ablate_simd = std::stoi(argv[++i]);
         else if (a == "--ablate_pruning" && i+1 < argc) o.ablate_pruning = std::stoi(argv[++i]);
         else if (a == "--ablate_heap" && i+1 < argc) o.ablate_heap = std::stoi(argv[++i]);
+        else if (a == "--hamming_threshold" && i+1 < argc) o.hamming_threshold = std::stoi(argv[++i]);
     }
     return o;
 }
@@ -390,6 +393,11 @@ int main(int argc, char** argv) {
                       + ", simd=" + std::to_string(simd)
                       + ", pruning=" + std::to_string(pruning)
                       + ", heap=" + std::to_string(heap) + "\n"));
+
+    if (opts.hamming_threshold > 0) {
+        set_hamming_threshold(opts.hamming_threshold);
+        logger.writeline(std::string("  Hamming threshold: ") + std::to_string(opts.hamming_threshold));
+    }
 
     // 加载数据
     logger.writeline("Loading base vectors...");
