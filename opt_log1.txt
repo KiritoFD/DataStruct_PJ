@@ -1,0 +1,117 @@
+💾 CSV backed up to: op_hng_20251207_165815.bak
+Loading entries from CSV...
+Loading history from op_hng.csv...
+Loaded 14 cached results, 1 graph configs, 3 trials.
+Pre-loaded 14 entries, 1 graph configs.
+
+============================================================
+🚀 HNSW Graph Parameter Optimization
+🎯 Target Recall: 0.9899 (constraint: > 0.988)
+📊 Optimizing: M, max_layer, efc (EFS auto-tuned via binary search)
+🔧 Initial: M=59, ML=7, EFC=763
+============================================================
+Restoring 3 trials from history...
+
+🔄 Batch #1, Trials: 3
+
+📊 Trial #3: M=52, ML=12, EFC=957
+   🔍 Binary search EFS for M=52, ML=12, EFC=957, target=0.9899
+      EFS=1040 -> Recall=0.9970, Time=3.4641ms
+      EFS=560 -> Recall=0.9899, Time=1.8976ms
+      EFS=800 -> Recall=0.9949, Time=2.6916ms
+      EFS=680 -> Recall=0.9929, Time=2.2897ms
+      EFS=620 -> Recall=0.9915, Time=2.4509ms
+      EFS=590 -> Recall=0.9908, Time=2.0060ms
+      EFS=575 -> Recall=0.9903, Time=1.9416ms
+      EFS=568 -> Recall=0.9901, Time=1.9193ms
+      EFS=564 -> Recall=0.9900, Time=1.8848ms
+      EFS=562 -> Recall=0.9899, Time=1.8919ms
+      EFS=561 -> Recall=0.9899, Time=1.8893ms
+   ✅ Best feasible: EFS=564 -> Recall=0.9900, Time=1.8848ms
+      (Found 11 feasible EFS values)
+   ✅ FEASIBLE: EFS=564, Recall=0.9900, Time=1.8848ms -> Score=1.8848
+
+📊 Trial #4: M=20, ML=10, EFC=1326
+   🔍 Binary search EFS for M=20, ML=10, EFC=1326, target=0.9899
+      EFS=1040 -> Recall=0.9812, Time=2.0759ms
+      EFS=1520 -> Recall=0.9881, Time=2.9814ms
+      EFS=1760 -> Recall=0.9902, Time=3.4252ms
+      EFS=1640 -> Recall=0.9893, Time=3.2102ms
+      EFS=1700 -> Recall=0.9897, Time=3.5906ms
+      EFS=1730 -> Recall=0.9899, Time=3.3561ms
+      EFS=1715 -> Recall=0.9898, Time=3.3268ms
+      EFS=1723 -> Recall=0.9899, Time=3.3718ms
+      EFS=1727 -> Recall=0.9899, Time=3.3784ms
+      EFS=1725 -> Recall=0.9899, Time=3.5954ms
+      EFS=1726 -> Recall=0.9899, Time=3.3804ms
+   ✅ Best feasible: EFS=1730 -> Recall=0.9899, Time=3.3561ms
+      (Found 4 feasible EFS values)
+   ✅ FEASIBLE: EFS=1730, Recall=0.9899, Time=3.3561ms -> Score=3.3561
+
+📊 Trial #5: M=51, ML=9, EFC=1153
+   🔍 Binary search EFS for M=51, ML=9, EFC=1153, target=0.9899
+      EFS=1040 -> Recall=0.9984, Time=4.2126ms
+      EFS=560 -> Recall=0.9937, Time=2.8132ms
+      EFS=320 -> Recall=0.9827, Time=1.3463ms
+      EFS=440 -> Recall=0.9897, Time=1.8524ms
+      EFS=500 -> Recall=0.9919, Time=2.0637ms
+      EFS=470 -> Recall=0.9908, Time=1.9191ms
+      EFS=455 -> Recall=0.9903, Time=1.8616ms
+      EFS=448 -> Recall=0.9900, Time=1.8513ms
+      EFS=444 -> Recall=0.9899, Time=1.8159ms
+      EFS=446 -> Recall=0.9900, Time=2.2177ms
+      EFS=445 -> Recall=0.9899, Time=1.8768ms
+   ✅ Best feasible: EFS=448 -> Recall=0.9900, Time=1.8513ms
+      (Found 9 feasible EFS values)
+   ✅ FEASIBLE: EFS=448, Recall=0.9900, Time=1.8513ms -> Score=1.8513
+
+📊 Trial #6: M=59, ML=17, EFC=1405
+   🔍 Binary search EFS for M=59, ML=17, EFC=1405, target=0.9899
+   ❌ Max EFS=2000 only gets Recall=0.0000, graph cannot meet target
+   ❌ INFEASIBLE: EFS=2000, Recall=0.0000 (gap=0.9880) -> Penalty=1009880
+
+📊 Trial #7: M=50, ML=15, EFC=1386
+   🔍 Binary search EFS for M=50, ML=15, EFC=1386, target=0.9899
+      EFS=1040 -> Recall=0.9985, Time=4.8582ms
+      EFS=560 -> Recall=0.9938, Time=2.3688ms
+      EFS=320 -> Recall=0.9828, Time=1.3950ms
+      EFS=440 -> Recall=0.9899, Time=1.9253ms
+      EFS=500 -> Recall=0.9921, Time=2.1264ms
+      EFS=470 -> Recall=0.9910, Time=1.9780ms
+      EFS=455 -> Recall=0.9904, Time=2.3044ms
+      EFS=448 -> Recall=0.9902, Time=1.9051ms
+      EFS=444 -> Recall=0.9901, Time=1.8951ms
+      EFS=442 -> Recall=0.9900, Time=1.8803ms
+      EFS=441 -> Recall=0.9899, Time=1.8803ms
+   ✅ Best feasible: EFS=441 -> Recall=0.9899, Time=1.8803ms
+      (Found 10 feasible EFS values)
+   ✅ FEASIBLE: EFS=441, Recall=0.9899, Time=1.8803ms -> Score=1.8803
+
+📊 Trial #8: M=50, ML=8, EFC=1222
+   🔍 Binary search EFS for M=50, ML=8, EFC=1222, target=0.9899
+      EFS=1040 -> Recall=0.9984, Time=4.3125ms
+      EFS=560 -> Recall=0.9936, Time=2.3336ms
+      EFS=320 -> Recall=0.9824, Time=1.3430ms
+      EFS=440 -> Recall=0.9894, Time=2.2163ms
+      EFS=500 -> Recall=0.9919, Time=2.1762ms
+      EFS=470 -> Recall=0.9906, Time=1.9443ms
+      EFS=455 -> Recall=0.9901, Time=1.9438ms
+      EFS=448 -> Recall=0.9897, Time=1.8740ms
+      EFS=452 -> Recall=0.9899, Time=1.9047ms
+      EFS=454 -> Recall=0.9900, Time=1.9186ms
+      EFS=453 -> Recall=0.9899, Time=2.2651ms
+   ✅ Best feasible: EFS=454 -> Recall=0.9900, Time=1.9186ms
+      (Found 8 feasible EFS values)
+   ✅ FEASIBLE: EFS=454, Recall=0.9900, Time=1.9186ms -> Score=1.9186
+
+📊 Trial #9: M=59, ML=10, EFC=1420
+   🔍 Binary search EFS for M=59, ML=10, EFC=1420, target=0.9899
+
+🛑 Stopped by user.
+
+============================================================
+🏆 Final Winner:
+   M=51, ML=9, EFC=1153
+   EFS=448
+   Recall=0.9900, Time=1.8513ms
+Total trials: 10

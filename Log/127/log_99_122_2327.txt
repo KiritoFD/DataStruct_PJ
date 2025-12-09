@@ -1,0 +1,357 @@
+💾 CSV backed up to: optuna_hng_20251202_232751.bak
+Loading entries from CSV...
+Loading history from optuna_hng.csv...
+Loaded 130 cached results, 35 graph configs, 86 trials.
+Pre-loaded 130 entries, 35 graph configs.
+
+============================================================
+🚀 HNSW Graph Parameter Optimization
+🎯 Target Recall: 0.99 (constraint: > 0.99)
+📊 Optimizing: M, max_layer, efc (EFS auto-tuned via binary search)
+🔧 Initial: M=51, ML=7, EFC=603
+============================================================
+Restoring 86 trials from history...
+
+🔄 Batch #1, Trials: 86
+
+📊 Trial #86: M=55, ML=6, EFC=427
+   🔍 Binary search EFS for M=55, ML=6, EFC=427, target=0.99
+      EFS=1040 -> Recall=0.9936, Time=2.8119ms
+      EFS=560 -> Recall=0.9831, Time=1.6049ms
+      EFS=800 -> Recall=0.9903, Time=2.2719ms
+      EFS=680 -> Recall=0.9875, Time=1.8952ms
+      EFS=740 -> Recall=0.9891, Time=2.1701ms
+      EFS=770 -> Recall=0.9896, Time=2.1701ms
+      EFS=785 -> Recall=0.9899, Time=2.2645ms
+      EFS=793 -> Recall=0.9901, Time=2.1964ms
+      EFS=789 -> Recall=0.9900, Time=2.1549ms
+      EFS=787 -> Recall=0.9900, Time=2.3259ms
+      EFS=788 -> Recall=0.9900, Time=2.3863ms
+   ✅ Optimal: EFS=788 -> Recall=0.9900, Time=2.3863ms
+   ✅ FEASIBLE: EFS=788, Recall=0.9900, Time=2.3863ms
+
+📊 Trial #87: M=38, ML=10, EFC=371
+   🔍 Binary search EFS for M=38, ML=10, EFC=371, target=0.99
+      EFS=1040 -> Recall=0.9913, Time=2.5113ms
+      EFS=560 -> Recall=0.9781, Time=1.3591ms
+      EFS=800 -> Recall=0.9870, Time=1.9800ms
+      EFS=920 -> Recall=0.9895, Time=2.1882ms
+      EFS=980 -> Recall=0.9905, Time=2.5230ms
+      EFS=950 -> Recall=0.9901, Time=2.2807ms
+      EFS=935 -> Recall=0.9898, Time=2.2948ms
+      EFS=943 -> Recall=0.9899, Time=2.5622ms
+      EFS=947 -> Recall=0.9900, Time=2.3423ms
+      EFS=945 -> Recall=0.9900, Time=2.2495ms
+      EFS=946 -> Recall=0.9900, Time=2.3767ms
+   ✅ Optimal: EFS=946 -> Recall=0.9900, Time=2.3767ms
+   ❌ INFEASIBLE: EFS=946, Recall=0.9900, Penalty=10000
+
+📊 Trial #88: M=53, ML=7, EFC=647
+   🔍 Binary search EFS for M=53, ML=7, EFC=647, target=0.99
+      EFS=1040 -> Recall=0.9959, Time=3.1928ms
+      EFS=560 -> Recall=0.9877, Time=1.8055ms
+      EFS=800 -> Recall=0.9934, Time=2.4910ms
+      EFS=680 -> Recall=0.9914, Time=2.0944ms
+      EFS=620 -> Recall=0.9896, Time=1.9554ms
+      EFS=650 -> Recall=0.9906, Time=2.3850ms
+      EFS=635 -> Recall=0.9901, Time=1.9646ms
+      EFS=628 -> Recall=0.9899, Time=1.9530ms
+      EFS=632 -> Recall=0.9901, Time=1.8550ms
+      EFS=630 -> Recall=0.9900, Time=2.0156ms
+      EFS=631 -> Recall=0.9900, Time=1.9841ms
+   ✅ Optimal: EFS=631 -> Recall=0.9900, Time=1.9841ms
+   ✅ FEASIBLE: EFS=631, Recall=0.9900, Time=1.9841ms
+
+📊 Trial #89: M=47, ML=14, EFC=588
+   🔍 Binary search EFS for M=47, ML=14, EFC=588, target=0.99
+      EFS=1040 -> Recall=0.9951, Time=3.0056ms
+      EFS=560 -> Recall=0.9858, Time=1.6894ms
+      EFS=800 -> Recall=0.9923, Time=2.6425ms
+      EFS=680 -> Recall=0.9901, Time=2.0974ms
+      EFS=620 -> Recall=0.9881, Time=1.8539ms
+      EFS=650 -> Recall=0.9891, Time=1.9068ms
+      EFS=665 -> Recall=0.9897, Time=2.0062ms
+      EFS=673 -> Recall=0.9899, Time=2.0268ms
+      EFS=677 -> Recall=0.9900, Time=2.3077ms
+      EFS=675 -> Recall=0.9900, Time=1.9282ms
+      EFS=676 -> Recall=0.9900, Time=1.9158ms
+   ✅ Optimal: EFS=677 -> Recall=0.9900, Time=2.3077ms
+   ✅ FEASIBLE: EFS=677, Recall=0.9900, Time=2.3077ms
+
+📊 Trial #90: M=40, ML=11, EFC=715
+   🔍 Binary search EFS for M=40, ML=11, EFC=715, target=0.99
+      EFS=1040 -> Recall=0.9952, Time=2.9523ms
+      EFS=560 -> Recall=0.9858, Time=1.7336ms
+      EFS=800 -> Recall=0.9923, Time=2.4838ms
+      EFS=680 -> Recall=0.9899, Time=1.9376ms
+      EFS=740 -> Recall=0.9913, Time=2.1645ms
+      EFS=710 -> Recall=0.9906, Time=2.3928ms
+      EFS=695 -> Recall=0.9902, Time=2.0624ms
+      EFS=688 -> Recall=0.9900, Time=2.0208ms
+      EFS=684 -> Recall=0.9900, Time=2.0301ms
+      EFS=686 -> Recall=0.9900, Time=2.0239ms
+      EFS=685 -> Recall=0.9900, Time=1.9390ms
+   ✅ Optimal: EFS=686 -> Recall=0.9900, Time=2.0239ms
+   ✅ FEASIBLE: EFS=686, Recall=0.9900, Time=2.0239ms
+
+📊 Trial #91: M=34, ML=6, EFC=385
+   🔍 Binary search EFS for M=34, ML=6, EFC=385, target=0.99
+      EFS=1040 -> Recall=0.9908, Time=2.4753ms
+      EFS=560 -> Recall=0.9771, Time=1.3444ms
+      EFS=800 -> Recall=0.9863, Time=2.1207ms
+      EFS=920 -> Recall=0.9889, Time=2.1695ms
+      EFS=980 -> Recall=0.9899, Time=2.3338ms
+      EFS=1010 -> Recall=0.9904, Time=2.3644ms
+      EFS=995 -> Recall=0.9901, Time=2.3425ms
+      EFS=988 -> Recall=0.9900, Time=2.3393ms
+      EFS=984 -> Recall=0.9899, Time=2.5498ms
+      EFS=986 -> Recall=0.9900, Time=2.3026ms
+      EFS=985 -> Recall=0.9900, Time=2.2882ms
+   ✅ Optimal: EFS=986 -> Recall=0.9900, Time=2.3026ms
+   ❌ INFEASIBLE: EFS=986, Recall=0.9900, Penalty=10000
+
+📊 Trial #92: M=39, ML=4, EFC=827
+   🔍 Binary search EFS for M=39, ML=4, EFC=827, target=0.99
+      EFS=1040 -> Recall=0.9957, Time=3.0695ms
+      EFS=560 -> Recall=0.9866, Time=1.6596ms
+      EFS=800 -> Recall=0.9928, Time=2.2564ms
+      EFS=680 -> Recall=0.9905, Time=2.0233ms
+      EFS=620 -> Recall=0.9885, Time=1.8692ms
+      EFS=650 -> Recall=0.9896, Time=2.2429ms
+      EFS=665 -> Recall=0.9901, Time=1.9832ms
+      EFS=658 -> Recall=0.9899, Time=1.9443ms
+      EFS=662 -> Recall=0.9900, Time=1.9572ms
+      EFS=660 -> Recall=0.9900, Time=1.9827ms
+      EFS=661 -> Recall=0.9900, Time=1.9857ms
+   ✅ Optimal: EFS=662 -> Recall=0.9900, Time=1.9572ms
+   ✅ FEASIBLE: EFS=662, Recall=0.9900, Time=1.9572ms
+
+📊 Trial #93: M=50, ML=5, EFC=498
+   🔍 Binary search EFS for M=50, ML=5, EFC=498, target=0.99
+      EFS=1040 -> Recall=0.9944, Time=3.0249ms
+      EFS=560 -> Recall=0.9852, Time=1.6811ms
+      EFS=800 -> Recall=0.9915, Time=2.2580ms
+      EFS=680 -> Recall=0.9891, Time=1.9220ms
+      EFS=740 -> Recall=0.9905, Time=2.1526ms
+      EFS=710 -> Recall=0.9899, Time=2.0166ms
+      EFS=725 -> Recall=0.9901, Time=2.3356ms
+      EFS=718 -> Recall=0.9899, Time=2.0685ms
+      EFS=722 -> Recall=0.9901, Time=2.1003ms
+      EFS=720 -> Recall=0.9900, Time=2.0336ms
+      EFS=719 -> Recall=0.9900, Time=2.0428ms
+   ✅ Optimal: EFS=720 -> Recall=0.9900, Time=2.0336ms
+   ❌ INFEASIBLE: EFS=720, Recall=0.9900, Penalty=10000
+
+📊 Trial #94: M=59, ML=8, EFC=818
+   🔍 Binary search EFS for M=59, ML=8, EFC=818, target=0.99
+      EFS=1040 -> Recall=0.9969, Time=3.4463ms
+      EFS=560 -> Recall=0.9896, Time=1.8147ms
+      EFS=800 -> Recall=0.9948, Time=2.5922ms
+      EFS=680 -> Recall=0.9927, Time=2.2447ms
+      EFS=620 -> Recall=0.9912, Time=2.0421ms
+      EFS=590 -> Recall=0.9905, Time=2.2527ms
+      EFS=575 -> Recall=0.9900, Time=1.8935ms
+      EFS=568 -> Recall=0.9898, Time=1.8503ms
+      EFS=572 -> Recall=0.9899, Time=1.8535ms
+      EFS=574 -> Recall=0.9900, Time=1.9611ms
+      EFS=573 -> Recall=0.9900, Time=1.9307ms
+   ✅ Optimal: EFS=574 -> Recall=0.9900, Time=1.9611ms
+   ✅ FEASIBLE: EFS=574, Recall=0.9900, Time=1.9611ms
+
+📊 Trial #95: M=32, ML=5, EFC=663
+   🔍 Binary search EFS for M=32, ML=5, EFC=663, target=0.99
+      EFS=1040 -> Recall=0.9926, Time=2.6911ms
+      EFS=560 -> Recall=0.9808, Time=1.4880ms
+      EFS=800 -> Recall=0.9886, Time=2.0751ms
+      EFS=920 -> Recall=0.9910, Time=2.5737ms
+      EFS=860 -> Recall=0.9899, Time=2.2051ms
+      EFS=890 -> Recall=0.9905, Time=2.2886ms
+      EFS=875 -> Recall=0.9902, Time=2.2435ms
+      EFS=868 -> Recall=0.9901, Time=2.2198ms
+      EFS=864 -> Recall=0.9900, Time=2.1912ms
+      EFS=862 -> Recall=0.9899, Time=2.5112ms
+      EFS=863 -> Recall=0.9900, Time=2.2084ms
+   ✅ Optimal: EFS=864 -> Recall=0.9900, Time=2.1912ms
+   ❌ INFEASIBLE: EFS=864, Recall=0.9900, Penalty=10000
+
+📊 Trial #96: M=43, ML=1, EFC=767
+   🔍 Binary search EFS for M=43, ML=1, EFC=767, target=0.99
+      EFS=1040 -> Recall=0.9958, Time=3.0705ms
+      EFS=560 -> Recall=0.9873, Time=1.6704ms
+      EFS=800 -> Recall=0.9933, Time=2.5527ms
+      EFS=680 -> Recall=0.9910, Time=2.0638ms
+      EFS=620 -> Recall=0.9890, Time=1.9034ms
+      EFS=650 -> Recall=0.9901, Time=1.9980ms
+      EFS=635 -> Recall=0.9895, Time=1.9452ms
+      EFS=643 -> Recall=0.9899, Time=1.9265ms
+      EFS=647 -> Recall=0.9900, Time=2.2693ms
+      EFS=649 -> Recall=0.9901, Time=1.9760ms
+      EFS=648 -> Recall=0.9900, Time=1.9945ms
+   ✅ Optimal: EFS=648 -> Recall=0.9900, Time=1.9945ms
+   ✅ FEASIBLE: EFS=648, Recall=0.9900, Time=1.9945ms
+
+📊 Trial #97: M=33, ML=9, EFC=585
+   🔍 Binary search EFS for M=33, ML=9, EFC=585, target=0.99
+      EFS=1040 -> Recall=0.9928, Time=2.6422ms
+      EFS=560 -> Recall=0.9809, Time=1.5124ms
+      EFS=800 -> Recall=0.9888, Time=2.3712ms
+      EFS=920 -> Recall=0.9912, Time=2.3787ms
+      EFS=860 -> Recall=0.9900, Time=2.2193ms
+      EFS=830 -> Recall=0.9895, Time=2.1216ms
+      EFS=845 -> Recall=0.9897, Time=2.1248ms
+      EFS=853 -> Recall=0.9899, Time=2.2132ms
+      EFS=857 -> Recall=0.9900, Time=2.4743ms
+      EFS=859 -> Recall=0.9900, Time=2.2333ms
+      EFS=858 -> Recall=0.9900, Time=2.2349ms
+   ✅ Optimal: EFS=858 -> Recall=0.9900, Time=2.2349ms
+   ✅ FEASIBLE: EFS=858, Recall=0.9900, Time=2.2349ms
+
+📊 Trial #98: M=39, ML=6, EFC=819
+   🔍 Binary search EFS for M=39, ML=6, EFC=819, target=0.99
+      EFS=1040 -> Recall=0.9956, Time=3.0568ms
+      EFS=560 -> Recall=0.9864, Time=1.7108ms
+      EFS=800 -> Recall=0.9927, Time=2.3159ms
+      EFS=680 -> Recall=0.9904, Time=1.8417ms
+      EFS=620 -> Recall=0.9884, Time=1.8228ms
+      EFS=650 -> Recall=0.9896, Time=1.9538ms
+      EFS=665 -> Recall=0.9900, Time=1.9830ms
+      EFS=658 -> Recall=0.9898, Time=1.9916ms
+      EFS=662 -> Recall=0.9900, Time=1.9391ms
+      EFS=664 -> Recall=0.9900, Time=1.9819ms
+      EFS=663 -> Recall=0.9900, Time=1.9542ms
+   ✅ Optimal: EFS=663 -> Recall=0.9900, Time=1.9542ms
+   ❌ INFEASIBLE: EFS=663, Recall=0.9900, Penalty=10000
+
+📊 Trial #99: M=34, ML=16, EFC=433
+   🔍 Binary search EFS for M=34, ML=16, EFC=433, target=0.99
+      EFS=1040 -> Recall=0.9912, Time=2.5468ms
+      EFS=560 -> Recall=0.9785, Time=1.4031ms
+      EFS=800 -> Recall=0.9870, Time=1.9959ms
+      EFS=920 -> Recall=0.9896, Time=2.2963ms
+      EFS=980 -> Recall=0.9904, Time=2.3497ms
+      EFS=950 -> Recall=0.9900, Time=2.5752ms
+      EFS=935 -> Recall=0.9898, Time=2.2995ms
+      EFS=943 -> Recall=0.9900, Time=2.3529ms
+      EFS=947 -> Recall=0.9900, Time=2.3302ms
+      EFS=945 -> Recall=0.9900, Time=2.3594ms
+      EFS=946 -> Recall=0.9900, Time=2.3708ms
+   ✅ Optimal: EFS=947 -> Recall=0.9900, Time=2.3302ms
+   ❌ INFEASIBLE: EFS=947, Recall=0.9900, Penalty=10000
+
+📊 Trial #100: M=48, ML=2, EFC=460
+   🔍 Binary search EFS for M=48, ML=2, EFC=460, target=0.99
+      EFS=1040 -> Recall=0.9939, Time=2.7781ms
+      EFS=560 -> Recall=0.9838, Time=1.9389ms
+      EFS=800 -> Recall=0.9908, Time=2.1775ms
+      EFS=680 -> Recall=0.9881, Time=1.9150ms
+      EFS=740 -> Recall=0.9896, Time=2.4000ms
+      EFS=770 -> Recall=0.9902, Time=2.1343ms
+      EFS=755 -> Recall=0.9899, Time=2.1947ms
+      EFS=763 -> Recall=0.9901, Time=2.5931ms
+      EFS=759 -> Recall=0.9900, Time=2.2801ms
+      EFS=757 -> Recall=0.9899, Time=2.1797ms
+      EFS=758 -> Recall=0.9900, Time=2.3415ms
+   ✅ Optimal: EFS=759 -> Recall=0.9900, Time=2.2801ms
+   ✅ FEASIBLE: EFS=759, Recall=0.9900, Time=2.2801ms
+
+📊 Trial #101: M=47, ML=16, EFC=682
+   🔍 Binary search EFS for M=47, ML=16, EFC=682, target=0.99
+      EFS=1040 -> Recall=0.9960, Time=3.0901ms
+      EFS=560 -> Recall=0.9872, Time=1.8868ms
+      EFS=800 -> Recall=0.9932, Time=2.4695ms
+      EFS=680 -> Recall=0.9911, Time=2.4146ms
+      EFS=620 -> Recall=0.9893, Time=1.9283ms
+      EFS=650 -> Recall=0.9903, Time=2.0459ms
+      EFS=635 -> Recall=0.9898, Time=1.9694ms
+      EFS=643 -> Recall=0.9901, Time=1.9993ms
+      EFS=639 -> Recall=0.9899, Time=1.9821ms
+      EFS=641 -> Recall=0.9901, Time=1.9973ms
+      EFS=640 -> Recall=0.9900, Time=1.9851ms
+   ✅ Optimal: EFS=640 -> Recall=0.9900, Time=1.9851ms
+   ✅ FEASIBLE: EFS=640, Recall=0.9900, Time=1.9851ms
+
+📊 Trial #102: M=59, ML=7, EFC=892
+   🔍 Binary search EFS for M=59, ML=7, EFC=892, target=0.99
+      EFS=1040 -> Recall=0.9970, Time=3.4283ms
+      EFS=560 -> Recall=0.9899, Time=1.9258ms
+      EFS=800 -> Recall=0.9950, Time=2.6732ms
+      EFS=680 -> Recall=0.9930, Time=2.2675ms
+      EFS=620 -> Recall=0.9916, Time=2.2567ms
+      EFS=590 -> Recall=0.9907, Time=1.9732ms
+      EFS=575 -> Recall=0.9903, Time=1.9488ms
+      EFS=568 -> Recall=0.9901, Time=1.9693ms
+      EFS=564 -> Recall=0.9900, Time=1.9509ms
+      EFS=562 -> Recall=0.9899, Time=1.9204ms
+      EFS=563 -> Recall=0.9900, Time=2.2208ms
+   ✅ Optimal: EFS=564 -> Recall=0.9900, Time=1.9509ms
+   ❌ INFEASIBLE: EFS=564, Recall=0.9900, Penalty=10000
+
+📊 Trial #103: M=52, ML=6, EFC=869
+   🔍 Binary search EFS for M=52, ML=6, EFC=869, target=0.99
+      EFS=1040 -> Recall=0.9967, Time=3.2887ms
+      EFS=560 -> Recall=0.9893, Time=2.2592ms
+      EFS=800 -> Recall=0.9946, Time=2.6928ms
+      EFS=680 -> Recall=0.9925, Time=2.3090ms
+      EFS=620 -> Recall=0.9909, Time=2.0205ms
+      EFS=590 -> Recall=0.9901, Time=2.0064ms
+      EFS=575 -> Recall=0.9897, Time=1.9013ms
+      EFS=583 -> Recall=0.9900, Time=2.2254ms
+      EFS=587 -> Recall=0.9901, Time=1.9806ms
+      EFS=585 -> Recall=0.9900, Time=1.8103ms
+      EFS=584 -> Recall=0.9900, Time=1.9265ms
+   ✅ Optimal: EFS=584 -> Recall=0.9900, Time=1.9265ms
+   ❌ INFEASIBLE: EFS=584, Recall=0.9900, Penalty=10000
+
+📊 Trial #104: M=39, ML=9, EFC=589
+   🔍 Binary search EFS for M=39, ML=9, EFC=589, target=0.99
+   ❌ Max EFS=2000 only gets Recall=0.9895, graph cannot meet target
+   ❌ INFEASIBLE: EFS=2000, Recall=0.9895, Penalty=10490
+
+📊 Trial #105: M=44, ML=6, EFC=841
+   🔍 Binary search EFS for M=44, ML=6, EFC=841, target=0.99
+      EFS=1040 -> Recall=0.9961, Time=3.2046ms
+      EFS=560 -> Recall=0.9881, Time=1.8103ms
+      EFS=800 -> Recall=0.9936, Time=2.7642ms
+      EFS=680 -> Recall=0.9914, Time=2.1473ms
+      EFS=620 -> Recall=0.9897, Time=2.0834ms
+      EFS=650 -> Recall=0.9906, Time=2.0971ms
+      EFS=635 -> Recall=0.9901, Time=2.0809ms
+      EFS=628 -> Recall=0.9899, Time=2.3825ms
+      EFS=632 -> Recall=0.9900, Time=2.0647ms
+      EFS=634 -> Recall=0.9901, Time=2.3892ms
+      EFS=633 -> Recall=0.9900, Time=2.0181ms
+   ✅ Optimal: EFS=633 -> Recall=0.9900, Time=2.0181ms
+   ✅ FEASIBLE: EFS=633, Recall=0.9900, Time=2.0181ms
+   Completed: 106, Feasible: 46
+✅ Best: M=39, ML=4, EFC=827, EFS=662, Recall=0.9900, Time=1.9572ms
+💾 Saved to optuna_hng.csv
+
+🔄 Batch #2, Trials: 106
+
+📊 Trial #106: M=44, ML=6, EFC=505
+   🔍 Binary search EFS for M=44, ML=6, EFC=505, target=0.99
+      EFS=1040 -> Recall=0.9940, Time=2.9184ms
+      EFS=560 -> Recall=0.9840, Time=1.7139ms
+      EFS=800 -> Recall=0.9909, Time=2.3245ms
+      EFS=680 -> Recall=0.9883, Time=2.3244ms
+      EFS=740 -> Recall=0.9898, Time=2.1521ms
+      EFS=770 -> Recall=0.9904, Time=2.2677ms
+      EFS=755 -> Recall=0.9901, Time=2.0457ms
+      EFS=748 -> Recall=0.9900, Time=2.2002ms
+      EFS=752 -> Recall=0.9900, Time=2.0779ms
+      EFS=750 -> Recall=0.9900, Time=2.1835ms
+      EFS=749 -> Recall=0.9900, Time=2.1901ms
+   ✅ Optimal: EFS=750 -> Recall=0.9900, Time=2.1835ms
+   ❌ INFEASIBLE: EFS=750, Recall=0.9900, Penalty=10000
+
+📊 Trial #107: M=35, ML=17, EFC=522
+   🔍 Binary search EFS for M=35, ML=17, EFC=522, target=0.99
+
+🛑 Stopped by user.
+
+============================================================
+🏆 Final Winner:
+   M=39, ML=4, EFC=827
+   EFS=662
+   Recall=0.9900, Time=1.9572ms
+Total trials: 108

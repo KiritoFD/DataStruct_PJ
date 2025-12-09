@@ -1,0 +1,7 @@
+variant_spec=full,0,0,0,0,0,0,0
+set_M=59
+set_ML=5
+set_EFC=763
+set_EFS=125
+run_index=1
+log_file=results/ablation_20251205_230404/params_M59_ML5_EFC763_EFS125/full/run_stdout_1.log

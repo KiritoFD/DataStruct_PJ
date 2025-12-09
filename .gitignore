@@ -1,4 +1,3 @@
-*.txt
+data_o/
 *.json
 *.bin
-*.idx

@@ -1,0 +1,31 @@
+💾 CSV backed up to: optuna_hng_20251202_232319.bak
+Loading entries from CSV...
+Loading history from optuna_hng.csv...
+Loaded 130 cached results, 35 graph configs, 85 trials.
+Pre-loaded 130 entries, 35 graph configs.
+
+============================================================
+🚀 HNSW Graph Parameter Optimization
+🎯 Target Recall: 0.99 (constraint: > 0.99)
+📊 Optimizing: M, max_layer, efc (EFS auto-tuned via binary search)
+🔧 Initial: M=51, ML=7, EFC=603
+============================================================
+Restoring 85 trials from history...
+
+🔄 Batch #1, Trials: 85
+
+📊 Trial #85: M=36, ML=11, EFC=451
+   [GRAPH CACHE] M=36, ML=11, EFC=451 -> EFS=1040, Rec=0.9922
+   ✅ FEASIBLE: EFS=1040, Recall=0.9922, Time=3.0381ms
+
+📊 Trial #86: M=24, ML=11, EFC=600
+   🔍 Binary search EFS for M=24, ML=11, EFC=600, target=0.99
+
+🛑 Stopped by user.
+
+============================================================
+🏆 Final Winner:
+   M=39, ML=10, EFC=641
+   EFS=750
+   Recall=0.9906, Time=2.0994ms
+Total trials: 87

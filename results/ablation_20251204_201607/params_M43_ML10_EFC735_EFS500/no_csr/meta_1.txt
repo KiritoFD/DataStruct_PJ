@@ -1,0 +1,8 @@
+variant_spec=no_csr,1,0,0,0,0,0,0
+set_M=43
+set_ML=10
+set_EFC=735
+set_EFS=500
+run_index=1
+log_file=results/ablation_20251204_201607/params_M43_ML10_EFC735_EFS500/no_csr/run_stdout_1.log
+status=done

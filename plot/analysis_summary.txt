@@ -1,0 +1,46 @@
+Recall-first Analysis summary
+=============================
+
+Total runs: 174
+Analyzed runs: 174
+
+Best recall run (global):
+timestamp             2025-12-06T07:49:53.527650
+study_name                            efs_search
+trial_id                                      -1
+NUM_CENTROIDS                                 55
+KMEANS_ITER                                   11
+NPROBE                                      1286
+ELAPSED_s                                   2000
+K                                             10
+RECALL                                   0.99944
+AVG_QUERY_TIME_ms                       7.315111
+INDEX_BUILD_TIME_s                1727980.531761
+reward_score                            7.315111
+status                                  COMPLETE
+RECALL_PER_SEC                            0.0005
+
+Elapsed time (s): 2000, AVG_QUERY_TIME_ms: 7.315111
+
+Top configurations by mean recall (recall_aggregated.csv)
+ NUM_CENTROIDS  KMEANS_ITER  NPROBE  RECALL_mean  ELAPSED_s_mean  AVG_QUERY_TIME_MS_mean  runs
+            52           12     957       0.9920        745.8462                  4.3229    13
+            59            5     763       0.9917        758.9231                  2.7776    13
+            33            5     511       0.9898        963.2500                  2.6854    12
+            32            5     530       0.9897        963.0769                  2.7347    13
+            55           11    1286       0.9845        548.0769                  2.1019    13
+            70            1    1096       0.9845        547.7692                  2.1414    13
+            82           13     985       0.9841        550.8462                  2.0868    13
+            44            4    1409       0.9836        561.5385                  2.0746    13
+            67            6     985       0.9836        558.3077                  2.0734    13
+            51           10     944       0.9836        561.6154                  1.9892    13
+
+Pareto front (recall then time) saved to: pareto_front.csv
+Top-20 runs by recall saved to: top_20_by_recall.csv
+Top-20 runs by recall/sec saved to: top_20_by_recall_per_sec.csv
+统计召回率高于0.98的点的时间情况：
+数量: 125
+ELAPSED_s: mean=794.2960, std=489.4768, min=319.0000, max=2000.0000
+AVG_QUERY_TIME_MS: mean=2.7660, std=1.7063, min=1.2977, max=10.3817
+详细点保存于: high_recall_time_stats.csv
+

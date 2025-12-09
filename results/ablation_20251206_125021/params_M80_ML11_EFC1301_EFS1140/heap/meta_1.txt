@@ -1,0 +1,8 @@
+variant_spec=heap,0,0,0,0,1,0,0
+set_M=80
+set_ML=11
+set_EFC=1301
+set_EFS=1140
+run_index=1
+log_file=results/ablation_20251206_125021/params_M80_ML11_EFC1301_EFS1140/heap/run_stdout_1.log
+status=done

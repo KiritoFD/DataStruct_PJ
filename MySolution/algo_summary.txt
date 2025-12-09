@@ -1,0 +1,45 @@
+实现与性能说明
+
+1) 算法概述
+- 实现基于 HNSW（分层小世界图）索引结构，支持多层级近邻搜索。
+- 使用随机层级分配、贪心下降（greedySearch）和局部搜索（searchLayer）来构建/查询邻居。
+- 构建阶段采用并行插入（ThreadPool），分块并发处理以加速大规模数据的构建。
+- 搜索阶段以无写锁（UseLock = false）为主，尽量降低锁开销以取得更高吞吐。
+- 距离计算使用 SIMD（AVX2）加速（若可用），并采用线程局部计数器 + 批量 flush 的方式统计距离运算次数以减少原子竞争。
+
+2) 代码要点
+- SimpleHNSW：核心数据结构，data_vecs 保存向量，nodes 保存邻接链表（每层）。
+- VisitedList：快速标记访问节点，避免重复访问。
+- searchLayer：基于 candidate/top-results 的 best-first 局部搜索。
+- connectNode：在构建时维护双向链接并做最大邻居数裁剪。
+- 并行构建：通过 ThreadPool 把点分块插入，记录并输出构建时间（ms）。
+- 距离统计：通过全局/线程局部原子变量记录每次查询的距离计算次数，并提供 C 接口重置与读取函数（reset_dist_counters, get_total_queries, get_avg_dists_per_query, get_last_query_dists, get_last_build_time_ms）。
+
+3) 运行/编译
+- 编译：
+  g++ MySolution.cpp test_hn.cpp -o hn -O3
+- 运行（示例）：
+  ./hn
+- 若无 AVX2，请确保编译器不强制使用不可用指令集或移除相关编译选项。
+
+4) 本次测得指标（来自用户输出）
+- 数据集：sift（1,000,000 points）
+- 构建时间（最近一次）：370125.86 ms（≈ 370.13 s）
+- 查询数（已处理）：1000
+- 平均 recall@10：0.9924
+- 平均查询时间：0.51 ms / query
+- 距离统计：
+  - Total queries reported by index: 1000
+  - Average distance ops per query: 1583.80
+  - Last query distance ops: 1592
+
+5) 解释与建议
+- 高召回 + 低查询时间说明搜索质量与速度兼顾良好；平均每查询约 1.6k 次距离计算，结合 SIMD 可获得较好吞吐。
+- 构建耗时较长（数分钟到数百秒），适合离线构建场景；可通过减少并行线程争用、增大 chunk_size 或优化 connectNode 裁剪策略进一步加速。
+- 距离计数为近似值（线程局部批量 flush），在高并发/长查询时能有效减少原子开销，适合性能分析，但若需精确逐-operation 统计可禁用批量策略。
+- 若希望进一步提升性能：
+  - 调整 M / ef_construction / ef_search 参数；
+  - 在 CPU 支持下启用 AVX/AVX2 并用 -march=native 编译；
+  - 增加索引构建时的并行度并优化内存布局（连续大数组替代 vector<vector<float>>）。
+
+结束。

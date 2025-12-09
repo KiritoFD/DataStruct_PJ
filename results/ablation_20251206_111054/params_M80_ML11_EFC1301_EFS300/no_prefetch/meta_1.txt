@@ -1,0 +1,8 @@
+variant_spec=no_prefetch,0,1,0,0,0,0,0
+set_M=80
+set_ML=11
+set_EFC=1301
+set_EFS=300
+run_index=1
+log_file=results/ablation_20251206_111054/params_M80_ML11_EFC1301_EFS300/no_prefetch/run_stdout_1.log
+status=done

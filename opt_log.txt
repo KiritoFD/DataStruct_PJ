@@ -1,0 +1,37 @@
+💾 CSV backed up to: op_hng_20251207_153337.bak
+Loading entries from CSV...
+Loading history from op_hng.csv...
+Loaded 12 cached results, 1 graph configs, 1 trials.
+Pre-loaded 12 entries, 1 graph configs.
+
+============================================================
+🚀 HNSW Graph Parameter Optimization
+🎯 Target Recall: 0.9899 (constraint: > 0.988)
+📊 Optimizing: M, max_layer, efc (EFS auto-tuned via binary search)
+🔧 Initial: M=59, ML=7, EFC=763
+============================================================
+Restoring 1 trials from history...
+
+🔄 Batch #1, Trials: 1
+
+📊 Trial #1: M=43, ML=5, EFC=1150
+   🔍 Binary search EFS for M=43, ML=5, EFC=1150, target=0.9899
+   ❌ Max EFS=2000 only gets Recall=0.0000, graph cannot meet target
+   ❌ INFEASIBLE: EFS=2000, Recall=0.0000 (gap=0.9880) -> Penalty=1009880
+
+📊 Trial #2: M=41, ML=5, EFC=1183
+   🔍 Binary search EFS for M=41, ML=5, EFC=1183, target=0.9899
+   ❌ Max EFS=2000 only gets Recall=0.0000, graph cannot meet target
+   ❌ INFEASIBLE: EFS=2000, Recall=0.0000 (gap=0.9880) -> Penalty=1009880
+
+📊 Trial #3: M=59, ML=10, EFC=1539
+   🔍 Binary search EFS for M=59, ML=10, EFC=1539, target=0.9899
+
+🛑 Stopped by user.
+
+============================================================
+🏆 Final Winner:
+   M=59, ML=7, EFC=763
+   EFS=440
+   Recall=0.9901, Time=1.8797ms
+Total trials: 4

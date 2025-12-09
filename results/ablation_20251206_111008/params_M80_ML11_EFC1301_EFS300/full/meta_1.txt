@@ -1,0 +1,7 @@
+variant_spec=full,0,0,0,0,0,0,0
+set_M=80
+set_ML=11
+set_EFC=1301
+set_EFS=300
+run_index=1
+log_file=results/ablation_20251206_111008/params_M80_ML11_EFC1301_EFS300/full/run_stdout_1.log
