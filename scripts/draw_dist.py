@@ -17,33 +17,99 @@ on the same figure (left y-axis: recall; right y-axis: avg_dists).
 import sys
 import os
 import argparse
-
+import math
+import re
+import unicodedata
 try:
     import pandas as pd
     import matplotlib.pyplot as plt
+    import numpy as np
+    from matplotlib.ticker import FixedLocator
 except Exception as e:
     print("Missing dependency:", e)
-    print("Install with: pip install pandas matplotlib")
+    print("Install with: pip install pandas matplotlib numpy")
     sys.exit(1)
 
+# Add helper to clean strange chars from column names
+def sanitize_columns(cols):
+    # strip leading/trailing whitespace, remove BOM/zero-width/control characters and surrounding quotes
+    cleaned = []
+    for c in cols:
+        s = str(c)
+        # normalize unicode to avoid weird composed characters
+        s = unicodedata.normalize('NFKC', s)
+        # remove BOM, zero-width, non-breaking space, CR/LF, tab
+        s = re.sub(r'[\ufeff\u200b-\u200f\u00a0\r\n\t]', '', s)
+        # remove content inside parentheses (units), e.g. "(ms)"
+        s = re.sub(r'\([^)]*\)', '', s)
+        s = s.strip()
+        # remove surrounding quotes if any
+        if len(s) >= 2 and ((s[0] == s[-1] == "'") or (s[0] == s[-1] == '"')):
+            s = s[1:-1].strip()
+        # strip stray punctuation from ends
+        s = s.strip(' \'"`.,;:')
+        cleaned.append(s)
+    return cleaned
 
 def detect_col(df, preferred, candidates):
-    """Find a column name in df (case-insensitive) from a list of candidates; fallback to preferred if present."""
-    lcmap = {c.lower(): c for c in df.columns}
+    """Find a column name in df (case-insensitive, punctuation-insensitive, whitespace-insensitive) from a list of candidates; fallback to preferred if present."""
+    def norm(s):
+        # Remove all non-alphanumeric, lowercase
+        return re.sub(r'[^0-9a-z]', '', str(s).lower())
+    # Build normalized map for all columns
+    nmmap = {norm(c): c for c in df.columns}
+    # Try candidates
     for cand in candidates:
-        if cand.lower() in lcmap:
-            return lcmap[cand.lower()]
-    # fallback to preferred if exists exactly
-    return df.columns[df.columns.str.lower() == preferred.lower()].tolist()[0] if preferred.lower() in lcmap else None
+        if not cand:
+            continue
+        nc = norm(cand)
+        if nc in nmmap:
+            return nmmap[nc]
+    # fallback to preferred if present
+    if preferred:
+        npref = norm(preferred)
+        if npref in nmmap:
+            return nmmap[npref]
+    return None
+
+# Add helper to find a column containing a substring in its normalized name
+def find_col_contains(df, substr):
+    """Return first column whose normalized name contains the substring (case-insensitive)."""
+    def norm(s): return re.sub(r'[^0-9a-z]', '', str(s).lower())
+    substr_norm = norm(substr)
+    for c in df.columns:
+        if substr_norm in norm(c):
+            return c
+    return None
 
 
 def read_csv_file(path):
-    # try pandas to be robust against stray commas, blank rows etc.
-    try:
-        df = pd.read_csv(path)
-    except Exception:
-        # fallback, try to read ignoring comment lines
-        df = pd.read_csv(path, comment='#', engine='python')
+    # try pandas to be robust against stray commas, blank rows, BOMs, different encodings etc.
+    encodings = [None, "utf-8-sig", "utf-8", "latin1", "utf-16"]
+    for enc in encodings:
+        try:
+            if enc is None:
+                df = pd.read_csv(path)
+            else:
+                df = pd.read_csv(path, encoding=enc)
+            break
+        except Exception:
+            # try with python engine if default fails
+            try:
+                if enc is None:
+                    df = pd.read_csv(path, engine='python')
+                else:
+                    df = pd.read_csv(path, encoding=enc, engine='python')
+                break
+            except Exception:
+                df = None
+    if df is None:
+        # last-chance: read as latin1 with python engine
+        df = pd.read_csv(path, encoding='latin1', engine='python')
+
+    # sanitize column names to remove BOM or control characters that can break detection
+    df.columns = sanitize_columns(df.columns)
+
     return df
 
 
@@ -82,6 +148,7 @@ def main(argv):
     color_idx = 0
 
     any_plotted = False
+    recall_values = []  # collect recall values across files
     for f in args.files:
         if not os.path.exists(f):
             print(f"Warning: file not found: {f}; skipping")
@@ -91,14 +158,11 @@ def main(argv):
             print(f"Warning: empty file {f}; skipping")
             continue
 
-        # Try to detect columns case-insensitively
-        columns_lower = {c.lower(): c for c in df.columns}
+        # Try to detect columns case-insensitively and robustly (ignore spaces/punctuation)
         # X column detection
-        xcol = None
-        for cand in (args.xcol, "EFS", "efs", "EfS", "EFS", "EFSEARCH", "ef_search"):
-            if cand and cand.lower() in columns_lower:
-                xcol = columns_lower[cand.lower()]
-                break
+        xcol = detect_col(df, args.xcol, (
+            args.xcol, "EFS", "EFSEARCH", "ef_search", "ef", "e_f_s", "efsearch"
+        ))
         if not xcol:
             # pick first numeric parameter-like column
             numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
@@ -109,23 +173,42 @@ def main(argv):
                 continue
 
         # recall column
-        recall_col = None
-        for cand in (args.recall, "avg_recall", "recall", "AVG_RECALL"):
-            if cand and cand.lower() in columns_lower:
-                recall_col = columns_lower[cand.lower()]
-                break
+        recall_col = detect_col(df, args.recall, (
+            args.recall, "avg_recall", "average_recall", "recall", "avgRecall", "Recall", "AVG_RECALL"
+        ))
         if not recall_col:
             print(f"Cannot detect recall column in {f}; skipping.")
             continue
 
         # dists column
-        dists_col = None
-        for cand in (args.dists, "avg_dists", "avg_dists_per_query", "avg_dists_per_q", "avg_dists"):
-            if cand and cand.lower() in columns_lower:
-                dists_col = columns_lower[cand.lower()]
-                break
+        dists_col = detect_col(df, args.dists, (
+            args.dists,
+            "avg_dists",
+            "avg_dists_per_query",
+            "avg_dists_per_q",
+            "AvgDists",
+            "DistOpsPerQuery",
+            "distopsperquery",
+            "dist_ops_per_query",
+            "dist_ops_per_q",
+            "distops_per_q",
+            "dist ops per query",
+            "distopsperquery(ms)",
+            "distance",
+            "distances",
+            "dist_per_query",
+        ))
+        # Fallback: any column whose normalized name contains 'dist'
         if not dists_col:
-            print(f"Cannot detect dists column in {f}; skipping.")
+            dists_col = find_col_contains(df, "dist")
+            if dists_col:
+                print(f"Note: using detected dists column '{dists_col}' in {f} (normalized contains 'dist')")
+        if not dists_col:
+            # helpful debug: show raw column names and normalized mapping
+            cols_repr = ", ".join([repr(c) for c in df.columns])
+            nmmap = {re.sub(r'[^0-9a-z]', '', str(c).lower()): c for c in df.columns}
+            nmmap_repr = ", ".join([f"{k}:{repr(v)}" for k,v in nmmap.items()])
+            print(f"Cannot detect dists column in {f}; skipping. Found columns: {cols_repr}; normalized map: {nmmap_repr}")
             continue
 
         # sort by x
@@ -146,9 +229,60 @@ def main(argv):
         ax2.plot(xs, ys_dist, label=f"{label} (avg_dists)", color=color, marker='x', linestyle='--')
         any_plotted = True
 
+        # collect recall values for tick-setting logic later
+        recall_values.extend(ys_rec.tolist())
+
     if not any_plotted:
         print("No valid data plotted. Exiting.")
         return 1
+
+    # Determine appropriate Y-scale and ticks for recall axis
+    if recall_values:
+        y_min = float(np.min(recall_values))
+        y_max = float(np.max(recall_values))
+
+        # lower bound with a small margin
+        y_lower = max(0.0, y_min - 0.01)
+        # upper bound with small margin
+        y_upper = min(1.0, y_max + 0.005)
+
+        # If recall goes >= 0.98, ensure fine-grained ticks above 0.98 and ensure 0.99 is visible
+        if y_max >= 0.98:
+            if y_upper < 0.99:
+                y_upper = min(1.0, 0.99 + 0.002)
+            # major ticks below 0.98 every 0.01
+            major_start = math.floor(y_lower * 100.0) / 100.0
+            major_end = min(0.98, y_upper)
+            if major_end <= major_start:
+                major_ticks = np.array([])
+            else:
+                major_ticks = np.arange(major_start, major_end + 1e-9, 0.01)
+
+            # Use finer ticks from 0.98 upward
+            fine_step = 0.001 if (y_upper - 0.98) <= 0.02 else 0.002
+            fine_ticks = np.arange(0.98, y_upper + 1e-12, fine_step)
+
+            ticks = np.unique(np.concatenate((major_ticks, fine_ticks)))
+            # ensure 0.99 included
+            if 0.99 not in ticks and 0.99 <= y_upper:
+                ticks = np.sort(np.append(ticks, 0.99))
+
+            ax1.set_yticks(ticks)
+        else:
+            # Default tick every 0.01 across the range
+            maj_start = math.floor(y_lower * 100.0) / 100.0
+            maj_end = math.ceil(y_upper * 100.0) / 100.0
+            ticks = np.arange(maj_start, maj_end + 1e-9, 0.01)
+            ax1.set_yticks(ticks)
+
+        ax1.set_ylim(y_lower, y_upper)
+
+        # If 0.99 is inside the visible Y-limits, draw a dashed horizontal line and annotation to mark it
+        if 0.99 >= y_lower and 0.99 <= y_upper:
+            ax1.axhline(0.99, color='red', linestyle=':', linewidth=1)
+            # place the annotation slightly to the right of the axes (fraction x coordinate)
+            ax1.annotate('Recall 0.99', xy=(1.01, 0.99), xycoords=('axes fraction', 'data'),
+                         color='red', fontsize='small', va='center')
 
     ax1.set_xlabel(args.xlabel if args.xlabel else args.xcol)
     ax1.set_ylabel("avg_recall", color='tab:blue')

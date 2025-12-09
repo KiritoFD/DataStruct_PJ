@@ -182,7 +182,7 @@ static inline void my_prefetch_l1(const void* ptr) {
 static constexpr int PREFETCH_AHEAD = 7;
 
 // [新增] 汉明距离阈值 (可调参数，建议范围 28-36)
-static std::atomic<int> HAMMING_THRESHOLD{44};
+static std::atomic<int> HAMMING_THRESHOLD{41};
 
 // ---------------------------------------------------------
 // 扁平化 HNSW 索引 (Unified Build & Search) - CSR 格式

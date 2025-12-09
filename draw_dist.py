@@ -120,12 +120,7 @@ def main(argv):
         print("No valid data plotted. Exiting.")
         return 1
 
-    # 计算重叠区间
-    overlap_min = max(min_vals)
-    overlap_max = min(max_vals)
-    if overlap_min >= overlap_max:
-        print("No overlapping distance region among all files.")
-        return 1
+
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
     color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]

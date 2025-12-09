@@ -1,0 +1,147 @@
+========== HNSW Search Test ==========
+
+Timestamp: Mon Dec  8 15:38:20 2025
+
+Command line arguments:
+  argv[0]: ./hng3
+  argv[1]: --m
+  argv[2]: 40
+  argv[3]: --max_layer
+  argv[4]: 7
+  argv[5]: --efc
+  argv[6]: 1000
+  argv[7]: --efs
+  argv[8]: 304
+  argv[9]: --hamming_threshold
+  argv[10]: 32
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 40
+  Max layer: 7
+  EFC: 1000
+  EFS: 304
+  Threads: -1
+  Debug: -1
+
+HNSW parameters set.
+
+Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
+
+  Hamming threshold: 32
+Loading base vectors...
+✓ Base loaded in 2232.189833 ms
+
+Loading query vectors...
+✓ Queries loaded in 68.561915 ms
+
+Loading ground truth...
+✓ Truth loaded in 73.415289 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+✓ Index built.
+  build_time(local)=4195.273955 ms
+  build_time(internal)=4190.127070 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 4
+
+  actual_max_layer: 4
+
+  avg_degree_l0: 68.582917
+
+  avg_degree_upper: 36.158961
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 29240 nodes (2.47%)
+
+    L2: 710 nodes (0.06%)
+
+    L3: 24 nodes (0.00%)
+
+    L4: 2 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.476090
+
+Average query time: 0.388568 ms
+
+Total query time: 3885.675905 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 10873133
+
+Average distance ops per query: 1087.313300
+
+Last query distance ops: 1830
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2374.167037 ms
+
+Index build time: 4190.127070 ms
+
+Query execution time: 3885.675905 ms
+
+Total elapsed time: 10455.116897 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 2573.554832
+
+Distance ops per second: 2798260.396861
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251208_153820_752.log
+
