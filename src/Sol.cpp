@@ -126,6 +126,7 @@ static std::atomic<bool> ABLATE_SIMD(false);
 static std::atomic<bool> ABLATE_PRUNING(false);
 static std::atomic<bool> ABLATE_HEAP(false);
 static std::atomic<bool> ABLATE_REORDER(false);
+static std::atomic<bool> ABLATE_ADAPTIVE_EP(false);  // 新增：自适应起点选择消融开关
 
 // 【移除】三角不等式剪枝开关 - 已被证明是负优化
 // 【移除】范数剪枝相关 - 在高维空间效率极低
@@ -212,8 +213,14 @@ public:
     std::vector<int> label_lookup;
 
     // [新增] 二进制指纹：每个向量 2 个 uint64_t (128 bits)
-    // 索引方式: signatures[id * 2], signatures[id * 2 + 1]
     std::vector<uint64_t> signatures;
+
+    // =========================================================
+    // [新增] 聚类起点选择相关成员
+    // =========================================================
+    std::vector<int> entry_candidates;           // 候选起点集（节点ID列表）
+    AlignedFloatArray entry_candidates_data;     // 候选起点向量数据（紧凑存储）
+    int num_entry_candidates = 0;                // 候选起点数量
 
     FlatHNSW(int d) : dim(d), max_m(0), max_m_upper(0), enter_point(-1), num_nodes(0), max_level(0) {}
 
@@ -301,6 +308,162 @@ public:
 #endif
     }
     
+    // =========================================================
+    // [新增] K-means 聚类构建候选起点集
+    // =========================================================
+    void buildEntryCandidates(int K = 32, int max_iters = 20) {
+        if (num_nodes < K) {
+            // 数据量太少，直接使用默认入口点
+            entry_candidates.clear();
+            num_entry_candidates = 0;
+            return;
+        }
+
+        // 1. K-means 聚类
+        std::vector<AlignedFloatArray> centroids(K);
+        for (int i = 0; i < K; ++i) {
+            centroids[i].resize(dim);
+        }
+        
+        // 初始化：随机选择 K 个点作为初始簇中心（K-means++简化版）
+        std::mt19937 rng(42);
+        std::vector<int> init_indices(num_nodes);
+        for (int i = 0; i < num_nodes; ++i) init_indices[i] = i;
+        std::shuffle(init_indices.begin(), init_indices.end(), rng);
+        
+        for (int i = 0; i < K; ++i) {
+            const float* src = get_vec(init_indices[i]);
+            std::memcpy(centroids[i].data(), src, dim * sizeof(float));
+        }
+        
+        // 节点所属簇的分配
+        std::vector<int> assignments(num_nodes, -1);
+        std::vector<int> cluster_sizes(K);
+        
+        // 迭代优化
+        for (int iter = 0; iter < max_iters; ++iter) {
+            // E-step: 分配每个点到最近的簇中心
+            std::fill(cluster_sizes.begin(), cluster_sizes.end(), 0);
+            
+            #pragma omp parallel for schedule(static)
+            for (int i = 0; i < num_nodes; ++i) {
+                const float* vec = get_vec(i);
+                float best_dist = std::numeric_limits<float>::max();
+                int best_cluster = 0;
+                
+                for (int c = 0; c < K; ++c) {
+                    float d = l2sq_100d(vec, centroids[c].data());
+                    if (d < best_dist) {
+                        best_dist = d;
+                        best_cluster = c;
+                    }
+                }
+                assignments[i] = best_cluster;
+            }
+            
+            // 统计每个簇的大小
+            for (int i = 0; i < num_nodes; ++i) {
+                cluster_sizes[assignments[i]]++;
+            }
+            
+            // M-step: 更新簇中心
+            // 先清零
+            for (int c = 0; c < K; ++c) {
+                std::memset(centroids[c].data(), 0, dim * sizeof(float));
+            }
+            
+            // 累加
+            for (int i = 0; i < num_nodes; ++i) {
+                int c = assignments[i];
+                const float* vec = get_vec(i);
+                float* cent = centroids[c].data();
+                for (int d = 0; d < dim; ++d) {
+                    cent[d] += vec[d];
+                }
+            }
+            
+            // 平均
+            for (int c = 0; c < K; ++c) {
+                if (cluster_sizes[c] > 0) {
+                    float inv = 1.0f / cluster_sizes[c];
+                    for (int d = 0; d < dim; ++d) {
+                        centroids[c][d] *= inv;
+                    }
+                }
+            }
+        }
+        
+        // 2. 为每个簇中心找到数据库中最近的点
+        entry_candidates.resize(K);
+        
+        #pragma omp parallel for schedule(static)
+        for (int c = 0; c < K; ++c) {
+            const float* cent = centroids[c].data();
+            float best_dist = std::numeric_limits<float>::max();
+            int best_node = 0;
+            
+            for (int i = 0; i < num_nodes; ++i) {
+                float d = l2sq_100d(get_vec(i), cent);
+                if (d < best_dist) {
+                    best_dist = d;
+                    best_node = i;
+                }
+            }
+            entry_candidates[c] = best_node;
+        }
+        
+        // 去重（不同簇中心可能映射到同一个点）
+        std::sort(entry_candidates.begin(), entry_candidates.end());
+        entry_candidates.erase(std::unique(entry_candidates.begin(), entry_candidates.end()), 
+                               entry_candidates.end());
+        
+        num_entry_candidates = (int)entry_candidates.size();
+        
+        // 3. 紧凑存储候选起点的向量数据（用于快速距离计算）
+        entry_candidates_data.resize((size_t)num_entry_candidates * dim);
+        for (int i = 0; i < num_entry_candidates; ++i) {
+            std::memcpy(entry_candidates_data.data() + (size_t)i * dim,
+                       get_vec(entry_candidates[i]),
+                       dim * sizeof(float));
+        }
+        
+        if (DEBUG_TIMING) {
+            std::cout << "[Cluster] Built " << num_entry_candidates 
+                      << " entry candidates from " << K << " clusters\n";
+        }
+    }
+    
+    // =========================================================
+    // [新增] 自适应选择最佳起点
+    // =========================================================
+    int selectBestEntryPoint(const float* q) const {
+        // 消融模式：禁用自适应起点选择，直接返回默认入口点
+        if (ABLATE_ADAPTIVE_EP.load(std::memory_order_relaxed)) {
+            return enter_point;
+        }
+        
+        if (num_entry_candidates == 0) {
+            // 没有候选起点，返回默认入口
+            return enter_point;
+        }
+        
+        float best_dist = std::numeric_limits<float>::max();
+        int best_idx = 0;
+        
+        // 计算查询到所有候选起点的距离
+        const float* cand_data = entry_candidates_data.data();
+        
+        for (int i = 0; i < num_entry_candidates; ++i) {
+            float d = l2sq_100d(q, cand_data + (size_t)i * dim);
+            if (d < best_dist) {
+                best_dist = d;
+                best_idx = i;
+            }
+        }
+        
+        return entry_candidates[best_idx];
+    }
+
     // -------------------------------------------------------------
     // 【优化】极简版上层贪婪搜索 - 移除所有剪枝
     // -------------------------------------------------------------
@@ -638,8 +801,9 @@ void Solution::search(const std::vector<float>& query, int* result) {
     }
 }
 
-// ---------------------------------------------------------
-// 设置参数接口
-// ---------------------------------------------------------
-#include "extern.h"
 
+
+
+
+
+#include "extern.h"// ---------------------------------------------------------// 设置参数接口// ---------------------------------------------------------

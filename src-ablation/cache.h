@@ -134,6 +134,17 @@ static bool save_flat_index(FlatHNSW* flat, const std::string& path) {
         ofs.write((char*)flat->label_lookup.data(), label_lookup_size * sizeof(int));
     }
     
+    // 写入自适应起点信息
+    int32_t num_clusters = flat->num_clusters;
+    ofs.write((char*)&num_clusters, sizeof(num_clusters));
+    
+    if (num_clusters > 0) {
+        // 写入起点候选集
+        ofs.write((char*)flat->entry_candidates.data(), num_clusters * sizeof(int));
+        // 写入聚类中心
+        ofs.write((char*)flat->cluster_centers.data(), (size_t)num_clusters * flat->dim * sizeof(float));
+    }
+    
     // 【移除】不再保存 node_l2_norms 和 pivot_dists（版本4）
     
     return ofs.good();
@@ -205,6 +216,20 @@ static FlatHNSW* load_flat_index(const std::string& path) {
         if (label_lookup_size > 0) {
             flat->label_lookup.resize(label_lookup_size);
             ifs.read((char*)flat->label_lookup.data(), label_lookup_size * sizeof(int));
+        }
+    }
+    
+    // 读取自适应起点信息
+    int32_t num_clusters = 0;
+    if (ifs.read((char*)&num_clusters, sizeof(num_clusters))) {
+        flat->num_clusters = num_clusters;
+        
+        if (num_clusters > 0) {
+            flat->entry_candidates.resize(num_clusters);
+            ifs.read((char*)flat->entry_candidates.data(), num_clusters * sizeof(int));
+            
+            flat->cluster_centers.resize((size_t)num_clusters * flat->dim);
+            ifs.read((char*)flat->cluster_centers.data(), (size_t)num_clusters * flat->dim * sizeof(float));
         }
     }
     

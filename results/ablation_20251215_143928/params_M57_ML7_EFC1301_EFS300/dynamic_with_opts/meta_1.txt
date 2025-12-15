@@ -1,0 +1,8 @@
+variant_spec=dynamic_with_opts,0,0,0,0,0,1,0,0
+set_M=57
+set_ML=7
+set_EFC=1301
+set_EFS=300
+run_index=1
+log_file=results/ablation_20251215_143928/params_M57_ML7_EFC1301_EFS300/dynamic_with_opts/run_stdout_1.log
+status=done

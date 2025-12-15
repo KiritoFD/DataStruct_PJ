@@ -40,3 +40,20 @@ private:
     std::condition_variable cv;
     bool stop;
 };
+
+// 默认参数（如果未定义）
+#ifndef HNSW_DEFAULT_M
+#define HNSW_DEFAULT_M 16
+#endif
+
+#ifndef HNSW_DEFAULT_MAX_LAYER
+#define HNSW_DEFAULT_MAX_LAYER 16
+#endif
+
+#ifndef HNSW_DEFAULT_EF_CONSTRUCTION
+#define HNSW_DEFAULT_EF_CONSTRUCTION 200
+#endif
+
+#ifndef HNSW_DEFAULT_EF_SEARCH
+#define HNSW_DEFAULT_EF_SEARCH 200
+#endif

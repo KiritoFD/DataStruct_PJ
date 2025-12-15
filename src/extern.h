@@ -22,20 +22,22 @@ void set_hnsw_params(int M, int max_layer, int ef_construction, int ef_search, i
 void set_hnsw_debug(int dbg) { DEBUG_TIMING = (dbg != 0); }
 
 // Set ablation flags at runtime to toggle features for experiments
-void set_ablation_flags(int prefetch, int simd, int pruning, int heap, int reorder) {
+void set_ablation_flags(int prefetch, int simd, int pruning, int heap, int reorder, int adaptive_ep) {
     ABLATE_PREFETCH.store(prefetch != 0);
     ABLATE_SIMD.store(simd != 0);
     ABLATE_PRUNING.store(pruning != 0);
     ABLATE_HEAP.store(heap != 0);
     ABLATE_REORDER.store(reorder != 0);
+    ABLATE_ADAPTIVE_EP.store(adaptive_ep != 0);
 }
 
-void get_ablation_flags(int* prefetch, int* simd, int* pruning, int* heap, int* reorder) {
+void get_ablation_flags(int* prefetch, int* simd, int* pruning, int* heap, int* reorder, int* adaptive_ep) {
     if (prefetch) *prefetch = ABLATE_PREFETCH.load() ? 1 : 0;
     if (simd) *simd = ABLATE_SIMD.load() ? 1 : 0;
     if (pruning) *pruning = ABLATE_PRUNING.load() ? 1 : 0;
     if (heap) *heap = ABLATE_HEAP.load() ? 1 : 0;
     if (reorder) *reorder = ABLATE_REORDER.load() ? 1 : 0;
+    if (adaptive_ep) *adaptive_ep = ABLATE_ADAPTIVE_EP.load() ? 1 : 0;
 }
 
 // Convenience setters
@@ -44,9 +46,14 @@ void set_ablate_simd(int on) { ABLATE_SIMD.store(on != 0); }
 void set_ablate_pruning(int on) { ABLATE_PRUNING.store(on != 0); }
 void set_ablate_heap(int on) { ABLATE_HEAP.store(on != 0); }
 void set_ablate_reorder(int on) { ABLATE_REORDER.store(on != 0); }
+void set_ablate_adaptive_ep(int on) { ABLATE_ADAPTIVE_EP.store(on != 0); }
 
 bool get_ablate_reorder() {
     return ABLATE_REORDER.load(std::memory_order_relaxed);
+}
+
+bool get_ablate_adaptive_ep() {
+    return ABLATE_ADAPTIVE_EP.load(std::memory_order_relaxed);
 }
 
 // New: enable/disable runtime distance counting
@@ -168,6 +175,22 @@ void set_hamming_threshold(int value) {
     if (value > 0) {
         HAMMING_THRESHOLD.store(value, std::memory_order_relaxed);
     }
+}
+
+// 聚类起点参数
+static std::atomic<int> g_CLUSTER_K{32};          // 聚类数量
+static std::atomic<int> g_CLUSTER_ITERS{15};      // K-means 迭代次数
+
+void set_cluster_k(int k) {
+    g_CLUSTER_K.store(k);
+}
+
+void set_cluster_iters(int iters) {
+    g_CLUSTER_ITERS.store(iters);
+}
+
+int get_cluster_k() {
+    return g_CLUSTER_K.load();
 }
 
 } // extern "C"

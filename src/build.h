@@ -134,47 +134,41 @@ public:
 
         point_ids.resize(n);
         for (int i = 0; i < n; ++i) point_ids[i] = i;
+
+        // 在构建完成后，添加聚类起点生成
+        if (flat_index && flat_index->num_nodes > 0) {
+            // K 可以根据数据规模调整，一般 sqrt(n) 或固定值 32-64
+            int K = std::min(64, std::max(16, (int)std::sqrt(n)));
+            flat_index->buildEntryCandidates(K, 15);
+        }
     }
 
     std::vector<std::pair<int, float>> search(const std::vector<float>& query, int k) {
-        tl_dist_counter = 0;
-
-        if (!flat_index || flat_index->enter_point < 0) return {};
-
-        int ep = flat_index->enter_point;
-        int max_l = flat_index->node_levels[ep];
-        int curr = ep;
-
-        int l = std::min(max_l, 4);
-        while (l > 0) {
-            curr = flat_index->greedySearchUpper(curr, query.data(), l);
-            l = (l > 1) ? (l - 2) : (l - 1);
-        }
-    
-        auto top = flat_index->searchL0(query.data(), curr, g_HNSW_EF_SEARCH.load());
+        if (!flat_index || flat_index->size() == 0) return {};
         
-        std::vector<std::pair<int, float>> out;
-        int cnt = std::min(k, (int)top.size());
-        out.reserve(cnt);
-        for (int i = 0; i < cnt; ++i) {
-            int original_idx;
-            if (!flat_index->label_lookup.empty()) {
-                original_idx = flat_index->label_lookup[top[i].second];
-            } else {
-                original_idx = top[i].second;
-            }
-            
-            if (original_idx >= 0 && original_idx < (int)point_ids.size()) {
-                out.push_back({point_ids[original_idx], top[i].first});
-            }
+        const float* q = query.data();
+        int ef = g_HNSW_EF_SEARCH.load();
+        
+        // [修改] 使用自适应起点选择
+        int ep = flat_index->selectBestEntryPoint(q);
+        
+        // 如果有上层图，仍然需要从上层贪婪搜索
+        // 但起点已经是更优的位置
+        for (int lv = flat_index->max_level; lv > 0; --lv) {
+            ep = flat_index->greedySearchUpper(ep, q, lv);
         }
-
-        uint64_t last = tl_dist_counter;
-        tl_dist_counter = 0;
-        g_last_query_dist.store(last, std::memory_order_relaxed);
-        g_total_dist_count.fetch_add(last, std::memory_order_relaxed);
-        g_total_query_count.fetch_add(1, std::memory_order_relaxed);
-
-        return out;
+        
+        // L0 层搜索
+        auto results = flat_index->searchL0(q, ep, ef);
+        
+        // 转换回原始 ID 并返回 top-k
+        std::vector<std::pair<int, float>> ret;
+        ret.reserve(k);
+        for (size_t i = 0; i < results.size() && (int)i < k; ++i) {
+            int internal_id = results[i].second;
+            int original_id = flat_index->label_lookup[internal_id];
+            ret.emplace_back(original_id, results[i].first);
+        }
+        return ret;
     }
 };

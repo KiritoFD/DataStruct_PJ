@@ -1,0 +1,8 @@
+variant_spec=no_adaptive_ep,0,0,0,0,0,0,0,1
+set_M=40
+set_ML=7
+set_EFC=700
+set_EFS=800
+run_index=1
+log_file=result-ablation/ablation_20251215_203820/params_M40_ML7_EFC700_EFS800/no_adaptive_ep/run_stdout_1.log
+status=done

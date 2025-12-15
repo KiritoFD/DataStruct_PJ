@@ -1,0 +1,179 @@
+========== HNSW Search Test ==========
+
+Timestamp: Mon Dec 15 19:27:30 2025
+
+Command line arguments:
+  argv[0]: ./hnga
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+  argv[7]: --k
+  argv[8]: 10
+  argv[9]: --m
+  argv[10]: 57
+  argv[11]: --max_layer
+  argv[12]: 7
+  argv[13]: --efc
+  argv[14]: 1400
+  argv[15]: --efs
+  argv[16]: 1050
+  argv[17]: --threads
+  argv[18]: 32
+  argv[19]: --ablate_csr
+  argv[20]: 0
+  argv[21]: --ablate_prefetch
+  argv[22]: 0
+  argv[23]: --ablate_simd
+  argv[24]: 0
+  argv[25]: --ablate_pruning
+  argv[26]: 0
+  argv[27]: --ablate_heap
+  argv[28]: 0
+  argv[29]: --ablate_flat_index
+  argv[30]: 0
+  argv[31]: --ablate_reorder
+  argv[32]: 0
+  argv[33]: --ablate_adaptive_ep
+  argv[34]: 1
+  argv[35]: --adaptive_ep_k
+  argv[36]: 256
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 57
+  Max layer: 7
+  EFC: 1400
+  EFS: 1050
+  Threads: 32
+  Debug: -1
+  Adaptive EP K: 256
+
+HNSW parameters set.
+
+[Ablation] Set flags: prefetch=0, simd=0, pruning=0, heap=0, reorder=0, adaptive_ep=1
+Ablation flags: prefetch=0, simd=0, pruning=0, heap=0, reorder=0, adaptive_ep=1
+
+Loading base vectors...
+Loaded base from binary cache: data_o/glove/base.txt.bin
+✓ Base loaded in 2567.102892 ms
+
+Loading query vectors...
+Loaded queries from binary cache: data_o/glove/query.txt.bin
+✓ Queries loaded in 92.598621 ms
+
+Loading ground truth...
+Loaded truth from binary cache: data_o/glove/truth.txt.bin
+✓ Truth loaded in 97.279968 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+[Cache] Loaded index from: cache/hnsw_n1183514_d100_M57_L7_efc1400.idx
+[Cache] Load time: 4957.71 ms
+[Cache] Index has 2560 clusters
+[Adaptive EP] Disabled by ablation flag
+✓ Index built.
+  build_time(local)=4964.297438 ms
+  build_time(internal)=4957.711323 ms
+
+
+========== GRAPH QUALITY ==========
+
+  num_nodes: 1183514
+
+  max_level (entry point): 3
+
+  actual_max_layer: 3
+
+  avg_degree_l0: 88.263055
+
+  avg_degree_upper: 0.195965
+
+
+  Layer Distribution:
+
+    L0: 1183514 nodes (100.00%)
+
+    L1: 20811 nodes (1.76%)
+
+    L2: 346 nodes (0.03%)
+
+    L3: 10 nodes (0.00%)
+
+
+
+Executing queries...
+
+  Processed 1000 queries
+
+  Processed 2000 queries
+
+  Processed 3000 queries
+
+  Processed 4000 queries
+
+  Processed 5000 queries
+
+  Processed 6000 queries
+
+  Processed 7000 queries
+
+  Processed 8000 queries
+
+  Processed 9000 queries
+
+  Processed 10000 queries
+
+
+========== RESULTS ==========
+
+Total queries: 10000
+
+Average recall@10: 0.998750
+
+Average query time: 5.234348 ms
+
+Total query time: 52343.478302 ms
+
+
+========== DISTANCE STATISTICS ==========
+
+Total queries reported by index: 10000
+
+Total distance computations: 644377811
+
+Average distance ops per query: 64437.781100
+
+Last query distance ops: 55563
+
+
+========== PERFORMANCE SUMMARY ==========
+
+Data loading time: 2756.981481 ms
+
+Index build time: 4957.711323 ms
+
+Query execution time: 52343.478302 ms
+
+Total elapsed time: 60064.757221 ms
+
+
+========== EFFICIENCY METRICS ==========
+
+Queries per second: 191.045768
+
+Distance ops per second: 12310565.363696
+
+
+========== END OF LOG ==========
+
+Log saved to: Log/run_20251215_192730_217.log
+

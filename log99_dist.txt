@@ -1,6 +1,6 @@
 ========== HNSW Search Test ==========
 
-Timestamp: Tue Dec  9 11:49:55 2025
+Timestamp: Mon Dec 15 12:33:57 2025
 
 Command line arguments:
   argv[0]: ./hng3
@@ -33,13 +33,13 @@ Ablation flags: csr=0, prefetch=0, simd=0, pruning=0, heap=0
 
   Hamming threshold: 41
 Loading base vectors...
-✓ Base loaded in 2468.114999 ms
+✓ Base loaded in 3092.881647 ms
 
 Loading query vectors...
-✓ Queries loaded in 78.228864 ms
+✓ Queries loaded in 102.815206 ms
 
 Loading ground truth...
-✓ Truth loaded in 81.087921 ms
+✓ Truth loaded in 110.813659 ms
 
 Data Summary:
   Dimension d=100, Base vectors=1183514, Queries=10000
@@ -47,10 +47,10 @@ Data Summary:
 
 Building HNSW index...
 [Cache] Loaded index from: cache/hnsw_n1183514_d100_M57_L7_efc2000.idx
-[Cache] Load time: 5670.96 ms
+[Cache] Load time: 6208.78 ms
 ✓ Index built.
-  build_time(local)=5677.299355 ms
-  build_time(internal)=5670.956685 ms
+  build_time(local)=6213.824614 ms
+  build_time(internal)=6208.783909 ms
 
 
 ========== GRAPH QUALITY ==========
@@ -107,41 +107,39 @@ Total queries: 10000
 
 Average recall@10: 0.990280
 
-Average query time: 3.314902 ms
+Average query time: 2.696168 ms
 
-Total query time: 33149.022455 ms
+Total query time: 26961.676558 ms
 
 
 ========== DISTANCE STATISTICS ==========
 
-Total queries reported by index: 10000
+Total queries reported by index: 0
 
-Total distance computations: 206189989
+Total distance computations: 0
 
-Average distance ops per query: 20618.998900
+Average distance ops per query: 0.000000
 
-Last query distance ops: 23539
+Last query distance ops: 0
 
 
 ========== PERFORMANCE SUMMARY ==========
 
-Data loading time: 2627.431784 ms
+Data loading time: 3306.510512 ms
 
-Index build time: 5670.956685 ms
+Index build time: 6208.783909 ms
 
-Query execution time: 33149.022455 ms
+Query execution time: 26961.676558 ms
 
-Total elapsed time: 41453.753594 ms
+Total elapsed time: 36482.011684 ms
 
 
 ========== EFFICIENCY METRICS ==========
 
-Queries per second: 301.668021
-
-Distance ops per second: 6220092.591868
+Queries per second: 370.896816
 
 
 ========== END OF LOG ==========
 
-Log saved to: Log/run_20251209_114955_830.log
+Log saved to: Log/run_20251215_123357_190.log
 

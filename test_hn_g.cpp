@@ -30,7 +30,7 @@ extern "C" {
     int get_graph_nodes_at_level(int level);
     double get_graph_avg_degree_upper();
     // 声明 set_ablation_flags 以避免未声明错误
-    void set_ablation_flags(int csr, int prefetch, int simd, int pruning, int heap);
+    void set_ablation_flags(int csr, int prefetch, int simd, int pruning, int heap, int adaptive_ep);
 }
 
 // 新增：尝试从二进制缓存加载 base；格式：magic(8) + uint32_t d + uint64_t n_vec + floats...
@@ -256,8 +256,10 @@ struct CmdOptsG {
     int ablate_simd = -1;
     int ablate_pruning = -1;
     int ablate_heap = -1;
+    int ablate_adaptive_ep = -1;  // 新增
     int hamming_threshold = -1;
 };
+
 static CmdOptsG parse_args_g(int argc, char** argv) {
     CmdOptsG o;
     for (int i = 1; i < argc; ++i) {
@@ -277,6 +279,7 @@ static CmdOptsG parse_args_g(int argc, char** argv) {
         else if (a == "--ablate_simd" && i+1 < argc) o.ablate_simd = std::stoi(argv[++i]);
         else if (a == "--ablate_pruning" && i+1 < argc) o.ablate_pruning = std::stoi(argv[++i]);
         else if (a == "--ablate_heap" && i+1 < argc) o.ablate_heap = std::stoi(argv[++i]);
+        else if (a == "--ablate_adaptive_ep" && i+1 < argc) o.ablate_adaptive_ep = std::stoi(argv[++i]);  // 新增
         else if (a == "--hamming_threshold" && i+1 < argc) o.hamming_threshold = std::stoi(argv[++i]);
     }
     return o;
@@ -387,12 +390,14 @@ int main(int argc, char** argv) {
     int simd = (opts.ablate_simd >= 0) ? opts.ablate_simd : 0;
     int pruning = (opts.ablate_pruning >= 0) ? opts.ablate_pruning : 0;
     int heap = (opts.ablate_heap >= 0) ? opts.ablate_heap : 0;
-    set_ablation_flags(csr, prefetch, simd, pruning, heap);
+    int adaptive_ep = (opts.ablate_adaptive_ep >= 0) ? opts.ablate_adaptive_ep : 0;  // 新增
+    set_ablation_flags(csr, prefetch, simd, pruning, heap, adaptive_ep);
     logger.writeline((std::string("Ablation flags: csr=") + std::to_string(csr)
                       + ", prefetch=" + std::to_string(prefetch)
                       + ", simd=" + std::to_string(simd)
                       + ", pruning=" + std::to_string(pruning)
-                      + ", heap=" + std::to_string(heap) + "\n"));
+                      + ", heap=" + std::to_string(heap)
+                      + ", adaptive_ep=" + std::to_string(adaptive_ep) + "\n"));  // 新增
 
     if (opts.hamming_threshold > 0) {
         set_hamming_threshold(opts.hamming_threshold);

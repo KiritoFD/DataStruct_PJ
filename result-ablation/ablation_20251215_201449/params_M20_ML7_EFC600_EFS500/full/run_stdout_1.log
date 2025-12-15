@@ -1,0 +1,90 @@
+========== HNSW Search Test ==========
+
+Timestamp: Mon Dec 15 20:14:49 2025
+
+Command line arguments:
+  argv[0]: ./hnga
+  argv[1]: --base
+  argv[2]: data_o/glove/base.txt
+  argv[3]: --query
+  argv[4]: data_o/glove/query.txt
+  argv[5]: --truth
+  argv[6]: data_o/glove/truth.txt
+  argv[7]: --k
+  argv[8]: 10
+  argv[9]: --m
+  argv[10]: 20
+  argv[11]: --max_layer
+  argv[12]: 7
+  argv[13]: --efc
+  argv[14]: 600
+  argv[15]: --efs
+  argv[16]: 500
+  argv[17]: --threads
+  argv[18]: 32
+  argv[19]: --ablate_csr
+  argv[20]: 0
+  argv[21]: --ablate_prefetch
+  argv[22]: 0
+  argv[23]: --ablate_simd
+  argv[24]: 0
+  argv[25]: --ablate_pruning
+  argv[26]: 0
+  argv[27]: --ablate_heap
+  argv[28]: 0
+  argv[29]: --ablate_flat_index
+  argv[30]: 0
+  argv[31]: --ablate_reorder
+  argv[32]: 0
+  argv[33]: --ablate_adaptive_ep
+  argv[34]: 0
+  argv[35]: --adaptive_ep_k
+  argv[36]: 256
+
+Configuration:
+  Base file: data_o/glove/base.txt
+  Query file: data_o/glove/query.txt
+  Truth file: data_o/glove/truth.txt
+  K: 10
+  M: 20
+  Max layer: 7
+  EFC: 600
+  EFS: 500
+  Threads: 32
+  Debug: -1
+  Adaptive EP K: 256
+
+HNSW parameters set.
+
+[Ablation] Set flags: prefetch=0, simd=0, pruning=0, heap=0, reorder=0, adaptive_ep=0
+Ablation flags: prefetch=0, simd=0, pruning=0, heap=0, reorder=0, adaptive_ep=0
+
+Loading base vectors...
+Loaded base from binary cache: data_o/glove/base.txt.bin
+✓ Base loaded in 2336.000329 ms
+
+Loading query vectors...
+Loaded queries from binary cache: data_o/glove/query.txt.bin
+✓ Queries loaded in 69.180881 ms
+
+Loading ground truth...
+Loaded truth from binary cache: data_o/glove/truth.txt.bin
+✓ Truth loaded in 68.641866 ms
+
+Data Summary:
+  Dimension d=100, Base vectors=1183514, Queries=10000
+
+
+Building HNSW index...
+[Progress] 59001/1183514 (5.0%) Time: 9023.19 ms
+[Progress] 114001/1183514 (9.6%) Time: 21027.80 ms
+[Progress] 167001/1183514 (14.1%) Time: 37046.93 ms
+[Progress] 218001/1183514 (18.4%) Time: 51561.97 ms
+[Progress] 268001/1183514 (22.6%) Time: 70075.81 ms
+[Progress] 318001/1183514 (26.9%) Time: 91094.86 ms
+[Progress] 368001/1183514 (31.1%) Time: 108603.35 ms
+[Progress] 419001/1183514 (35.4%) Time: 134129.84 ms
+[Progress] 470001/1183514 (39.7%) Time: 158153.53 ms
+[Progress] 520001/1183514 (43.9%) Time: 184194.71 ms
+[Progress] 570001/1183514 (48.2%) Time: 211223.32 ms
+[Progress] 621001/1183514 (52.5%) Time: 236260.78 ms
